@@ -2054,6 +2054,9 @@ window.switchAdminTab = (tab, animationType = 'fade-in') => {
     // 🛡️ جدار الحماية: منع النقر على الأزرار السفلية نهائياً إذا كان النظام مشغولاً بحركة سحب حالية
     if (window.isSwipeNavigating && animationType !== 'none') return;
 
+    // إغلاق أي نافذة منبثقة مفتوحة فوراً عند النقر على تبويب جديد
+    window.closeModals();
+
     sessionStorage.setItem('admin_tab', tab); 
     
     document.querySelectorAll('.admin-section').forEach(s => {
