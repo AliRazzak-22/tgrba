@@ -20,35 +20,39 @@
    reference في index.html و style.css تلقائياً بلا لمس أي ملف مشترك.            */
     const CSS = `
 html.is-mobile {
-    --m-bg: #04060a;
-    --m-card: #0b111b;
-    --m-card2: #121a26;
-    --m-text: #eef4ff;
-    --m-ink: #eef4ff;
-    --m-muted: #93a6bd;
-    --m-faint: #62778f;
-    --m-line: rgba(150,190,235,.15);
-    --m-hair: rgba(255,255,255,.07);
-    --m-accent: #4da3ff;
-    --m-accent2: #86dcff;
-    --m-deep: #1d5c9e;
-    --m-glass-bg: rgba(10,16,26,.66);
-    --m-glass: linear-gradient(158deg, rgba(255,255,255,.085) 0%, rgba(255,255,255,.018) 46%, rgba(255,255,255,.05) 100%);
-    --m-sheen: radial-gradient(125% 62% at 50% -22%, rgba(255,255,255,.20), rgba(255,255,255,0) 62%);
-    --m-edge: rgba(255,255,255,.11);
-    --m-edge-hi: rgba(255,255,255,.26);
-    --m-lift: 0 14px 34px rgba(0,0,0,.54), inset 0 1px 0 rgba(255,255,255,.17), inset 0 0 0 1px rgba(255,255,255,.05);
+    --m-bg: #03060c;
+    --m-card: #0a1424;
+    --m-card2: #101d33;
+    --m-text: #eaf3ff;
+    --m-ink: #eaf3ff;
+    --m-muted: #94aac6;
+    --m-faint: #647c99;
+    --m-line: rgba(130,185,255,.15);
+    --m-hair: rgba(150,200,255,.085);
+    --m-accent: #5aa8ff;
+    --m-accent2: #93d6ff;
+    --m-indigo: #5b6bff;
+    --m-deep: #2148a8;
+    /* زجاج أزرق مائل: الجسم شفاف أكثر فتظهر الخلفية المتحركة خلف كل بطاقة،
+       والضوء العلوي أزرق لا أبيض — أبيضُ صافياً هو ما يخنق اللون. */
+    --m-glass-bg: rgba(11,21,38,.50);
+    --m-glass: linear-gradient(160deg, rgba(118,180,255,.095) 0%, rgba(88,132,214,.02) 46%, rgba(108,158,255,.055) 100%);
+    --m-sheen: radial-gradient(130% 60% at 50% -18%, rgba(118,184,255,.17), rgba(118,184,255,0) 62%);
+    --m-edge: rgba(138,194,255,.17);
+    --m-edge-hi: rgba(190,226,255,.34);
+    --m-lift: 0 14px 30px rgba(0,0,0,.46), inset 0 1px 0 rgba(170,214,255,.22), inset 0 0 0 1px rgba(138,190,255,.06);
+    --m-rim: inset 0 1px 0 rgba(178,220,255,.24), inset 0 -1px 0 rgba(10,26,52,.35), inset 0 0 0 1px rgba(138,190,255,.07);
     /* الهندسة: وجه مشطوف للوحات الكبيرة، وصحن ثماني للأيقونات، وخدش زجاجي مائل */
     --m-facet: polygon(22px 0, 100% 0, 100% calc(100% - 22px), calc(100% - 22px) 100%, 0 100%, 0 22px);
     --m-facet-xl: polygon(30px 0, 100% 0, 100% calc(100% - 30px), calc(100% - 30px) 100%, 0 100%, 0 30px);
     --m-facet-sm: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
     --m-plate: polygon(30% 0, 70% 0, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0 70%, 0 30%);
-    --m-etch: repeating-linear-gradient(122deg, rgba(255,255,255,.055) 0 1px, transparent 1px 13px);
-    --m-gold: #4da3ff;
-    --m-gold-soft: rgba(77,163,255,.14);
+    --m-etch: repeating-linear-gradient(122deg, rgba(150,200,255,.042) 0 1px, transparent 1px 15px);
+    --m-gold: #5aa8ff;
+    --m-gold-soft: rgba(90,168,255,.14);
     --m-green: #3ddc97;
     --m-red: #ff5d6c;
-    --m-blue: #4da3ff;
+    --m-blue: #5aa8ff;
     --m-radius-card: 20px;
     --m-radius-sheet: 26px;
     --m-radius-bar: 26px;
@@ -61,14 +65,15 @@ html.is-mobile {
     --m-n: 1;
     color-scheme: dark;
 
-    --gold: #4da3ff;
-    --gold-gradient: linear-gradient(135deg, #e4f3ff 0%, #4da3ff 52%, #1d5c9e 100%);
-    --black-bg: #04060a;
-    --dark-gray: #0c121c;
-    --light-gray: #223047;
-    --text-white: #f2f7ff;
-    --text-gray: #93a6bd;
-    --blue-electronic: #86dcff;
+    --gold: #5aa8ff;
+    /* لا أبيض في أي تدرّج: الملكي أزرق ياقوتي إلى نيلي. */
+    --gold-gradient: linear-gradient(135deg, #79c4ff 0%, #3b8bf0 48%, #3646d6 100%);
+    --black-bg: #03060c;
+    --dark-gray: #0a1424;
+    --light-gray: #223a5c;
+    --text-white: #eef5ff;
+    --text-gray: #94aac6;
+    --blue-electronic: #93d6ff;
     --green-success: #3ddc97;
     --red-danger: #ff5d6c;
 }
@@ -94,39 +99,50 @@ html.is-mobile body {
     margin: 0;
 }
 
-/* مشهد الخلفية: أسود أزرق عميق مع حقل هندسي محفور — شبكة خطوط شعرية بميلين،
-   وضوء علني باهت من طرف الزجاج. لا هالات ولا توهّج: الفخامة من الطبقات والحواف.
-   الطبقتان مثبّتان خارج مسار التمرير فلا تُعاد رسمتهما أي حركة. */
+/* مشهد الخلفية: أسود مزرق يسبح فيه نيلي وأزرق ياقوتي، فوقه حقل هندسي محفور
+   بميلين. كل الحركة transform على طبقتين مثبّتَين فقط — لا background-position
+   ولا blur: الطبقتان تُرسمان مرة واحدة ثم ينزلقان على معالج الرسوم.
+   ما يشبه البلور في البطاقات أعلاه هو ضوء وحواف، لا فلتر. */
 html.is-mobile body::before {
     content: "";
     position: fixed;
-    inset: 0;
+    inset: -6%;
     z-index: -2;
     pointer-events: none;
+    will-change: transform;
     background:
-        repeating-linear-gradient(122deg, rgba(174,210,245,.045) 0 1px, transparent 1px 96px),
-        repeating-linear-gradient(58deg, rgba(174,210,245,.032) 0 1px, transparent 1px 96px),
-        linear-gradient(180deg, rgba(196,226,255,.07) 0, rgba(196,226,255,0) 34%),
-        linear-gradient(180deg, #070b12 0%, #05070c 46%, #080e18 100%);
+        radial-gradient(64% 42% at 84% 8%, rgba(84,90,244,.40), transparent 72%),
+        radial-gradient(72% 46% at 10% 38%, rgba(30,112,236,.34), transparent 74%),
+        radial-gradient(96% 54% at 50% 112%, rgba(38,90,208,.46), transparent 72%),
+        repeating-linear-gradient(122deg, rgba(130,180,255,.08) 0 1px, transparent 1px 104px),
+        repeating-linear-gradient(58deg, rgba(130,180,255,.058) 0 1px, transparent 1px 104px),
+        linear-gradient(175deg, #060b18 0%, #03060f 46%, #080e22 100%);
+    animation: mFieldDrift 46s ease-in-out infinite alternate;
 }
-/* شريط ضوء زجاجي ينزلق على الحقل ببطء: انكسار، لا إشعاع */
+/* حزام ضوء ينزلق على الحقل ببطء: انكسار زجاجي، لا إشعاع */
 html.is-mobile body::after {
     content: "";
     position: fixed;
-    inset: -20%;
+    inset: -22%;
     z-index: -1;
     pointer-events: none;
-    opacity: .5;
+    opacity: .82;
     will-change: transform;
-    background: linear-gradient(104deg,
-        transparent 38%,
-        rgba(180,214,248,.055) 46%,
-        rgba(232,244,255,.085) 50%,
-        rgba(180,214,248,.055) 54%,
-        transparent 62%);
-    animation: mSilk 26s var(--m-ease) infinite alternate;
+    background:
+        linear-gradient(104deg,
+            transparent 36%,
+            rgba(96,160,255,.06) 45%,
+            rgba(168,214,255,.12) 50%,
+            rgba(96,160,255,.06) 55%,
+            transparent 64%),
+        radial-gradient(52% 26% at 72% 22%, rgba(92,104,255,.16), transparent 70%);
+    animation: mSilk 30s var(--m-ease) infinite alternate;
 }
-@keyframes mSilk { from { transform: translate3d(-16%, -8%, 0); } to { transform: translate3d(16%, 8%, 0); } }
+@keyframes mFieldDrift {
+    from { transform: translate3d(0, 0, 0) scale(1); }
+    to   { transform: translate3d(-1.6%, 1.2%, 0) scale(1.045); }
+}
+@keyframes mSilk { from { transform: translate3d(-13%, -7%, 0); } to { transform: translate3d(13%, 7%, 0); } }
 
 html.is-mobile .screen { height: 100%; }
 html.is-mobile #pos-screen.active-screen,
@@ -168,7 +184,9 @@ html.is-mobile .admin-content {
     overflow: hidden;
 }
 
-/* ------------------------- الترويسة: زجاج مثبت ------------------------- */
+/* ------------------------- الترويسة: زجاج مثبت -------------------------
+   بلا backdrop-filter: الشريط ثابت فوق محتوى يتحرك، وblur فوقه يعني إعادة رسم
+   كامل الشريط كل إطار. الزجاج هنا طبقات ضوء وحواف فقط — نفس إحساس شاشة القفل. */
 html.is-mobile .m-head {
     position: relative;
     z-index: 6;
@@ -177,11 +195,11 @@ html.is-mobile .m-head {
     align-items: center;
     gap: 10px;
     padding: 11px 16px 10px;
-    border-bottom: 1px solid var(--m-hair);
-    background: linear-gradient(180deg, rgba(9,14,23,.94), rgba(9,14,23,.80));
-    -webkit-backdrop-filter: blur(18px) saturate(150%);
-    backdrop-filter: blur(18px) saturate(150%);
-    box-shadow: 0 10px 26px rgba(0,0,0,.42);
+    border-bottom: 1px solid rgba(150,200,255,.13);
+    background:
+        linear-gradient(180deg, rgba(132,186,255,.075), rgba(132,186,255,0) 62%),
+        linear-gradient(180deg, rgba(5,10,19,.93), rgba(5,10,20,.72));
+    box-shadow: 0 10px 24px rgba(0,0,0,.38);
     /* الترويسة مثبتة: السحب عليها لا يحرك المستند */
     touch-action: none;
 }
@@ -190,20 +208,18 @@ html.is-mobile .m-head::after {
     content: "";
     position: absolute;
     left: 0; right: 0; bottom: -1px; height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(226,240,255,.42), transparent);
+    background: linear-gradient(90deg, transparent, rgba(160,215,255,.46), transparent);
 }
-/* اللوغو: معدن مصلّى — تدرّج من أبيض ثلجي إلى فضّي ازرقاق بلا أي هالة خلف الحروف
-   (text-shadow مع background-clip:text يظهر ورائها كتوهّج، فحُذف تماماً) */
+/* الاسم: ثلجي صافٍ بلا أي تدرّج. gradient-text مع clip يُختفي على آيفون أثناء
+   التمرير، وفوق ذلك كان أبيضَ إلى أزرق — وهو التدرّج المرفوض. */
 .m-brand {
     font-size: 21px;
     font-weight: 900;
     letter-spacing: .3px;
-    background: linear-gradient(168deg, #ffffff 6%, #dceaf8 42%, #9fb8cf 78%, #e9f3fb 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    color: #dfeaf5;
-    filter: none;
+    color: #eaf4ff;
+    -webkit-text-fill-color: #eaf4ff;
+    background: none;
+    text-shadow: 0 1px 0 rgba(0,0,0,.45), 0 0 14px rgba(90,168,255,.20);
 }
 .m-conn { margin-inline-start: auto; display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--m-muted); }
 /* نقطة الاتصال: قرينة صلبة بحلقة ضوئية رفيعة بدل الهالة */
@@ -215,10 +231,11 @@ html.is-mobile .m-head::after {
 }
 
 /* ------------------------- اللوحات (كاروسيل هندسي) -------------------------
-   الموضع مشتق بالكامل من متغيرات على وسم html: --m-p للصفحة العشرية، --m-w لعرضها،
-   --m-dir لاتجاه RTL، و --m-i لموضع اللوحة (تُكتب في ورقة أنماط مستقلة بالـ id).
-   السبب: switchAdminTab الأصلية تنفّذ style.cssText = '' على كل لوحة فتمسح أي
-   transform سطري. الأنماط في ورقة الأنماط لا تُمسح. */
+   الموضع أثناء الحركة وحدها: الإصبع والنابض يكتبان transform سطرياً، وعند
+   السكون يُمسح تماماً. لوحة التمرير المتحوّلة دائماً هي أشهر سببين في WebKit:
+   محتوى يختفي عشوائياً أثناء التمرير، وطبقة رسم دائمة تستهلك الذاكرة.
+   بلا contain كذلك: الحاوية تُمرَّر بالمحتوى الكامل، وهذا ما يشعرك بخفة
+   تطبيقات الدردشة — التمرير لا يمرّ بأي قصّ أو حوسبة إضافية. */
 html.is-mobile .admin-section {
     --m-d: calc(var(--m-i, 0) - var(--m-p, 0));
     --m-ad: max(var(--m-d), calc(var(--m-d) * -1));
@@ -228,14 +245,17 @@ html.is-mobile .admin-section {
     overflow-y: auto;
     overflow-x: hidden;
     overscroll-behavior: none;
-    contain: layout style;
     padding: 16px 13px calc(var(--m-bar-h) + 84px + env(safe-area-inset-bottom));
     scrollbar-width: none;
-    transform: translate3d(calc(var(--m-d) * var(--m-dir, 1) * var(--m-w, 100vw)), 0, 0);
-    opacity: calc(1 - min(1, var(--m-ad)) * 0.24);
+    transform: none;
+    opacity: 1;
 }
 html.is-mobile .admin-section::-webkit-scrollbar { display: none; }
 html.is-mobile .admin-section.m-seen { display: block; }
+/* بوابة العرض النهائية: صفحة بلا m-seen لا تُرسم أبداً مهما كان display في
+   style.css أو طغت قاعدة #id. كانت «المزيد» تبقى flex تحت كل الصفحات وتطل
+   من بين الزجاج — وهذا سبب المعلومات التي تظهر وتختفي عشوائياً. */
+html.is-mobile #admin-screen .admin-section:not(.m-seen) { display: none !important; }
 html.is-mobile .m-calc-probe {
     position: absolute; visibility: hidden; pointer-events: none;
     transform: translate3d(calc((2 - var(--m-q, 0)) * 10px), 0, 0);
@@ -266,9 +286,11 @@ html.is-mobile #admin-screen .admin-section * {
     62%  { opacity: 1; transform: translate3d(0,2px,0) scale(1.06); }
     100% { opacity: 1; transform: none; }
 }
+/* mWipe لم تعد تقصّ بـ clip-path: القصّ المتحرك على خلايا داخل حاوية تمرير
+   كان يجعل النص يختفي عشوائياً على آيفون، ويرسم طبقة إضافية لكل خلية. */
 @keyframes mWipe {
-    from { opacity: .12; clip-path: inset(0 0 0 100%); }
-    to   { opacity: 1;   clip-path: inset(0 0 0 0); }
+    from { opacity: 0; transform: translate3d(0,5px,0); }
+    to   { opacity: 1; transform: none; }
 }
 @keyframes mGrow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 
@@ -326,7 +348,7 @@ html.is-mobile .monthly-strip {
     position: relative;
     isolation: isolate;
     background:
-        linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,0) 26%),
+        linear-gradient(180deg, rgba(146,198,255,.155), rgba(146,198,255,0) 30%),
         var(--m-etch),
         var(--m-glass),
         var(--m-glass-bg) !important;
@@ -350,8 +372,7 @@ html.is-mobile .m-today,
 html.is-mobile .monthly-strip {
     clip-path: var(--m-facet);
     border: none !important;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.17), inset 0 0 0 1px rgba(255,255,255,.07) !important;
-    filter: drop-shadow(0 16px 26px rgba(0,0,0,.5));
+    box-shadow: inset 0 1px 0 rgba(170,214,255,.22), inset 0 0 0 1px rgba(138,190,255,.08) !important;
 }
 /* شريط التلوين الذي يمتلئ أسفل البطاقة عند الدخول: بلاتين مصقول بدل النيون */
 html.is-mobile #admin-screen .stat-card::after {
@@ -360,7 +381,7 @@ html.is-mobile #admin-screen .stat-card::after {
     left: 14px; right: 14px; bottom: 8px;
     height: 2px;
     border-radius: 99px;
-    background: linear-gradient(90deg, rgba(232,244,255,.85), rgba(150,180,210,.10));
+    background: linear-gradient(90deg, rgba(170,220,255,.62), rgba(90,150,230,.08));
     box-shadow: none;
     transform-origin: right center;
     opacity: .45;
@@ -398,7 +419,7 @@ html.is-mobile #admin-screen .invoices-table tr::before {
     position: absolute;
     inset-inline-start: 0; top: 12px; bottom: 12px; width: 2px;
     border-radius: 0;
-    background: linear-gradient(180deg, rgba(236,246,255,.92), rgba(150,180,210,.16));
+    background: linear-gradient(180deg, rgba(160,215,255,.80), rgba(80,140,220,.14));
     opacity: .75;
 }
 
@@ -469,11 +490,13 @@ html.is-mobile #admin-screen td:last-child .action-icon {
     font-size: 13px !important;
     padding: 8px 10px !important;
     border-radius: var(--m-radius-pill) !important;
-    background: rgba(255,255,255,.06) !important;
+    background:
+        linear-gradient(180deg, rgba(146,200,255,.10), rgba(146,200,255,.015) 60%),
+        rgba(12,23,42,.48) !important;
     border: 1px solid var(--m-edge) !important;
     color: #cfe6ff !important;
     margin: 0 !important;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.10);
+    box-shadow: inset 0 1px 0 rgba(178,220,255,.16);
 }
 html.is-mobile #admin-screen td:last-child .action-icon:active { background: rgba(77,163,255,.22) !important; }
 
@@ -508,11 +531,11 @@ html.is-mobile .stat-icon {
     line-height: 1;
     color: #eaf4ff !important;
     background:
-        linear-gradient(152deg, rgba(255,255,255,.20) 0%, rgba(255,255,255,.05) 44%, rgba(255,255,255,.11) 100%),
-        rgba(14,22,34,.72) !important;
+        linear-gradient(152deg, rgba(150,200,255,.16) 0%, rgba(120,165,235,.04) 44%, rgba(130,175,255,.09) 100%),
+        rgba(14,25,44,.62) !important;
     box-shadow: none;
     text-shadow: none;
-    filter: drop-shadow(0 8px 14px rgba(0,0,0,.46));
+    filter: none;
 }
 html.is-mobile .stat-icon::before {
     content: "";
@@ -559,12 +582,11 @@ html.is-mobile #admin-daily-report .bento-hero {
     border: none !important;
     padding: 24px 18px !important;
     background:
-        linear-gradient(180deg, rgba(255,255,255,.24), rgba(255,255,255,0) 24%),
+        linear-gradient(180deg, rgba(146,198,255,.17), rgba(146,198,255,0) 28%),
         var(--m-etch),
         var(--m-glass),
-        rgba(8,13,21,.9) !important;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.22), inset 0 0 0 1px rgba(255,255,255,.08) !important;
-    filter: drop-shadow(0 18px 30px rgba(0,0,0,.55));
+        rgba(8,15,28,.62) !important;
+    box-shadow: inset 0 1px 0 rgba(170,214,255,.24), inset 0 0 0 1px rgba(138,190,255,.08) !important;
 }
 html.is-mobile #admin-daily-report .bento-hero .stat-title { color: #cfe3ff !important; font-size: 13px !important; }
 html.is-mobile #bento-current-pieces {
@@ -614,10 +636,10 @@ html.is-mobile .m-today-row > i {
     display: flex; align-items: center; justify-content: center;
     font-size: 13px; color: #dceaf8;
     background:
-        linear-gradient(160deg, rgba(255,255,255,.20), rgba(255,255,255,.03) 55%, rgba(255,255,255,.10)),
-        rgba(14,22,34,.72);
+        linear-gradient(160deg, rgba(150,200,255,.15), rgba(120,165,235,.03) 55%, rgba(130,175,255,.08)),
+        rgba(14,25,44,.62);
     border: none;
-    filter: drop-shadow(0 6px 10px rgba(0,0,0,.42));
+    filter: none;
     text-shadow: 0 1px 2px rgba(0,0,0,.55);
 }
 html.is-mobile .m-today-meta { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
@@ -630,7 +652,7 @@ html.is-mobile .m-today-bar {
 /* التعبئة التدريجي: سكة معدنية تُسحب، لا خيط نيون */
 html.is-mobile .m-today-bar i {
     display: block; height: 100%; width: 0;
-    background: linear-gradient(90deg, rgba(150,180,210,.30), rgba(236,246,255,.92));
+    background: linear-gradient(90deg, rgba(70,130,220,.35), rgba(150,215,255,.95));
     transition: width 1.1s var(--m-ease-out);
 }
 html.is-mobile .m-today-val {
@@ -655,7 +677,8 @@ html.is-mobile .m-today.m-anim .m-today-row {
 
 /* ------------------------- صفحة المزيد -------------------------
    البطاقات تملأ ارتفاع اللوحة: لا تصعد الأيقونات تحت الترويسة ولا فراغ أسفلها. */
-html.is-mobile #admin-more-menu { padding-top: 8px !important; display: flex; flex-direction: column; }
+html.is-mobile #admin-more-menu { padding-top: 8px !important; display: none; flex-direction: column; }
+html.is-mobile #admin-more-menu.m-seen { display: flex; }
 html.is-mobile #admin-more-menu > h2 { margin-bottom: 14px !important; }
 html.is-mobile #admin-more-menu > div[style*="grid-template-columns"] {
     display: grid !important;
@@ -682,66 +705,103 @@ html.is-mobile .note-input,
 html.is-mobile .input-group input,
 html.is-mobile .input-group select {
     font-size: 16px !important;
-    background: rgba(255,255,255,.05) !important;
-    border: 1px solid var(--m-edge) !important;
+    background:
+        linear-gradient(180deg, rgba(146,200,255,.06), rgba(146,200,255,.01) 60%),
+        rgba(9,18,33,.50) !important;
+    border: 1px solid rgba(146,200,255,.20) !important;
     border-radius: 14px !important;
     color: var(--m-text) !important;
     padding: 11px 12px !important;
     width: 100% !important;
     min-height: 46px;
-    box-shadow: inset 0 1px 2px rgba(0,0,0,.4);
+    box-shadow: inset 0 1px 2px rgba(0,0,0,.34);
 }
 html.is-mobile .input-group label { color: var(--m-muted) !important; font-size: 12px !important; font-weight: 800 !important; }
 html.is-mobile input:focus, html.is-mobile select:focus, html.is-mobile textarea:focus {
     outline: none;
-    border-color: rgba(77,163,255,.6) !important;
-    box-shadow: 0 0 0 2px rgba(207,227,247,.42), inset 0 1px 2px rgba(0,0,0,.4) !important;
-    background: rgba(77,163,255,.07) !important;
+    border-color: rgba(102,178,255,.68) !important;
+    box-shadow: 0 0 0 3px rgba(74,150,255,.18), inset 0 1px 2px rgba(0,0,0,.34) !important;
+    background: rgba(74,150,255,.09) !important;
 }
 
-/* ------------------------- الأزرار والشارات ------------------------- */
-html.is-mobile .btn, html.is-mobile .top-bar-btn, html.is-mobile .btn-royal-action,
-html.is-mobile .btn-save, html.is-mobile .btn-cancel, html.is-mobile .btn-confirm,
-html.is-mobile .admin-nav-btn, html.is-mobile .modal-actions button {
+/* ------------------------- الأزرار والشارات -------------------------
+   زرّ زجاجي واحد في كل النظام: جسم شفاف مائل للأزرق، حافة مضيئة 1px،
+   وانضغاط صغير عند اللمس بنفس إحساس أزرار شاشة القفل. لا تدرّج أبيض. */
+html.is-mobile #admin-screen .btn,
+html.is-mobile #pos-screen .btn,
+html.is-mobile #main-screen .btn,
+html.is-mobile .modal-overlay:not(#modal-admin-login) .btn,
+html.is-mobile .modal-overlay:not(#modal-admin-login) .modal-actions button,
+html.is-mobile .btn-royal-action,
+html.is-mobile .btn-save,
+html.is-mobile .btn-cancel,
+html.is-mobile .btn-confirm {
     min-height: 46px;
-    border-radius: 15px !important;
+    border-radius: 16px !important;
     font-weight: 800 !important;
     letter-spacing: .2px;
-}
-html.is-mobile .btn-cancel,
-html.is-mobile .modal-actions .btn-cancel {
-    background: rgba(255,255,255,.06) !important;
-    border: 1px solid var(--m-edge) !important;
-    color: #dfeaf8 !important;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.10);
-}
-html.is-mobile .btn-confirm,
-html.is-mobile .modal-actions .btn-confirm,
-html.is-mobile .btn-save {
+    border: 1px solid rgba(146,200,255,.22) !important;
     background:
-        linear-gradient(180deg, rgba(255,255,255,.26), rgba(255,255,255,0) 30%),
-        linear-gradient(160deg, rgba(168,206,240,.30), rgba(24,40,62,.72)) !important;
-    border: 1px solid rgba(214,234,252,.34) !important;
-    color: #ffffff !important;
-    box-shadow: 0 12px 26px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.32) !important;
-    text-shadow: 0 1px 2px rgba(0,0,0,.5);
+        linear-gradient(180deg, rgba(146,200,255,.10), rgba(146,200,255,.012) 55%),
+        rgba(12,23,42,.52) !important;
+    color: #e4efff !important;
+    box-shadow: inset 0 1px 0 rgba(178,220,255,.20), 0 8px 18px rgba(0,0,0,.32) !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,.40);
+    transition: transform .15s var(--m-ease), filter .15s linear, opacity .15s linear;
+    -webkit-tap-highlight-color: transparent;
 }
-html.is-mobile .btn-royal-action {
-    background: rgba(255,255,255,.06) !important;
-    border: 1px solid var(--m-edge) !important;
-    color: #dfeaf8 !important;
+/* الأساسي: ياقوتي زجاجي — أزرق أعمق وحافة أسطع، وما زال شفافاً */
+html.is-mobile #admin-screen .btn-confirm,
+html.is-mobile #admin-screen .btn-cash,
+html.is-mobile #pos-screen .btn-confirm,
+html.is-mobile #pos-screen .btn-cash,
+html.is-mobile #pos-screen .btn-electronic,
+html.is-mobile .modal-overlay:not(#modal-admin-login) .btn-confirm,
+html.is-mobile .modal-overlay:not(#modal-admin-login) .modal-actions .btn-confirm,
+html.is-mobile .btn-save {
+    border-color: rgba(160,215,255,.36) !important;
+    background:
+        linear-gradient(180deg, rgba(186,226,255,.22), rgba(186,226,255,0) 48%),
+        linear-gradient(160deg, rgba(88,160,255,.30), rgba(40,72,148,.24)) !important;
+    color: #f2faff !important;
+    box-shadow:
+        inset 0 1px 0 rgba(205,238,255,.36),
+        inset 0 -1px 0 rgba(4,12,26,.40),
+        0 12px 26px rgba(6,20,48,.45) !important;
 }
-html.is-mobile button:active, html.is-mobile a:active, html.is-mobile .stat-card:active {
-    opacity: .72;
-    transition: none;
+html.is-mobile #admin-screen .btn-cancel,
+html.is-mobile .modal-overlay:not(#modal-admin-login) .btn-cancel,
+html.is-mobile .modal-overlay:not(#modal-admin-login) .modal-actions .btn-cancel {
+    background:
+        linear-gradient(180deg, rgba(146,200,255,.06), rgba(146,200,255,.01) 55%),
+        rgba(10,19,35,.46) !important;
+    border-color: rgba(146,200,255,.18) !important;
+    color: #cddff5 !important;
+    box-shadow: inset 0 1px 0 rgba(178,220,255,.14), 0 6px 14px rgba(0,0,0,.26) !important;
 }
+/* لمسة الزر: تنضغط فعلياً وتلمع قليلاً — لا تذوب إلى نصف شفافة كما كان */
+html.is-mobile .btn:active,
+html.is-mobile .btn-confirm:active,
+html.is-mobile .btn-cash:active,
+html.is-mobile .btn-cancel:active,
+html.is-mobile .top-bar-btn:active,
+html.is-mobile .action-icon:active,
+html.is-mobile .m-sheet-x:active,
+html.is-mobile .m-viewbtn:active,
+html.is-mobile .bottom-nav-btn:active {
+    transform: scale(.965);
+    filter: brightness(1.10);
+    opacity: .96;
+}
+html.is-mobile .bottom-nav-btn:active i { transform: translateY(0) scale(.90); }
+html.is-mobile a:active, html.is-mobile .stat-card:active { opacity: .94; }
 /* الشارات: رقاقة زجاجية بحافة شعرية وحفر داخلي — بلا هالة */
 html.is-mobile .badge, html.is-mobile .stat-badge, html.is-mobile .pill {
-    border: 1px solid rgba(214,234,252,.24) !important;
-    background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.03)), rgba(16,26,40,.7) !important;
-    color: #e8f2fb !important;
+    border: 1px solid rgba(160,210,255,.24) !important;
+    background: linear-gradient(180deg, rgba(146,200,255,.13), rgba(146,200,255,.03)), rgba(14,26,46,.58) !important;
+    color: #e6f2ff !important;
     border-radius: 99px !important;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.2), 0 4px 10px rgba(0,0,0,.35);
+    box-shadow: inset 0 1px 0 rgba(190,228,255,.20), 0 4px 10px rgba(0,0,0,.30);
     font-variant-numeric: tabular-nums;
 }
 
@@ -758,11 +818,12 @@ html.is-mobile #mobile-bottom-nav {
     z-index: 9500;
     padding: 6px;
     border-radius: var(--m-radius-bar);
-    background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.02)), rgba(7,11,18,.80);
-    -webkit-backdrop-filter: blur(22px) saturate(170%);
-    backdrop-filter: blur(22px) saturate(170%);
-    border: 1px solid rgba(255,255,255,.12);
-    box-shadow: 0 18px 44px rgba(0,0,0,.60), inset 0 1px 0 rgba(255,255,255,.20);
+    /* زجاج حقيقي بلا فلتر: الشفافية تُظهر المشهد المتحرك خلف الشريط مباشرة */
+    background:
+        linear-gradient(180deg, rgba(118,180,255,.105), rgba(118,180,255,.015) 58%),
+        rgba(7,14,26,.66);
+    border: 1px solid rgba(146,200,255,.20);
+    box-shadow: 0 16px 38px rgba(0,0,0,.52), var(--m-rim);
     justify-content: space-around;
     align-items: stretch;
     overflow: hidden;
@@ -771,6 +832,19 @@ html.is-mobile #mobile-bottom-nav {
     isolation: isolate;
 }
 html.is-mobile body.m-admin #mobile-bottom-nav { display: flex; }
+/* لا فلتر خلفي على أي سطح متحرك: القاعدة القديمة في style.css تضع blur(15px)
+   على الشريط وblur(16px) على النوافذ، وهي تُعاد حوسبتها مع كل إطار تمرير.
+   شاشة القفل وحدها تحتفظ بزجاجها الحقيقي (m-lk) وهي مجمّدة. */
+html.is-mobile #mobile-bottom-nav,
+html.is-mobile .modal-overlay:not(#modal-admin-login),
+html.is-mobile .modal-overlay:not(#modal-admin-login) .modal-content,
+html.is-mobile .modal-overlay:not(#modal-admin-login) .modal-header-sticky,
+html.is-mobile .modal-overlay:not(#modal-admin-login) .modal-footer-sticky,
+html.is-mobile .toast-msg,
+html.is-mobile .hamburger-dropdown {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+}
 html.is-mobile #mobile-bottom-nav::before {
     content: "";
     position: absolute;
@@ -786,7 +860,7 @@ html.is-mobile .bottom-nav-btn {
     display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
     background: transparent; border: none; color: var(--m-faint);
     padding: 4px 2px;
-    transition: color .34s var(--m-ease), transform .34s var(--m-ease);
+    transition: color .30s var(--m-ease), transform .18s var(--m-ease);
 }
 html.is-mobile .bottom-nav-btn i { font-size: 18px; line-height: 1; transition: transform .34s var(--m-ease), filter .34s var(--m-ease); }
 html.is-mobile .bottom-nav-btn span {
@@ -810,10 +884,13 @@ html.is-mobile .m-ind {
     border-radius: calc(22px + var(--m-sq, 0) * 16px) calc(30px - var(--m-sq, 0) * 10px)
                    calc(22px + var(--m-sq, 0) * 12px) calc(30px - var(--m-sq, 0) * 8px) / 62% 58% 62% 58%;
     background:
-        radial-gradient(78% 120% at 50% 116%, rgba(198,226,250,.30), transparent 70%),
-        radial-gradient(120% 150% at 50% -20%, rgba(255,255,255,.36), transparent 62%),
-        linear-gradient(180deg, rgba(216,234,252,.30), rgba(92,122,158,.16));
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.58), inset 0 0 0 1px rgba(255,255,255,.14);
+        radial-gradient(80% 120% at 50% 118%, rgba(118,190,255,.34), transparent 70%),
+        radial-gradient(120% 150% at 50% -18%, rgba(188,226,255,.24), transparent 64%),
+        linear-gradient(180deg, rgba(96,168,255,.30), rgba(40,80,160,.18));
+    box-shadow:
+        inset 0 1px 0 rgba(200,235,255,.44),
+        inset 0 0 0 1px rgba(120,180,255,.18),
+        0 6px 18px rgba(16,48,120,.32);
     opacity: .95;
     will-change: transform;
     transition: border-radius .42s var(--m-ease-out), opacity .3s linear;
@@ -843,9 +920,11 @@ html.is-mobile .modal-overlay:not(.m-sheet) .modal-content {
     max-height: calc(100% - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 20px) !important;
     margin: 0 auto !important;
     border-radius: var(--m-radius-sheet) !important;
-    border: 1px solid var(--m-edge) !important;
-    background: var(--m-glass), rgba(9,14,22,.94) !important;
-    box-shadow: 0 26px 70px rgba(0,0,0,.66), inset 0 1px 0 rgba(255,255,255,.16) !important;
+    border: 1px solid rgba(150,205,255,.20) !important;
+    background:
+        linear-gradient(180deg, rgba(146,200,255,.10), rgba(146,200,255,.012) 42%),
+        rgba(9,17,31,.90) !important;
+    box-shadow: 0 26px 70px rgba(0,0,0,.62), inset 0 1px 0 rgba(180,222,255,.22) !important;
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
@@ -859,9 +938,11 @@ html.is-mobile .modal-overlay.m-sheet {
     align-items: flex-end !important;
     justify-content: center !important;
     padding: 0 !important;
-    background: rgba(2,4,8,.66);
-    -webkit-backdrop-filter: blur(6px);
-    backdrop-filter: blur(6px);
+    /* ستارة داكنة مزرقة بدل blur: فتح أي نافذة كان يطلب من المعالج ضبابية
+       الشاشة كاملة فوق المحتوى — وهذا أبطأ لحظة في التطبيق */
+    background:
+        radial-gradient(120% 70% at 50% 0%, rgba(30,62,132,.26), transparent 62%),
+        rgba(2,5,11,.64);
     opacity: 0;
     pointer-events: none;
     transition: opacity .28s var(--m-ease);
@@ -889,10 +970,12 @@ html.is-mobile .modal-overlay.m-sheet .modal-content {
     max-height: 92% !important;
     margin: 0 !important;
     border-radius: var(--m-radius-sheet) var(--m-radius-sheet) 0 0 !important;
-    border: 1px solid rgba(255,255,255,.14) !important;
+    border: 1px solid rgba(150,205,255,.20) !important;
     border-bottom: none !important;
-    background: linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.015)), rgba(8,13,21,.97) !important;
-    box-shadow: 0 -18px 60px rgba(0,0,0,.66), inset 0 1px 0 rgba(255,255,255,.20) !important;
+    background:
+        linear-gradient(180deg, rgba(146,200,255,.13), rgba(146,200,255,.015) 40%),
+        rgba(8,16,30,.92) !important;
+    box-shadow: 0 -18px 60px rgba(0,0,0,.62), inset 0 1px 0 rgba(186,226,255,.24) !important;
     padding: 6px 14px calc(14px + env(safe-area-inset-bottom)) !important;
     overflow-y: auto !important;
     overflow-x: hidden !important;
@@ -921,15 +1004,15 @@ html.is-mobile .modal-overlay.m-sheet.m-on .modal-content { transform: translate
 html.is-mobile .modal-overlay.m-sheet.m-live .modal-content { animation: none !important; transition: transform .1s linear; }
 html.is-mobile .m-grab {
     width: 46px; height: 4px; border-radius: 0;
-    background: linear-gradient(90deg, rgba(255,255,255,.18), rgba(232,244,255,.62) 50%, rgba(255,255,255,.18));
+    background: linear-gradient(90deg, rgba(146,200,255,.16), rgba(196,232,255,.58) 50%, rgba(146,200,255,.16));
     margin: 10px auto 10px;
 }
 html.is-mobile .modal-overlay.m-sheet .modal-title {
     position: sticky; top: -6px; z-index: 3;
     margin: 0 -14px 10px;
     padding: 14px 14px 12px;
-    background: linear-gradient(180deg, rgba(13,20,31,.99), rgba(11,17,27,.96));
-    border-bottom: 1px solid var(--m-hair);
+    background: linear-gradient(180deg, rgba(14,26,46,.99), rgba(10,19,34,.97));
+    border-bottom: 1px solid rgba(150,200,255,.12);
     border-radius: var(--m-radius-sheet) var(--m-radius-sheet) 0 0;
     font-size: 16.5px;
     font-weight: 900;
@@ -938,7 +1021,7 @@ html.is-mobile .modal-overlay.m-sheet .modal-title {
 }
 html.is-mobile .modal-overlay.m-sheet .modal-actions {
     position: sticky; bottom: 0; padding-top: 10px;
-    background: linear-gradient(to top, rgba(8,13,21,.99) 62%, rgba(8,13,21,0));
+    background: linear-gradient(to top, rgba(8,16,29,.99) 62%, rgba(8,16,29,0));
 }
 html.is-mobile .m-sheet-x {
     position: absolute; top: 11px; inset-inline-end: 12px; z-index: 4;
@@ -947,10 +1030,10 @@ html.is-mobile .m-sheet-x {
     clip-path: var(--m-plate);
     border: none;
     background:
-        linear-gradient(160deg, rgba(255,255,255,.22), rgba(255,255,255,.03) 50%, rgba(255,255,255,.12)),
-        rgba(12,19,30,.9);
+        linear-gradient(160deg, rgba(160,210,255,.16), rgba(120,165,235,.03) 50%, rgba(130,175,255,.10)),
+        rgba(12,23,42,.78);
     color: #e8f2ff; font-size: 20px; line-height: 1;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.28);
+    box-shadow: inset 0 1px 0 rgba(186,226,255,.24);
     text-shadow: 0 1px 2px rgba(0,0,0,.6);
     filter: drop-shadow(0 6px 12px rgba(0,0,0,.5));
 }
@@ -963,8 +1046,7 @@ html.is-mobile .m-exp-sum {
     clip-path: var(--m-facet-sm);
     border-radius: 0 !important;
     border: none !important;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.22), inset 0 0 0 1px rgba(255,255,255,.07) !important;
-    filter: drop-shadow(0 10px 18px rgba(0,0,0,.45));
+    box-shadow: inset 0 1px 0 rgba(170,214,255,.22), inset 0 0 0 1px rgba(138,190,255,.08) !important;
     padding: 11px 13px;
     margin: 0 0 12px;
     font-size: 12px; font-weight: 800; color: var(--m-muted);
@@ -1889,12 +1971,12 @@ html.is-mobile #toast-container {
 }
 html.is-mobile .toast-msg {
     border-radius: 16px !important;
-    border: 1px solid rgba(255,255,255,.14) !important;
-    background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.02)), rgba(9,14,22,.95) !important;
-    box-shadow: 0 16px 40px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.18) !important;
+    border: 1px solid rgba(150,205,255,.22) !important;
+    background:
+        linear-gradient(180deg, rgba(146,200,255,.12), rgba(146,200,255,.02)),
+        rgba(9,17,31,.94) !important;
+    box-shadow: 0 16px 40px rgba(0,0,0,.52), inset 0 1px 0 rgba(186,226,255,.20) !important;
     max-width: none !important;
-    -webkit-backdrop-filter: blur(14px);
-    backdrop-filter: blur(14px);
 }
 
 html.is-mobile .m-offline {
@@ -1926,10 +2008,12 @@ html.is-mobile .m-viewbtn {
     min-height: 48px;
     border-radius: 16px;
     border: 1px solid var(--m-edge);
-    background: linear-gradient(160deg, rgba(255,255,255,.08), rgba(255,255,255,.02));
+    background:
+        linear-gradient(160deg, rgba(146,200,255,.12), rgba(146,200,255,.02)),
+        rgba(12,23,42,.46);
     color: #dceaff;
     font-size: 15px; font-weight: 800;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.14);
+    box-shadow: inset 0 1px 0 rgba(178,220,255,.18);
 }
 
 /* الخلفية تتجمّد باللمس لا بتغيير overflow: تغييرها في سفاري يصفّر موضع التمرير  */
@@ -1953,8 +2037,8 @@ html.is-mobile #admin-screen .stat-icon { box-shadow: none !important; text-shad
 html.is-mobile .stat-card[onclick*="costs"] .stat-icon,
 html.is-mobile .stat-card[onclick*="logs"] .stat-icon {
     background:
-        linear-gradient(152deg, rgba(255,255,255,.20) 0%, rgba(255,255,255,.05) 44%, rgba(255,255,255,.11) 100%),
-        rgba(14,22,34,.72) !important;
+        linear-gradient(152deg, rgba(150,200,255,.16) 0%, rgba(120,165,235,.04) 44%, rgba(130,175,255,.09) 100%),
+        rgba(14,25,44,.62) !important;
     border-color: transparent !important;
 }
 
@@ -1963,15 +2047,14 @@ html.is-mobile .stat-card[onclick*="logs"] .stat-icon {
    الذي يسبق كليهما، وهو ما يلغي الإطار الذهبي وهالة الدخل الصافي. */
 html.is-mobile #admin-screen #admin-daily-reports-body tr {
     background:
-        linear-gradient(180deg, rgba(255,255,255,.20), rgba(255,255,255,0) 24%),
+        linear-gradient(180deg, rgba(146,198,255,.15), rgba(146,198,255,0) 28%),
         var(--m-etch),
         var(--m-glass),
-        rgba(8,13,21,.92) !important;
+        rgba(9,17,31,.62) !important;
     border: none !important;
     border-radius: 0 !important;
     clip-path: var(--m-facet);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.18), inset 0 0 0 1px rgba(255,255,255,.07) !important;
-    filter: drop-shadow(0 14px 24px rgba(0,0,0,.5));
+    box-shadow: inset 0 1px 0 rgba(170,214,255,.20), inset 0 0 0 1px rgba(138,190,255,.07) !important;
     padding: 15px 14px !important;
     margin-bottom: 12px !important;
 }
@@ -2013,9 +2096,9 @@ html.is-mobile .interactive-table tr:hover {
     transform: none !important;
     -webkit-transform: none !important;
     background:
-        linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,.02) 30%),
+        linear-gradient(180deg, rgba(146,198,255,.16), rgba(146,198,255,.02) 30%),
         var(--m-glass),
-        rgba(11,17,27,.86) !important;
+        rgba(11,21,38,.72) !important;
     border-color: var(--m-edge-hi) !important;
     box-shadow: var(--m-lift) !important;
 }
@@ -2038,10 +2121,10 @@ html.is-mobile .stat-card:hover {
 html.is-mobile #admin-screen .cart-table tbody tr:hover,
 html.is-mobile #admin-screen .invoices-table tbody tr:hover {
     background:
-        linear-gradient(180deg, rgba(255,255,255,.20), rgba(255,255,255,.02) 30%),
+        linear-gradient(180deg, rgba(146,198,255,.18), rgba(146,198,255,.02) 30%),
         var(--m-etch),
         var(--m-glass),
-        rgba(10,16,26,.9) !important;
+        rgba(10,20,36,.76) !important;
 }
 /* أزرار التنقل القديمة إن بقي منها شيء في الجوال: توهّج ذهبي لصيق */
 html.is-mobile .admin-nav-btn:hover,
@@ -2053,12 +2136,12 @@ html.is-mobile .admin-nav-btn.active {
 
 /* رؤوس وأذيال النوافذ الثابتة: بلاتين بدل الذهبي، وسطح زجاجي بدل الرمادي المسطّح */
 html.is-mobile .modal-header-sticky {
-    background: linear-gradient(180deg, rgba(23,34,50,.97), rgba(11,17,27,.96)) !important;
-    border-bottom: 1px solid var(--m-hair) !important;
+    background: linear-gradient(180deg, rgba(19,34,58,.97), rgba(10,19,34,.97)) !important;
+    border-bottom: 1px solid rgba(150,200,255,.12) !important;
 }
 html.is-mobile .modal-footer-sticky {
-    background: linear-gradient(0deg, rgba(23,34,50,.97), rgba(11,17,27,.96)) !important;
-    border-top: 1px solid var(--m-hair) !important;
+    background: linear-gradient(0deg, rgba(19,34,58,.97), rgba(10,19,34,.97)) !important;
+    border-top: 1px solid rgba(150,200,255,.12) !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2067,6 +2150,7 @@ html.is-mobile .modal-footer-sticky {
         animation-duration: .001ms !important;
         animation-iteration-count: 1 !important;
     }
+    html.is-mobile body::before,
     html.is-mobile body::after,
     html.is-mobile .m-lk-scene i { animation: none !important; }
     /* حركة الطبقة تُخفَّف ولا تُلغى: إلغاؤها الكامل هو ما جعل المستخدم يقول
@@ -2246,12 +2330,18 @@ html.is-mobile .modal-footer-sticky {
     function paintTransforms() {
         if (!motionDirect) root.style.setProperty('--m-p', phys.P.toFixed(4));
         const P = phys.P;
+        /* أثناء السحب وحده تُعرض اللوحة الجارية وجارتها القريبة (بفاصل أقل من
+           وحدة كاملة). busy ليس حركة: كان يترك لوحة مجاورة معروضة بعد الإقلاع
+           وبعد أي إعادة رسم، فكانت «المالية» تطل تحت اليومية بلا سبب. */
+        const live = motionDirect || phys.touching;
         for (let i = 0; i < state.pages.length; i++) {
             const el = state.pages[i];
             if (!el) continue;
             /* اللوحات التي تشترك الخانة الوهمية نفسها لا تُعرض معاً: الجارية وحدها */
             const v = vpos(i);
-            const seen = Math.abs(v - P) <= 1.5 && (v <= state.swipeHi || i === state.index);
+            const seen = live
+                ? Math.abs(v - P) <= 0.999 && (v <= state.swipeHi || i === state.index)
+                : i === state.index;
             if (seen !== el.classList.contains('m-seen')) el.classList.toggle('m-seen', seen);
             const cur = i === state.index;
             if (cur !== el.classList.contains('m-cur')) el.classList.toggle('m-cur', cur);
@@ -2279,6 +2369,10 @@ html.is-mobile .modal-footer-sticky {
             if (!el) continue;
             el.style.removeProperty('transform');
             el.style.removeProperty('opacity');
+            /* عند السكون لا تبقى إلا اللوحة الجارية معروضة */
+            const cur = i === state.index;
+            if (cur !== el.classList.contains('m-cur')) el.classList.toggle('m-cur', cur);
+            if (!cur && el.classList.contains('m-seen')) el.classList.remove('m-seen');
         }
     }
 
@@ -4517,10 +4611,18 @@ html.is-mobile .modal-footer-sticky {
 
     /* صفوف الجداول تُرقَّم بنفسها، من صفر لكل جدول: البطاقة تدخل أولاً ثم تُملأ
        خلاياها سطراً سطراً. هذا هو «التدرّج في بيانات الزبائن» ولا علاقة له
-       بإعادة الرسم: الصفوف الجديدة المُولَّدة بعد الحركة تبقى ساكنة. */
+       بإعادة الرسم: الصفوف الجديدة المُولَّدة بعد الحركة تبقى ساكنة.
+       ما تحت الشاشة لا يُحرَّك: صفوف الجدول الطويل كانت تُشغّل مئات الحركات
+       دفعة واحدة لحظة الدخول، ولا يراها أحد. */
     function enterRows(page) {
         const out = [];
-        qsa('tbody tr', page).forEach((r) => { if (out.length < 40) out.push(r); });
+        const limit = page.clientHeight * 1.25;
+        const base = page.getBoundingClientRect().top;
+        qsa('tbody tr', page).forEach((r) => {
+            if (out.length >= 26) return;
+            if (r.getBoundingClientRect().top - base > limit) return;
+            out.push(r);
+        });
         return out;
     }
 
@@ -4621,9 +4723,11 @@ html.is-mobile .modal-footer-sticky {
             if (src) src.style.willChange = 'auto';
             if (dst) dst.style.willChange = 'auto';
             clearOffsets();
+            /* قبل الرسم: paintTransforms يقرأ state.busy ليعرف أن الحركة انتهت،
+               فبقاء busy يترك اللوحة السابقة معروضة فوق الجديدة بلا إزاحة */
+            setBusy(false);
             paintTransforms();
             syncA11y();
-            setBusy(false);
             enterAnimate(dst);
             /* ما استجد أثناء الحركة يُرسم بعد اكتمال الدخول، لا فوقه */
             setTimeout(() => { flushRepaint(); syncFlow(); }, 520);
@@ -4706,6 +4810,12 @@ html.is-mobile .modal-footer-sticky {
            وعند فتح الأدمن تكون دوال النظام معرّفة بالكامل. */
         wrapRepainters();
         wrapRouter();
+        /* «المزيد» مكتوب خارج .admin-content في index.html، فخانته تبدأ من أعلى
+           الشاشة ويختفي عنوانه تحت الرأس بينما بقية اللوحات تبدأ تحته. نعيده
+           جاراً لبقية اللوحات على الجوال وحده؛ الكمبيوتر لا يعرضه أصلاً. */
+        const more = document.getElementById('admin-more-menu');
+        const content = document.querySelector('#admin-screen .admin-content');
+        if (more && content && more.parentElement !== content) content.appendChild(more);
         const order = readTabsOrder();
         if (!order.length) return;
         state.keys = order;
