@@ -33,15 +33,15 @@ html.is-mobile {
     --m-accent2: #93d6ff;
     --m-indigo: #5b6bff;
     --m-deep: #2148a8;
-    /* زجاج أزرق مائل: الجسم شفاف أكثر فتظهر الخلفية المتحركة خلف كل بطاقة،
-       والضوء العلوي أزرق لا أبيض — أبيضُ صافياً هو ما يخنق اللون. */
-    --m-glass-bg: rgba(11,21,38,.50);
-    --m-glass: linear-gradient(160deg, rgba(118,180,255,.095) 0%, rgba(88,132,214,.02) 46%, rgba(108,158,255,.055) 100%);
-    --m-sheen: radial-gradient(130% 60% at 50% -18%, rgba(118,184,255,.17), rgba(118,184,255,0) 62%);
-    --m-edge: rgba(138,194,255,.17);
-    --m-edge-hi: rgba(190,226,255,.34);
-    --m-lift: 0 14px 30px rgba(0,0,0,.46), inset 0 1px 0 rgba(170,214,255,.22), inset 0 0 0 1px rgba(138,190,255,.06);
-    --m-rim: inset 0 1px 0 rgba(178,220,255,.24), inset 0 -1px 0 rgba(10,26,52,.35), inset 0 0 0 1px rgba(138,190,255,.07);
+    /* زجاج ياقوتي بنفس كثافة شاشة القفل: جسم مائل للأزرق أفتح، وضوء علوي
+       سماوي، وحافة داخلية ساطعة. كل الألوان زرقاء — لا تدرّج أبيض إلى أزرق. */
+    --m-glass-bg: rgba(24,50,98,.34);
+    --m-glass: linear-gradient(160deg, rgba(170,214,255,.20) 0%, rgba(90,140,226,.045) 46%, rgba(128,184,255,.14) 100%);
+    --m-sheen: radial-gradient(130% 62% at 50% -14%, rgba(160,210,255,.32), rgba(160,210,255,0) 64%);
+    --m-edge: rgba(162,212,255,.26);
+    --m-edge-hi: rgba(214,238,255,.48);
+    --m-lift: 0 18px 38px rgba(1,6,16,.50), inset 0 1px 0 rgba(208,236,255,.38), inset 0 0 0 1px rgba(150,200,255,.10);
+    --m-rim: inset 0 1px 0 rgba(212,238,255,.40), inset 0 -1px 0 rgba(10,26,52,.45), inset 0 0 0 1px rgba(150,200,255,.11);
     /* الهندسة: وجه مشطوف للوحات الكبيرة، وصحن ثماني للأيقونات، وخدش زجاجي مائل */
     --m-facet: polygon(22px 0, 100% 0, 100% calc(100% - 22px), calc(100% - 22px) 100%, 0 100%, 0 22px);
     --m-facet-xl: polygon(30px 0, 100% 0, 100% calc(100% - 30px), calc(100% - 30px) 100%, 0 100%, 0 30px);
@@ -78,11 +78,13 @@ html.is-mobile {
     --red-danger: #ff5d6c;
 }
 
-html.is-mobile { height: 100%; overflow: hidden; overscroll-behavior: none; }
+html.is-mobile { height: 100%; overflow: hidden; overscroll-behavior: none; background: #04070f; }
 
 /* المستند مثبّت لا يُتمرَّر: في safari هذا هو السبب الوحيد الذي يحرّك العناصر
    المثبتة — المستند يرتد بالمط عند نهاية السحب وشريط العنوان ينكمش فيعيد حساب
-   الأسفل. بتثبيت body يبقى الشريط في مكانه، وكل تمرير يحدث داخل اللوحات وحدها. */
+   الأسفل. بتثبيت body يبقى الشريط في مكانه، وكل تمرير يحدث داخل اللوحات وحدها.
+   جسم الصفحة شفاف: كان يطلي #03060c فوق المشهد، فبدت الشاشة كلها سوداء ولا
+   يظهر من الخلفية الهندسية شيء. اللون الأساسي على html، والمشهد فوقه. */
 html.is-mobile body {
     position: fixed;
     inset: 0;
@@ -90,7 +92,7 @@ html.is-mobile body {
     height: 100%;
     overflow: hidden;
     overscroll-behavior: none;
-    background: var(--m-bg);
+    background: transparent;
     color: var(--m-text);
     font-family: -apple-system, "SF Arabic", "Segoe UI", Cairo, system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
@@ -111,13 +113,14 @@ html.is-mobile body::before {
     pointer-events: none;
     will-change: transform;
     background:
-        radial-gradient(64% 42% at 84% 8%, rgba(84,90,244,.40), transparent 72%),
-        radial-gradient(72% 46% at 10% 38%, rgba(30,112,236,.34), transparent 74%),
-        radial-gradient(96% 54% at 50% 112%, rgba(38,90,208,.46), transparent 72%),
-        repeating-linear-gradient(122deg, rgba(130,180,255,.08) 0 1px, transparent 1px 104px),
-        repeating-linear-gradient(58deg, rgba(130,180,255,.058) 0 1px, transparent 1px 104px),
-        linear-gradient(175deg, #060b18 0%, #03060f 46%, #080e22 100%);
-    animation: mFieldDrift 46s ease-in-out infinite alternate;
+        radial-gradient(58% 38% at 84% 4%, rgba(96,104,255,.60), transparent 70%),
+        radial-gradient(64% 42% at 8% 34%, rgba(34,128,255,.50), transparent 72%),
+        radial-gradient(44% 30% at 34% 62%, rgba(74,62,226,.32), transparent 76%),
+        radial-gradient(94% 52% at 50% 112%, rgba(46,102,236,.58), transparent 72%),
+        repeating-linear-gradient(122deg, rgba(140,190,255,.115) 0 1px, transparent 1px 96px),
+        repeating-linear-gradient(58deg, rgba(140,190,255,.085) 0 1px, transparent 1px 96px),
+        linear-gradient(175deg, #081022 0%, #040812 46%, #0a1430 100%);
+    animation: mFieldDrift 38s ease-in-out infinite alternate;
 }
 /* حزام ضوء ينزلق على الحقل ببطء: انكسار زجاجي، لا إشعاع */
 html.is-mobile body::after {
@@ -126,21 +129,22 @@ html.is-mobile body::after {
     inset: -22%;
     z-index: -1;
     pointer-events: none;
-    opacity: .82;
+    opacity: .92;
     will-change: transform;
     background:
         linear-gradient(104deg,
-            transparent 36%,
-            rgba(96,160,255,.06) 45%,
-            rgba(168,214,255,.12) 50%,
-            rgba(96,160,255,.06) 55%,
-            transparent 64%),
-        radial-gradient(52% 26% at 72% 22%, rgba(92,104,255,.16), transparent 70%);
-    animation: mSilk 30s var(--m-ease) infinite alternate;
+            transparent 34%,
+            rgba(96,160,255,.10) 45%,
+            rgba(180,222,255,.20) 50%,
+            rgba(96,160,255,.10) 55%,
+            transparent 66%),
+        radial-gradient(52% 26% at 72% 22%, rgba(99,110,255,.26), transparent 70%),
+        radial-gradient(40% 22% at 18% 78%, rgba(56,189,248,.16), transparent 72%);
+    animation: mSilk 26s var(--m-ease) infinite alternate;
 }
 @keyframes mFieldDrift {
     from { transform: translate3d(0, 0, 0) scale(1); }
-    to   { transform: translate3d(-1.6%, 1.2%, 0) scale(1.045); }
+    to   { transform: translate3d(-2.4%, 1.8%, 0) scale(1.07); }
 }
 @keyframes mSilk { from { transform: translate3d(-13%, -7%, 0); } to { transform: translate3d(13%, 7%, 0); } }
 
@@ -162,7 +166,13 @@ html.is-mobile #admin-screen.active-screen {
     height: 100%;
     overflow: hidden;
     padding-top: env(safe-area-inset-top);
+    /* style.css يطلي الشاشة بـ var(--black-bg)؛ هنا نتخلّى عن الطلاء كي يظهر
+       المشهد المتحرك في الفجوات وخلف الزجاج — وهو أصل «لا أرى فرقاً». */
+    background: transparent !important;
 }
+html.is-mobile #admin-screen .admin-content,
+html.is-mobile #admin-screen .admin-layout,
+html.is-mobile #admin-screen .admin-section { background: transparent !important; }
 
 html.is-mobile .admin-sidebar { display: none; }
 
@@ -195,11 +205,12 @@ html.is-mobile .m-head {
     align-items: center;
     gap: 10px;
     padding: 11px 16px 10px;
-    border-bottom: 1px solid rgba(150,200,255,.13);
+    border-bottom: 1px solid rgba(170,215,255,.22);
     background:
-        linear-gradient(180deg, rgba(132,186,255,.075), rgba(132,186,255,0) 62%),
-        linear-gradient(180deg, rgba(5,10,19,.93), rgba(5,10,20,.72));
-    box-shadow: 0 10px 24px rgba(0,0,0,.38);
+        linear-gradient(180deg, rgba(160,208,255,.18), rgba(132,186,255,.02) 70%),
+        radial-gradient(120% 160% at 50% -60%, rgba(70,130,235,.36), transparent 64%),
+        rgba(8,18,38,.52);
+    box-shadow: 0 12px 30px rgba(0,4,12,.36), inset 0 1px 0 rgba(208,236,255,.16);
     /* الترويسة مثبتة: السحب عليها لا يحرك المستند */
     touch-action: none;
 }
@@ -346,9 +357,9 @@ html.is-mobile .m-today,
 html.is-mobile .m-exp-sum,
 html.is-mobile .monthly-strip {
     position: relative;
-    isolation: isolate;
     background:
-        linear-gradient(180deg, rgba(146,198,255,.155), rgba(146,198,255,0) 30%),
+        linear-gradient(152deg, rgba(198,230,255,.13) 0%, rgba(120,172,240,.02) 42%, rgba(150,200,255,.08) 100%),
+        radial-gradient(120% 90% at 50% 0%, rgba(96,160,255,.20), transparent 62%),
         var(--m-etch),
         var(--m-glass),
         var(--m-glass-bg) !important;
@@ -361,18 +372,26 @@ html.is-mobile .monthly-strip::before {
     content: "";
     position: absolute;
     inset: 0;
-    z-index: -1;
+    z-index: 0;
     border-radius: inherit;
     pointer-events: none;
     background: var(--m-sheen);
 }
-/* اللوحات الكبيرة تُقطع هندسياً: زاوية مشطوفة بدل الاستدارة — قطع زجاجي.
-   الظلّ الخارجي يُرقى بـ drop-shadow لأن clip-path يقصّ box-shadow الخارجي. */
+/* المحتوى فوق طبقة اللمعان: بلا z-index سالب — السالب داخل حاوية مقصوصة كان
+   يرسم البطاقة وحدها ويترك الأيقونة والنص خارج القصّ على آيفون. */
+html.is-mobile #admin-screen .stat-card > *,
+html.is-mobile .m-today > *,
+html.is-mobile .monthly-strip > * { position: relative; z-index: 1; }
+/* اللوحات الكبيرة: استدارة كاملة بدل القطع الهندسي. clip-path على بطاقة
+   تدخل بأنيميشن transform كان على WebKit يفصل الزجاج عن محتواه (عنوان مقصوص
+   وأيقونة تطفو فوق البطاقة). الاستدارة آمنة وبنفس الفخامة. */
 html.is-mobile .m-today,
 html.is-mobile .monthly-strip {
-    clip-path: var(--m-facet);
-    border: none !important;
-    box-shadow: inset 0 1px 0 rgba(170,214,255,.22), inset 0 0 0 1px rgba(138,190,255,.08) !important;
+    border-radius: var(--m-radius-card) !important;
+    clip-path: none !important;
+    border: 1px solid var(--m-edge) !important;
+    box-shadow: var(--m-lift) !important;
+    overflow: hidden;
 }
 /* شريط التلوين الذي يمتلئ أسفل البطاقة عند الدخول: بلاتين مصقول بدل النيون */
 html.is-mobile #admin-screen .stat-card::after {
@@ -515,7 +534,8 @@ html.is-mobile .stat-card {
 html.is-mobile .stat-card:hover { transform: none !important; }
 html.is-mobile .stat-card:active { transform: scale(.985) !important; }
 /* صحن الأيقونة: مُثمَّن هندسي من الزجاج المصنفر بحلقة داخلية وظلّ أسود تحته.
-   لا توهّج حول الرمز: الحافة المضيئة داخل الشكل هي ما يعطي إحساس القطع الزجاجي. */
+   الحفر داخل الخلفية نفسها لا في ::before — فـ Font Awesome يرسم الرمز نفسه
+   في ::before، وكانت طبقتنا تمحوه فتظهر أطباق فارغة بلا أيقونات. */
 html.is-mobile .stat-icon {
     position: relative;
     display: flex !important;
@@ -529,22 +549,14 @@ html.is-mobile .stat-icon {
     clip-path: var(--m-plate);
     font-size: 21px !important;
     line-height: 1;
-    color: #eaf4ff !important;
+    color: #f2faff !important;
     background:
-        linear-gradient(152deg, rgba(150,200,255,.16) 0%, rgba(120,165,235,.04) 44%, rgba(130,175,255,.09) 100%),
-        rgba(14,25,44,.62) !important;
+        repeating-linear-gradient(122deg, rgba(198,230,255,.075) 0 1px, transparent 1px 9px),
+        linear-gradient(152deg, rgba(180,220,255,.34) 0%, rgba(120,165,235,.10) 46%, rgba(140,190,255,.20) 100%),
+        rgba(22,44,80,.60) !important;
     box-shadow: none;
-    text-shadow: none;
+    text-shadow: 0 1px 3px rgba(0,10,30,.62);
     filter: none;
-}
-html.is-mobile .stat-icon::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    clip-path: var(--m-plate);
-    background: var(--m-etch);
-    opacity: .55;
-    pointer-events: none;
 }
 /* البرتقالي المكتوب سطرياً في صفحة المزيد يُرجع البطاقة خارج الهوية */
 html.is-mobile #admin-screen [style*="#f39c12"] { border-color: var(--m-edge) !important; }
@@ -566,36 +578,96 @@ html.is-mobile [id^="bento-"] {
     transition: none !important;
     -webkit-transform: none !important;
 }
+/* البطاقة العريضة صارت عموداً: في الصف كانت الأيقونة والرقم يزاحمان عنواناً
+   عربياً طويلاً على شاشة 390px فيُسحق إلى ثلاثة أسطر وينفلت من بطاقته. */
 html.is-mobile .stat-card[style*="grid-column: span 2"] {
     grid-column: span 2 !important;
-    flex-direction: row !important;
-    justify-content: flex-start !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    justify-content: flex-end !important;
     text-align: start !important;
-    gap: 14px;
+    gap: 2px;
+    padding: 20px 20px 22px !important;
 }
-html.is-mobile .stat-card[style*="grid-column: span 2"] .stat-icon { margin: 0 !important; flex: none !important; }
+html.is-mobile .stat-card[style*="grid-column: span 2"] .stat-icon { margin: 0 0 12px !important; flex: none !important; }
+html.is-mobile .stat-card[style*="grid-column: span 2"] .stat-title { margin: 0 0 2px !important; max-width: 100%; }
+html.is-mobile .stat-card[style*="grid-column: span 2"] .stat-value { line-height: 1.05 !important; }
 
-/* البطاقة البطلة في اليومية: لوح مشطوف بحواف داخلية، لا وهج ازرق في الزاوية */
+/* البطاقة البطلة في اليومية: أشبع قطعة زجاج في الشاشة — توهّج نيلي/أزرق داخلي،
+   حافة سماوية سميكة، ومسحة ضوء تمرّ عليها كبطاقة شاشة القفل. */
 html.is-mobile #admin-daily-report .bento-hero {
-    border-radius: 0 !important;
-    clip-path: var(--m-facet);
-    border: none !important;
-    padding: 24px 18px !important;
+    position: relative;
+    border-radius: 24px !important;
+    clip-path: none !important;
+    border: 1px solid rgba(184,224,255,.32) !important;
+    padding: 20px 20px 22px !important;
     background:
-        linear-gradient(180deg, rgba(146,198,255,.17), rgba(146,198,255,0) 28%),
+        radial-gradient(120% 96% at 88% -14%, rgba(122,104,255,.42), transparent 62%),
+        radial-gradient(110% 86% at -4% 110%, rgba(44,134,255,.36), transparent 64%),
+        linear-gradient(152deg, rgba(206,234,255,.16), rgba(120,172,240,.03) 48%, rgba(150,200,255,.10) 100%),
         var(--m-etch),
-        var(--m-glass),
-        rgba(8,15,28,.62) !important;
-    box-shadow: inset 0 1px 0 rgba(170,214,255,.24), inset 0 0 0 1px rgba(138,190,255,.08) !important;
+        rgba(16,36,76,.46) !important;
+    box-shadow:
+        0 26px 54px rgba(1,6,16,.56),
+        inset 0 1px 0 rgba(222,242,255,.42),
+        inset 0 -18px 40px rgba(24,80,180,.16),
+        inset 0 0 0 1px rgba(150,200,255,.12) !important;
+    overflow: hidden;
 }
-html.is-mobile #admin-daily-report .bento-hero .stat-title { color: #cfe3ff !important; font-size: 13px !important; }
+html.is-mobile #admin-daily-report .bento-hero::before { background: none; }
+html.is-mobile #admin-daily-report .bento-hero::after {
+    content: "";
+    position: absolute;
+    top: -70%; bottom: -70%; left: -45%;
+    width: 46%;
+    z-index: 0;
+    pointer-events: none;
+    background: linear-gradient(100deg, transparent, rgba(206,236,255,.16), transparent);
+    transform: rotate(14deg) translate3d(-30%, 0, 0);
+    animation: mHeroSheen 8s ease-in-out infinite alternate;
+}
+@keyframes mHeroSheen {
+    to { transform: rotate(14deg) translate3d(320%, 0, 0); opacity: .35; }
+}
+html.is-mobile #admin-daily-report .bento-hero > * { position: relative; z-index: 1; }
+html.is-mobile #admin-daily-report .bento-hero .stat-title {
+    color: #cfe6ff !important;
+    font-size: 14.5px !important;
+    font-weight: 800 !important;
+    line-height: 1.45 !important;
+    letter-spacing: 0 !important;
+}
+html.is-mobile #admin-daily-report .bento-hero .stat-icon {
+    width: 46px !important; height: 46px !important;
+    font-size: 19px !important;
+    margin: 0 0 10px !important;
+    align-self: flex-start !important;
+}
 html.is-mobile #bento-current-pieces {
     color: #ffffff !important;
-    text-shadow: 0 1px 2px rgba(0,0,0,.55);
+    font-size: 50px !important;
+    line-height: 1.02 !important;
+    letter-spacing: -1px;
+    text-shadow: 0 2px 14px rgba(70,150,255,.40), 0 1px 2px rgba(0,0,0,.55);
+}
+/* بطاقتا اليوم: أيقونة أصغر ورقم أوضح بلا أنماط سطرية تفرض 45px/26px */
+html.is-mobile .bento-box-container > .stat-card:not(.bento-hero) {
+    min-height: 128px;
+    justify-content: center !important;
+    gap: 0;
+}
+html.is-mobile .bento-box-container > .stat-card:not(.bento-hero) .stat-icon {
+    width: 46px !important; height: 46px !important;
+    font-size: 18px !important;
+    margin: 0 0 10px !important;
+}
+html.is-mobile .bento-box-container > .stat-card:not(.bento-hero) .stat-value {
+    font-size: 27px !important;
+    margin-top: 2px;
 }
 html.is-mobile .monthly-strip {
-    border-radius: 0 !important;
-    padding: 12px 10px !important;
+    border-radius: var(--m-radius-card) !important;
+    padding: 14px 12px !important;
     gap: 6px;
     flex-wrap: wrap;
 }
@@ -604,7 +676,7 @@ html.is-mobile .monthly-strip-item strong { color: #eaf4ff !important; text-shad
 
 /* ------------------------- لوحة تفاصيل اليوم ------------------------- */
 html.is-mobile .m-today {
-    border-radius: 0 !important;
+    border-radius: var(--m-radius-card) !important;
     margin: 4px 0 22px !important;
     padding: 14px 14px 6px !important;
     overflow: hidden;
@@ -740,12 +812,12 @@ html.is-mobile .btn-confirm {
     border-radius: 16px !important;
     font-weight: 800 !important;
     letter-spacing: .2px;
-    border: 1px solid rgba(146,200,255,.22) !important;
+    border: 1px solid rgba(170,216,255,.30) !important;
     background:
-        linear-gradient(180deg, rgba(146,200,255,.10), rgba(146,200,255,.012) 55%),
-        rgba(12,23,42,.52) !important;
-    color: #e4efff !important;
-    box-shadow: inset 0 1px 0 rgba(178,220,255,.20), 0 8px 18px rgba(0,0,0,.32) !important;
+        linear-gradient(180deg, rgba(186,224,255,.20), rgba(146,200,255,.03) 55%),
+        rgba(18,40,78,.46) !important;
+    color: #eef7ff !important;
+    box-shadow: inset 0 1px 0 rgba(216,240,255,.34), 0 10px 22px rgba(0,6,18,.36) !important;
     text-shadow: 0 1px 2px rgba(0,0,0,.40);
     transition: transform .15s var(--m-ease), filter .15s linear, opacity .15s linear;
     -webkit-tap-highlight-color: transparent;
@@ -813,17 +885,20 @@ html.is-mobile #mobile-bottom-nav {
     position: fixed;
     width: auto !important;
     left: 10px; right: 10px;
-    bottom: calc(4px + env(safe-area-inset-bottom) * 0.34);
+    bottom: calc(9px + env(safe-area-inset-bottom) * 0.45);
     height: var(--m-bar-h);
     z-index: 9500;
     padding: 6px;
     border-radius: var(--m-radius-bar);
     /* زجاج حقيقي بلا فلتر: الشفافية تُظهر المشهد المتحرك خلف الشريط مباشرة */
+    /* قاعدة أغمق من البطاقات: الشريط يطفو فوق محتوى ساطع، والزجاج الشفاف
+       جداً يذيب أسماء التبويبات في الأرقام الكبيرة تحته. */
     background:
-        linear-gradient(180deg, rgba(118,180,255,.105), rgba(118,180,255,.015) 58%),
-        rgba(7,14,26,.66);
-    border: 1px solid rgba(146,200,255,.20);
-    box-shadow: 0 16px 38px rgba(0,0,0,.52), var(--m-rim);
+        linear-gradient(180deg, rgba(186,224,255,.22), rgba(118,180,255,.03) 58%),
+        radial-gradient(120% 150% at 50% -20%, rgba(96,150,255,.28), transparent 64%),
+        rgba(6,15,32,.88);
+    border: 1px solid rgba(184,224,255,.34);
+    box-shadow: 0 20px 44px rgba(0,4,14,.55), var(--m-rim);
     justify-content: space-around;
     align-items: stretch;
     overflow: hidden;
@@ -858,7 +933,7 @@ html.is-mobile .bottom-nav-btn {
     flex: 1 1 calc(100% / var(--m-n));
     min-width: 0;
     display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
-    background: transparent; border: none; color: var(--m-faint);
+    background: transparent; border: none; color: #a3bcdb;
     padding: 4px 2px;
     transition: color .30s var(--m-ease), transform .18s var(--m-ease);
 }
@@ -920,14 +995,27 @@ html.is-mobile .modal-overlay:not(.m-sheet) .modal-content {
     max-height: calc(100% - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 20px) !important;
     margin: 0 auto !important;
     border-radius: var(--m-radius-sheet) !important;
-    border: 1px solid rgba(150,205,255,.20) !important;
+    border: 1px solid rgba(168,216,255,.26) !important;
     background:
-        linear-gradient(180deg, rgba(146,200,255,.10), rgba(146,200,255,.012) 42%),
-        rgba(9,17,31,.90) !important;
-    box-shadow: 0 26px 70px rgba(0,0,0,.62), inset 0 1px 0 rgba(180,222,255,.22) !important;
+        radial-gradient(140% 90% at 88% -12%, rgba(110,104,255,.26), transparent 60%),
+        linear-gradient(180deg, rgba(168,212,255,.15), rgba(146,200,255,.02) 42%),
+        rgba(17,36,68,.90) !important;
+    box-shadow: 0 26px 70px rgba(0,4,14,.62), inset 0 1px 0 rgba(206,236,255,.34) !important;
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
+}
+/* رأس/جسم/تذييل النوافذ كانت سوداء مربعة فوق الزجاج الجديد (style.css يطليها
+   rgba(20,20,20,.95)). نزيل الطلاء الأسود ونترك نفس زجاج اللوحة. */
+html.is-mobile .modal-overlay:not(#modal-admin-login) .modal-header-sticky,
+html.is-mobile .modal-overlay:not(#modal-admin-login) .modal-footer-sticky {
+    background:
+        linear-gradient(180deg, rgba(160,206,255,.13), rgba(160,206,255,.02) 70%),
+        rgba(16,34,64,.86) !important;
+    border-color: rgba(160,210,255,.20) !important;
+}
+html.is-mobile .modal-overlay:not(#modal-admin-login) .modal-body-scrollable {
+    background: rgba(12,26,50,.46) !important;
 }
 
 /* ------------------------- النوافذ السفلية ------------------------- */
@@ -970,12 +1058,13 @@ html.is-mobile .modal-overlay.m-sheet .modal-content {
     max-height: 92% !important;
     margin: 0 !important;
     border-radius: var(--m-radius-sheet) var(--m-radius-sheet) 0 0 !important;
-    border: 1px solid rgba(150,205,255,.20) !important;
+    border: 1px solid rgba(172,218,255,.28) !important;
     border-bottom: none !important;
     background:
-        linear-gradient(180deg, rgba(146,200,255,.13), rgba(146,200,255,.015) 40%),
-        rgba(8,16,30,.92) !important;
-    box-shadow: 0 -18px 60px rgba(0,0,0,.62), inset 0 1px 0 rgba(186,226,255,.24) !important;
+        radial-gradient(150% 90% at 84% -14%, rgba(112,104,255,.30), transparent 62%),
+        linear-gradient(180deg, rgba(170,213,255,.16), rgba(146,200,255,.02) 40%),
+        rgba(17,36,68,.92) !important;
+    box-shadow: 0 -18px 60px rgba(0,4,14,.62), inset 0 1px 0 rgba(210,238,255,.36) !important;
     padding: 6px 14px calc(14px + env(safe-area-inset-bottom)) !important;
     overflow-y: auto !important;
     overflow-x: hidden !important;
@@ -4800,6 +4889,24 @@ html.is-mobile .modal-footer-sticky {
     }
 
     /* ================== التركيب ================== */
+    /* أنماط index.html السطرية على بطاقات اليومية تحمل !important فتسبق أي
+       قاعدة في ورقة الأنماط، ولا سبيل لتصغير عنوان البطاقة أو رقمها معها.
+       نزيلها مرة واحدة عند التركيب (عمود الشبكة يبقى)، وتتولى الطبقة الباقي. */
+    function unstyleBento() {
+        const box = document.querySelector('#admin-daily-report .bento-box-container');
+        if (!box) return;
+        const dropCard = ['font-size', 'font-weight', 'color', 'text-shadow', 'border', 'border-color', 'background', 'background-color', 'padding', 'box-shadow', 'height', 'min-height', 'width'];
+        const dropInner = ['font-size', 'font-weight', 'color', 'text-shadow', 'letter-spacing', 'line-height', 'margin', 'padding', 'background', 'background-color', 'border', 'border-color', 'box-shadow', 'width', 'height'];
+        qsa('.stat-card', box).forEach((card) => {
+            dropCard.forEach((p) => card.style.removeProperty(p));
+            qsa('.stat-icon, .stat-title, .stat-value', card).forEach((el) => {
+                dropInner.forEach((p) => el.style.removeProperty(p));
+            });
+        });
+        const strip = box.querySelector('.monthly-strip');
+        if (strip) ['display', 'justify-content', 'background', 'background-color', 'padding', 'border', 'border-radius'].forEach((p) => strip.style.removeProperty(p));
+    }
+
     function mount() {
         splash();
         /* الشريط إلى body مباشرة: لا حاوية متحوّلة أو مقصوصة تبقى فوقه،
@@ -4816,6 +4923,7 @@ html.is-mobile .modal-footer-sticky {
         const more = document.getElementById('admin-more-menu');
         const content = document.querySelector('#admin-screen .admin-content');
         if (more && content && more.parentElement !== content) content.appendChild(more);
+        unstyleBento();
         const order = readTabsOrder();
         if (!order.length) return;
         state.keys = order;
