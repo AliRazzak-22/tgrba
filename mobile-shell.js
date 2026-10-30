@@ -1038,13 +1038,15 @@ html.is-mobile {
     --m-lk-glass: rgba(255,255,255,.045);
     --m-lk-rim-inset: inset 0 1px 0 rgba(255,255,255,.24), inset 0 -1px 0 rgba(255,255,255,.035);
     --m-lk-num: "Outfit", "Cairo", -apple-system, "Segoe UI", system-ui, sans-serif;
-    --m-lk-key: linear-gradient(96deg, #38bdf8, #4da3ff);
-    --m-lk-key-ok: linear-gradient(96deg, #22c55e, #86efac);
     --m-lk-neon-a: #38bdf8;
     --m-lk-neon-b: #4da3ff;
     --m-lk-neon-speed: 5s;
     --m-lk-bg-speed: 22s;
-    --m-lk-blur: 26px;
+    /* 18px لا 26px: كل بكسل زائد فيBlur يُدفع كل إطار لأن المشهد خلف البطاقة يتحرك */
+    --m-lk-blur: 18px;
+    --m-lk-flow: 6.5s;
+    --m-lk-blue-flow: linear-gradient(112deg, #4da3ff, #38bdf8 24%, #22d3ee 44%, #7dd3fc 62%, #4da3ff 82%, #38bdf8);
+    --m-lk-go-flow: linear-gradient(115deg, #2b7fd0, #38bdf8 20%, #67e8f9 40%, #4da3ff 58%, #22d3ee 76%, #2b7fd0);
 }
 html.is-mobile #modal-admin-login.m-lock-screen {
     display: none;
@@ -1079,7 +1081,15 @@ html.is-mobile #modal-admin-login.m-lock-screen .modal-content {
     justify-content: center;
     animation: none !important;
 }
-html.is-mobile body.m-lk-busy #modal-admin-login .m-lk-shell { visibility: hidden; }
+/* أثناء المؤثر: البطاقة الحقيقية ومشهدها كلاهما مرئي بلا طائل. الطبقتان
+   المتحركتان معاً هما ما يُسقط اللقطة عند الرقم الرابع، فنُخفي الأصل
+   visibility لا display: التخطيط يبقى صحيحاً لكل من يقيسه. */
+html.is-mobile body.m-lk-busy #modal-admin-login .m-lk-shell,
+html.is-mobile body.m-lk-busy #modal-admin-login .m-lk-scene { visibility: hidden; }
+/* الشاشة التي تُبنى خلف الستار لا يراها أحد: نوقف رسمها ولا نوقف قياسها */
+html.is-mobile body.m-lk-busy .admin-section,
+html.is-mobile body.m-lk-busy .m-head,
+html.is-mobile body.m-lk-busy #mobile-bottom-nav { visibility: hidden; }
 
 html.is-mobile .m-lk-scene {
     position: absolute;
@@ -1171,7 +1181,7 @@ html.is-mobile .m-lk-card {
     box-sizing: border-box;
     width: 100%;
     margin: 0;
-    padding: 24px 22px 20px;
+    padding: 18px 22px 20px;
     overflow: hidden;
     border: 1px solid rgba(255,255,255,.14);
     border-radius: 26px;
@@ -1194,6 +1204,9 @@ html.is-mobile .m-lk-card::before {
     pointer-events: none;
     opacity: .42;
     transform: rotate(18deg);
+    /* طبقته الخاصة: بلا هذا السطر يُرسم وجه البطاقة كله في كل إطار لمسه */
+    will-change: transform;
+    backface-visibility: hidden;
     background: linear-gradient(90deg, transparent, rgba(255,255,255,.075), transparent);
     animation: mLkSheen calc(var(--m-lk-bg-speed) * .72) ease-in-out infinite alternate;
 }
@@ -1218,7 +1231,9 @@ html.is-mobile .m-otp-neon::before,
 html.is-mobile .m-lk-core-neon::before {
     content: "";
     position: absolute;
-    inset: -120%;
+    /* -60% لا -120%: تكفي لتغطية أركان البطاقة أثناء الدوران، وتختصر
+       مساحة التدرّج المخروطي المرسومة في كل إطار إلى النصف تقريباً */
+    inset: -60%;
     background: conic-gradient(from 0deg, transparent 0deg 268deg, color-mix(in srgb, var(--m-lk-neon-a) 12%, transparent) 282deg, var(--m-lk-neon-a) 318deg, var(--m-lk-neon-b) 334deg, transparent 350deg 360deg);
     animation: mLkSpin var(--m-lk-neon-speed) linear infinite;
 }
@@ -1227,7 +1242,7 @@ html.is-mobile .m-lk-neon { border-radius: 27px; opacity: .9; }
 html.is-mobile .m-lk-chip {
     width: 46px;
     height: 46px;
-    margin-bottom: 13px;
+    margin-bottom: 7px;
     border: 1px solid rgba(255,255,255,.14);
     border-radius: 16px;
     display: flex;
@@ -1243,7 +1258,7 @@ html.is-mobile .m-lk-chip svg circle { fill: none; stroke: #f5f9ff; stroke-width
 html.is-mobile .m-lk-chip .m-shield { display: none; }
 html.is-mobile .m-lk-card .modal-title {
     display: block;
-    margin: 0 0 7px !important;
+    margin: 0 0 6px !important;
     padding: 0 !important;
     font-size: 22px !important;
     font-weight: 700 !important;
@@ -1253,17 +1268,25 @@ html.is-mobile .m-lk-card .modal-title {
 }
 html.is-mobile .m-lk-card .modal-title > i { display: none; }
 html.is-mobile .m-lk-word { display: inline-block; }
+/* التدرّج الجري: صورة أعرض من الكلام ونزحلقها بمقدار صورتها تماماً، فلا قفزة
+   عند نهاية الدورة. أول اللون وآخره واحد، والممسوحة على النص وحدها تُرسم. */
 html.is-mobile .m-lk-key {
-    background-image: var(--m-lk-key);
+    background-image: var(--m-lk-blue-flow);
+    background-size: 260% 100%;
+    background-repeat: repeat;
+    animation: mLkKeyFlow var(--m-lk-flow) linear infinite;
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
     -webkit-text-fill-color: transparent;
     text-shadow: none !important;
 }
-html.is-mobile .m-lk-key.ok { background-image: var(--m-lk-key-ok); }
+html.is-mobile .m-lk-key.ok {
+    background-image: linear-gradient(100deg, #86efac, #22c55e 26%, #4ade80 52%, #22c55e 78%, #86efac);
+}
+@keyframes mLkKeyFlow { to { background-position: -260% 50%; } }
 html.is-mobile .m-lk-sub {
-    margin: 0 0 17px !important;
+    margin: 0 0 22px !important;
     font-size: 12.5px;
     line-height: 1.65;
     font-weight: 400;
@@ -1275,11 +1298,17 @@ html.is-mobile .m-lk-err {
     margin: 7px 0 0;
     font-size: 12px;
     font-weight: 700;
+    font-variant-numeric: tabular-nums;
     color: var(--m-red-1);
     opacity: 0;
     transition: opacity .24s ease;
 }
 html.is-mobile .m-lk-err.on { opacity: 1; }
+/* سطر العدّاد: نفس الشريط المحجوز، بلا أي قفزة في التخطيط */
+html.is-mobile .m-lk-err.cool {
+    color: #fcd34d;
+    text-shadow: 0 0 12px rgba(251,191,36,.28);
+}
 
 html.is-mobile .m-lk-card .input-group { width: 100%; margin: 0 !important; position: relative; }
 html.is-mobile .m-lk-card .input-group label { display: none; }
@@ -1313,6 +1342,24 @@ html.is-mobile .m-otp b {
 }
 html.is-mobile .m-lk-fx .m-otp b { will-change: transform, opacity; }
 html.is-mobile .m-otp b u { display: block; text-decoration: none; text-shadow: 0 0 16px rgba(255,255,255,.16); }
+/* حلقة الرقم الداخل: طبقة شفافة تتوسّع وتخبو. transform وopacity وحدهما،
+   فلا إعادة رسم لمربع ولا قفل للخيّاط في إطاره. */
+html.is-mobile .m-otp b::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    border: 1.5px solid rgba(125,211,252,.8);
+    opacity: 0;
+    pointer-events: none;
+}
+/* اسمان يتبادلانه:إعادة تشغيل الحركة بلا قراءة تخطيط تُجبر المتصفح على الحساب */
+html.is-mobile .m-otp b.pa::after,
+html.is-mobile .m-otp b.pb::after { animation: mLkRing 360ms var(--m-ease-out) both; }
+@keyframes mLkRing {
+    from { opacity: .8; transform: scale(.84); }
+    to { opacity: 0; transform: scale(1.16); }
+}
 html.is-mobile .m-otp b.filled { background: rgba(255,255,255,.068); border-color: rgba(255,255,255,.20); }
 html.is-mobile .m-otp b.bad { --m-lk-neon-a: #fb7185; --m-lk-neon-b: #f43f5e; border-color: rgba(251,113,133,.72); }
 html.is-mobile .m-otp-glide {
@@ -1434,43 +1481,233 @@ html.is-mobile .m-pad .m-rp {
     pointer-events: none;
     background: radial-gradient(circle, rgba(255,255,255,.34), transparent 64%);
 }
+/* بعد سحب زر المسح يبقى الصفر في الوسط وعلامة الحذف في موضعها السابق،
+   وتلميح المصباح يأخذ الخلية الشاغبة إلى جواره */
+html.is-mobile .m-pad button[data-k="0"] { grid-column: 2; }
+html.is-mobile .m-pad button[data-k="del"] { grid-column: 3; }
+html.is-mobile .m-pad button[data-k="hint"] { grid-column: 1; }
+html.is-mobile .m-pad button.bulb {
+    color: rgba(196,213,236,.34);
+    border-color: rgba(255,255,255,.07);
+}
+html.is-mobile .m-pad button.bulb::before {
+    background: radial-gradient(90% 90% at 50% 20%, rgba(251,191,36,.30), rgba(245,158,11,.09) 62%, transparent);
+}
+/* اللمبة مطفأة: هالة شاحبة لا تُلمس. تتقدّ من تلقاء نفسها حين تتكاثر الأخطاء */
+html.is-mobile .m-pad button.bulb::after {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: 0;
+    background: radial-gradient(62% 62% at 50% 34%, rgba(251,191,36,.26), transparent 72%);
+}
+html.is-mobile .m-pad button.bulb.lit {
+    color: rgba(253,224,171,.9);
+    border-color: rgba(251,191,36,.34);
+}
+html.is-mobile .m-pad button.bulb.lit::after {
+    opacity: 1;
+    animation: mLkBulbPulse 2.6s ease-in-out infinite;
+}
+html.is-mobile .m-pad button.bulb.on {
+    color: #fef3c7;
+    border-color: rgba(251,191,36,.9);
+    text-shadow: 0 0 12px rgba(251,191,36,.75);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.28), 0 0 18px rgba(251,191,36,.18);
+}
+/* وهجة الاشتعال: طبقة واحدة داخل الزر تُنسخ مرة وتُحرك، لا ظل متحرك */
+html.is-mobile .m-pad .m-bulb-flare {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: 0;
+    background: radial-gradient(58% 58% at 50% 40%, rgba(253,224,171,.92), rgba(251,191,36,.34) 58%, transparent 78%);
+}
+@keyframes mLkBulbPulse {
+    0%, 100% { opacity: .34; }
+    50% { opacity: .9; }
+}
+/* اللوحة خاملة والعدّاد جارٍ: الأرقام مُطفأة واللمبة وحدها حيّة */
+html.is-mobile .m-pad.cooling button:not(.bulb) {
+    opacity: .34;
+    transition: opacity .26s ease;
+}
+html.is-mobile .m-pad.cooling button.bulb:not(.lit) {
+    opacity: .5;
+}
+
+/* فقاعة التلميح تطفو في الممرّ الفارغ بين المربعات واللوحة: موضعها مطلق
+   فلا قفزة ولا إعادة قياس عند ظهورها، وشفاها مغلقة أمام اللمس. */
+html.is-mobile .m-lk-tip {
+    position: absolute;
+    bottom: calc(100% + 4px);
+    left: 50%;
+    z-index: 4;
+    direction: rtl;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    max-width: 100%;
+    padding: 5px 10px 6px;
+    border-radius: 13px;
+    border: 1px solid rgba(251,191,36,.32);
+    background: linear-gradient(180deg, rgba(255,255,255,.13), rgba(255,255,255,0) 46%), rgba(26,18,6,.62);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.20), 0 10px 22px rgba(2,8,18,.5), 0 0 16px rgba(251,191,36,.12);
+    color: #fde68a;
+    font-size: 13px;
+    line-height: 1.2;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    overflow: hidden;
+    transform: translate3d(-50%, 8px, 0) scale(.92);
+    /* منحنى يتجاوز الهدف ثم يرتد: الفقاعة تُقذف إلى عينك لا تنزلق */
+    transition: opacity .24s ease, transform .46s cubic-bezier(.16,1.16,.3,1);
+}
+html.is-mobile .m-lk-tip.on {
+    opacity: 1;
+    transform: translate3d(-50%, 0, 0) scale(1);
+}
+/* مسحة ضوء تمرّ على الفقاعة مرة واحدة عند إقلاعها: داخل حدودها المغلقة
+   فلا شريط ضوء يمشي فوق اللوحة */
+html.is-mobile .m-lk-tip::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: 0;
+    background: linear-gradient(100deg, transparent 38%, rgba(255,244,214,.30) 50%, transparent 62%);
+}
+html.is-mobile .m-lk-tip.on::after { animation: mLkTipSweep 900ms cubic-bezier(.3,.7,.3,1) 140ms both; }
+@keyframes mLkTipSweep {
+    from { opacity: .9; transform: translate3d(-108%,0,0); }
+    to { opacity: 0; transform: translate3d(108%,0,0); }
+}
+/* رسالة الغلط تسكن الممرّ نفسه: إن ظهرت فلا تلاقاها كلمة التلميح فوقها.
+   انتظار العدّاد لا يُطفئها: التلميح يُقرأ وهو مطروح بالظبط */
+html.is-mobile .m-lk-err.bad:not(.cool) ~ .m-pad .m-lk-tip {
+    opacity: 0;
+    transform: translate3d(-50%, 8px, 0) scale(.92);
+}
+html.is-mobile .m-lk-tip b { font-weight: 800; color: #fff4d1; }
+html.is-mobile .m-lk-tip .m-lk-tip-tag {
+    font-size: 10px;
+    font-weight: 800;
+    padding: 2px 6px;
+    border-radius: 7px;
+    background: rgba(251,191,36,.15);
+    border: 1px solid rgba(251,191,36,.28);
+    color: #fcd34d;
+}
 
 html.is-mobile .m-lk-card .modal-actions {
     display: flex;
-    gap: 10px;
+    justify-content: center;
     width: 100%;
-    margin-top: 13px;
+    margin-top: 14px;
     padding: 0 !important;
     position: static !important;
     background: none !important;
 }
-html.is-mobile .m-lk-card .modal-actions button {
-    flex: 1 1 0;
-    min-width: 0;
-    min-height: 42px;
-    border: 1px solid rgba(255,255,255,.11);
-    border-radius: 16px;
+/* زر الدخول: زجاج فوق تدرّج أزرق جارٍ ومسحة ضوء تدور عليه. الحركة كلها في
+   الطبقتين الشبهيتين، والزر نفسه لا يُلمس تخطيطياً. لاBlur فوق البطاقة
+   المزجّجة: blur داخل blur هو أغلى ما في الشاشة على معالج الرسوم. */
+html.is-mobile .m-lk-card .modal-actions .btn-confirm {
+    position: relative;
+    isolation: isolate;
+    flex: 0 0 auto;
+    width: min(100%, 200px);
+    min-height: 46px;
+    margin: 0;
+    padding: 0 16px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(148,220,255,.34) !important;
+    border-radius: 17px !important;
     font-family: inherit;
-    font-size: 13px;
-    font-weight: 700;
-    color: #edf6ff;
-    background: rgba(255,255,255,.04);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.14);
-    transition: opacity .2s ease;
-}
-html.is-mobile .m-lk-card .modal-actions button:active { opacity: .68; }
-html.is-mobile .m-lk-card .modal-actions button:disabled { opacity: .45; }
-html.is-mobile .m-lk-card .modal-actions .btn-cancel { color: rgba(213,227,245,.58); }
-html.is-mobile .m-lk-foot { margin: 10px 0 0; font-size: 11.5px; color: rgba(213,227,245,.54); }
-html.is-mobile .m-lk-foot button {
-    color: var(--m-blue-2);
-    font-weight: 700;
-    background: none;
-    border: 0;
-    font-family: inherit;
-    font-size: 11.5px;
-    padding: 5px 4px;
+    font-size: 14.5px;
+    font-weight: 800;
+    letter-spacing: .3px;
+    color: #f4fdff !important;
+    background: linear-gradient(180deg, rgba(255,255,255,.24), rgba(255,255,255,0) 44%), rgba(9,19,33,.5) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.34), inset 0 -1px 0 rgba(255,255,255,.05), 0 12px 26px rgba(2,8,18,.5), 0 0 20px rgba(56,189,248,.12) !important;
+    text-shadow: 0 1px 2px rgba(3,12,24,.55);
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
     cursor: pointer;
+    transition: transform .2s var(--m-ease-out), border-color .3s ease, box-shadow .3s ease, opacity .3s ease;
+}
+html.is-mobile .m-lk-card .modal-actions .btn-confirm::after {
+    content: "";
+    position: absolute;
+    z-index: 0;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background-image: var(--m-lk-go-flow);
+    background-size: 300% 100%;
+    opacity: .58;
+    animation: mLkGoFlow var(--m-lk-flow) linear infinite;
+    transition: opacity .34s ease;
+}
+html.is-mobile .m-lk-card .modal-actions .btn-confirm::before {
+    content: "";
+    position: absolute;
+    z-index: 1;
+    top: -70%;
+    bottom: -70%;
+    left: -30%;
+    width: 30%;
+    pointer-events: none;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.26), rgba(190,238,255,.4), rgba(255,255,255,.1), transparent);
+    transform: translate3d(-160%, 0, 0) rotate(14deg);
+    will-change: transform;
+    animation: mLkGoSweep 4.2s cubic-bezier(.45, 0, .55, 1) infinite;
+}
+html.is-mobile .m-lk-card .modal-actions .btn-confirm > span { position: relative; z-index: 2; }
+@keyframes mLkGoFlow { to { background-position: -300% 50%; } }
+@keyframes mLkGoSweep {
+    0%, 52% { transform: translate3d(-160%, 0, 0) rotate(14deg); }
+    100% { transform: translate3d(560%, 0, 0) rotate(14deg); }
+}
+html.is-mobile .m-lk-card .modal-actions .btn-confirm.armed {
+    border-color: rgba(186,240,255,.6) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.42), 0 14px 30px rgba(2,8,18,.52), 0 0 26px rgba(56,189,248,.22) !important;
+}
+html.is-mobile .m-lk-card .modal-actions .btn-confirm.armed::after { opacity: .92; }
+html.is-mobile .m-lk-card .modal-actions .btn-confirm:active { opacity: 1; transform: scale(.962); }
+html.is-mobile .m-lk-card .modal-actions button:disabled { opacity: .45; }
+/* والانتظار يُهدّئ الزرّ: تدرّجه ومسحة ضوئه يتوقفان — وهما أغلى ما يرسم
+   كل إطار في الشاشة — ويمرّ فوقهما شريط ينقص حتى ينفد الوقت */
+html.is-mobile .m-lk-card .modal-actions .btn-confirm.cool {
+    opacity: .66;
+    border-color: rgba(148,220,255,.18) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.14), 0 8px 18px rgba(2,8,18,.42) !important;
+}
+html.is-mobile .m-lk-card .modal-actions .btn-confirm.cool::before,
+html.is-mobile .m-lk-card .modal-actions .btn-confirm.cool::after {
+    animation-play-state: paused;
+    opacity: .16;
+}
+html.is-mobile .m-lk-cool-bar {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 3px;
+    z-index: 2;
+    pointer-events: none;
+    transform-origin: right center;
+    background: linear-gradient(90deg, rgba(34,211,238,.1), rgba(56,189,248,.85) 40%, rgba(125,211,252,.95));
+    box-shadow: 0 0 12px rgba(56,189,248,.5);
+    will-change: transform;
 }
 html.is-mobile .m-lk-hint {
     display: flex;
@@ -1502,6 +1739,19 @@ html.is-mobile .m-lk-fx {
 html.is-mobile .m-lk-fx.gone { opacity: 0; }
 html.is-mobile .m-lk-fx canvas { position: fixed; pointer-events: none; z-index: 8; }
 html.is-mobile .m-lk-stage-hidden { display: none !important; }
+/* المسرح: ما يُكلّف رسماً في كل إطار يُطفأ أثناء الانتقالات. الخلفية معتمة
+   وراء البطاقة، فالBlur لا يعطي فيها شيئاً غير الثمن. والحلقة الدوّارة
+   أغلى عنصر في الشاشة: مساحتها كانت أضعاف البطاقة مرات. */
+html.is-mobile .m-lk-fx .m-lk-card {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    contain: layout paint;
+    background: linear-gradient(135deg, rgba(255,255,255,.075), rgba(255,255,255,.02) 48%, rgba(255,255,255,.042)), rgba(6,12,22,.74) !important;
+}
+html.is-mobile .m-lk-fx .m-lk-card::before,
+html.is-mobile .m-lk-fx .m-lk-neon { display: none; }
+/* هالة اللمبة النابضة لا تُورَّث للمسرح: إطار الاستلام أغلى ما في الحركة */
+html.is-mobile .m-lk-fx .m-pad button.bulb::after { animation: none; opacity: .5; }
 html.is-mobile .m-lk-fx .m-lk-shell.compact .m-lk-card { height: 100%; }
 html.is-mobile .m-lk-fx .m-lk-shell.compact .modal-title {
     position: absolute;
@@ -1584,27 +1834,33 @@ html.is-mobile .m-lk-pill svg path { fill: none; stroke: #4ade80; stroke-width: 
 
 @media (max-height: 700px) {
     html.is-mobile .m-lk-shell { width: min(88vw, 340px); }
-    html.is-mobile .m-lk-card { padding: 16px 18px 13px; }
-    html.is-mobile .m-lk-chip { width: 38px; height: 38px; margin-bottom: 8px; border-radius: 14px; }
-    html.is-mobile .m-lk-card .modal-title { font-size: 19px !important; margin-bottom: 4px !important; }
+    html.is-mobile .m-lk-card { padding: 13px 18px 13px; }
+    html.is-mobile .m-lk-chip { width: 36px; height: 36px; margin-bottom: 4px; border-radius: 14px; }
+    html.is-mobile .m-lk-card .modal-title { font-size: 19px !important; margin-bottom: 13px !important; }
     html.is-mobile .m-lk-sub { display: none; }
     html.is-mobile .m-otp { grid-template-columns: repeat(4, minmax(0, 50px)); gap: 10px; }
     html.is-mobile .m-otp b { min-height: 50px; border-radius: 16px; font-size: 23px; }
     html.is-mobile .m-otp-glide, html.is-mobile .m-otp-neon { border-radius: 16px; }
     html.is-mobile .m-pad { gap: 7px; margin-top: 10px; max-width: 252px; }
     html.is-mobile .m-pad button { height: 40px; border-radius: 15px; font-size: 20px; }
+    html.is-mobile .m-lk-tip { font-size: 12px; padding: 4px 9px 5px; bottom: calc(100% + 3px); border-radius: 12px; }
     html.is-mobile .m-lk-card .modal-actions { margin-top: 10px; }
-    html.is-mobile .m-lk-card .modal-actions button { min-height: 38px; }
-    html.is-mobile .m-lk-foot { margin-top: 6px; }
+    html.is-mobile .m-lk-card .modal-actions .btn-confirm { min-height: 40px; width: min(100%, 184px); }
     html.is-mobile .m-lk-hint { margin-top: 4px; }
 }
 @media (prefers-reduced-motion: reduce) {
     html.is-mobile .m-lk-scene i,
     html.is-mobile .m-lk-card::before,
+    html.is-mobile .m-lk-key,
+    html.is-mobile .m-lk-card .modal-actions .btn-confirm::before,
+    html.is-mobile .m-lk-card .modal-actions .btn-confirm::after,
     html.is-mobile .m-lk-neon::before,
+    html.is-mobile .m-pad button.bulb.lit::after,
     html.is-mobile .m-otp-neon::before,
+    html.is-mobile .m-lk-tip.on::after,
     html.is-mobile .m-lk-core-neon::before { animation: none !important; }
     html.is-mobile .m-otp-caret { animation: none; }
+    html.is-mobile .m-lk-card .modal-actions .btn-confirm::before { opacity: 0; }
 }
 
 /* ------------------------- التنبيهات والعناصر الصغيرة ------------------------- */
@@ -2865,6 +3121,166 @@ html.is-mobile .modal-footer-sticky {
     const VERDICT_MS = 6500;
     const ENTRANCE_SPEED = 1;
     const FX_SLOTS = [[0, 0], [1, 0], [0, 1], [1, 1]];
+    /* النقر الرابع يرجع فوراً وتُترك للوحة فرصة ترسم الرقم؛ المسرح يبدأ بعد
+       مهلة قصيرة. بلا هذه المهلة يُبنى المسرح داخل نفس المهمة فلا يظهر رقم. */
+    const SUBMIT_HOLD = 200;
+    const POP_IN = 340;
+    /* سعة ارتجاج المربع عند نزول الرقم: رقم واحد يتحكّم بالقوة كلها */
+    const CELL_SHAKE = 3.2;
+    const TIP_TAG = 'مقترح';
+    const TIP_TEXT = 'مواليد';
+    const TIP_MS = 5200;
+
+    /* ==================== حرّاس الرمز ====================
+       ثلاث محاولات بلا انتظار، وكل واحدة بعدها تركب سلّماً يطول: 20 ثانية،
+       ثم دقيقة، ثم ثلاث، ثم خمس وتقف. لا قفل أبدي يُضيّع صاحبه، ولا باب
+       مفتوح للتخمين: خمس ثوانٍ لكل محاولة = 288 محاولة في اليوم، وأرقامها
+       العشرة الآلاف تعني أسبوعين من النقر المتواصل بلا طائل.
+       العدّاد في الصفحة ونسخته في localStorage: إعادة التحميل لا تمسحه. */
+    const GUARD_FREE = 3;
+    const GUARD_WAIT = [20, 60, 180, 300];
+    const GUARD_FORGET = 15 * 60 * 1000;
+    const GUARD_KEY = 'royal.lk.guard.v1';
+    const guard = { n: 0, until: 0 };
+
+    function guardLoad() {
+        guard.n = 0;
+        guard.until = 0;
+        try {
+            const j = JSON.parse(localStorage.getItem(GUARD_KEY) || '{}') || {};
+            const now = Date.now();
+            if (typeof j.n === 'number' && now - (j.at || 0) < GUARD_FORGET) guard.n = Math.max(0, Math.floor(j.n));
+            if (typeof j.until === 'number' && j.until > now) guard.until = j.until;
+        } catch (e) {}
+    }
+    function guardSave() {
+        try { localStorage.setItem(GUARD_KEY, JSON.stringify({ n: guard.n, until: guard.until, at: Date.now() })); } catch (e) {}
+    }
+    function guardLeft() {
+        return guard.until > Date.now() ? Math.ceil((guard.until - Date.now()) / 1000) : 0;
+    }
+    /* اللمبة تُفتح حيث يُفتح الأمل وحده: بعد أن دخل صاحب الجهاز في المتاهة */
+    function guardTipOpen() {
+        return guard.n > GUARD_FREE;
+    }
+    function guardFail() {
+        guard.n += 1;
+        const step = guard.n - GUARD_FREE;
+        const sec = step > 0 ? GUARD_WAIT[Math.min(step, GUARD_WAIT.length) - 1] : 0;
+        guard.until = sec ? Date.now() + sec * 1000 : 0;
+        guardSave();
+        return sec;
+    }
+    function guardPass() {
+        guard.n = 0;
+        guard.until = 0;
+        guardSave();
+    }
+
+    function lkRefs() {
+        const modal = document.getElementById(LOGIN_ID);
+        const shell = modal && modal.querySelector('.m-lk-shell');
+        if (!shell) return null;
+        return {
+            shell,
+            pad: shell.querySelector('.m-pad'),
+            bulb: shell.querySelector('[data-k="hint"]'),
+            btn: shell.querySelector('.modal-actions .btn-confirm'),
+            err: shell.querySelector('.m-lk-err'),
+            tip: shell.querySelector('.m-lk-tip')
+        };
+    }
+    function syncBulb() {
+        const r = lkRefs();
+        if (!r || !r.bulb) return;
+        const open = guardTipOpen();
+        const was = r.bulb.classList.contains('lit');
+        r.bulb.classList.toggle('lit', open);
+        if (!open && r.tip) r.tip.classList.remove('on');
+        /* الاشتعال مرة واحدة عند انتقال الحالة لا في كل استدعاء: وإلا ومضت
+           اللمبة مع كل نقرة وهو مطفأ أصلاً */
+        if (open && !was) bulbIgnite(r.bulb);
+    }
+    /* اللمبة تُشعل من داخلها: وهجة تتّسع وتخبو داخل حدّ الزر، والمربع ينكمش
+       ويتمدّد انكماش الإضاءة الأولى. transform وopacity، بلا إعادة رسم. */
+    function bulbIgnite(btn) {
+        if (REDUCED || !btn.animate) return;
+        const f = document.createElement('i');
+        f.className = 'm-bulb-flare';
+        f.setAttribute('aria-hidden', 'true');
+        btn.appendChild(f);
+        const a = f.animate([
+            { opacity: 0, transform: 'scale(.5)' },
+            { opacity: .95, transform: 'scale(1.04)', offset: .26 },
+            { opacity: 0, transform: 'scale(1.9)' }
+        ], { duration: 760, easing: 'cubic-bezier(.2,.8,.3,1)' });
+        a.onfinish = () => f.remove();
+        a.oncancel = () => f.remove();
+        btn.animate([
+            { transform: 'scale(1)' },
+            { transform: 'scale(1.13)', offset: .22 },
+            { transform: 'scale(.975)', offset: .56 },
+            { transform: 'scale(1)' }
+        ], { duration: 560, easing: 'cubic-bezier(.2,.8,.3,1)' });
+    }
+    function fmtWait(sec) {
+        return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0');
+    }
+    let coolTick = 0;
+    let coolBar = null;
+    let coolAnim = null;
+    let coolQuiet = 0;
+    function coolPaint(r, sec) {
+        if (!r || !r.err) return;
+        if (Date.now() < coolQuiet) return;
+        r.err.textContent = 'انتظر ' + fmtWait(sec) + ' للمحاولة التالية';
+        r.err.classList.add('on', 'cool');
+        r.err.classList.remove('bad');
+    }
+    function coolStop(keepErr) {
+        if (coolTick) { clearInterval(coolTick); coolTick = 0; }
+        if (coolAnim) { try { coolAnim.cancel(); } catch (e) {} coolAnim = null; }
+        if (coolBar) { coolBar.remove(); coolBar = null; }
+        coolQuiet = 0;
+        const r = lkRefs();
+        if (!r) return;
+        if (r.pad) r.pad.classList.remove('cooling');
+        if (r.btn) { r.btn.classList.remove('cool'); r.btn.disabled = false; }
+        if (r.err && !keepErr && r.err.classList.contains('cool')) {
+            r.err.classList.remove('on', 'cool');
+            r.err.textContent = '';
+        }
+    }
+    function coolStart(sec, quietMs) {
+        const r = lkRefs();
+        if (!r || !r.btn) return;
+        coolStop(true);
+        r.pad && r.pad.classList.add('cooling');
+        r.btn.classList.remove('armed');
+        r.btn.classList.add('cool');
+        r.btn.disabled = true;
+        coolBar = document.createElement('i');
+        coolBar.className = 'm-lk-cool-bar';
+        r.btn.appendChild(coolBar);
+        if (REDUCED || !coolBar.animate) {
+            coolBar.style.transform = 'scaleX(0)';
+        } else {
+            coolAnim = coolBar.animate([{ transform: 'scaleX(1)' }, { transform: 'scaleX(0)' }],
+                { duration: sec * 1000, easing: 'linear', fill: 'forwards' });
+        }
+        coolQuiet = Date.now() + (quietMs || 0);
+        coolPaint(r, sec);
+        announce('انتظر ' + fmtWait(sec) + ' قبل المحاولة التالية');
+        coolTick = setInterval(() => {
+            const left = guardLeft();
+            if (left <= 0) {
+                coolStop();
+                announce('تفضّل، يمكنك المحاولة الآن');
+                return;
+            }
+            coolPaint(lkRefs(), left);
+        }, 1000);
+    }
 
     const LK_SVG = {
         lock: '<svg class="m-lock" viewBox="0 0 20 20" aria-hidden="true"><path d="M5.4 9.2V6.8a4.6 4.6 0 0 1 9.2 0v2.4"/><path d="M3.6 9.2h12.8a1.4 1.4 0 0 1 1.4 1.4v6a1.6 1.6 0 0 1-1.6 1.6H3.8a1.6 1.6 0 0 1-1.6-1.6v-6a1.4 1.4 0 0 1 1.4-1.4z"/><circle cx="10" cy="13.6" r="1.2"/></svg>',
@@ -2974,6 +3390,60 @@ html.is-mobile .modal-footer-sticky {
         }
     }
 
+    let popFlip = 0;
+    /* الرقم لا يُكتب بل يهبط إلى موضعه ثم يستقر — لغة المحو نفسها معكوسة:
+       المحو يصعد ويذوب، والدخول يصعد من تحته ويظهر. الاهتزاز على المربع نفسه
+       لا على الخوارية، والاثنان transform خالص فلا إعادة تخطيط. */
+    function cellShake(cell) {
+        if (REDUCED || !cell.animate) return;
+        if (cell._shake) { try { cell._shake.cancel(); } catch (e) {} }
+        const frames = [];
+        for (let i = 0; i <= 20; i++) {
+            const p = i / 20;
+            const k = Math.exp(-5.2 * p);
+            const s = Math.sin(p * Math.PI * 4.6);
+            frames.push({
+                transform: 'translate3d(' + (CELL_SHAKE * k * s).toFixed(2) + 'px,' +
+                    (CELL_SHAKE * .45 * k * Math.sin(p * Math.PI * 3.1)).toFixed(2) + 'px,0) rotate(' +
+                    (0.7 * k * s).toFixed(2) + 'deg) scale(' +
+                    (1 + .034 * k * Math.cos(p * Math.PI * 2)).toFixed(3) + ')'
+            });
+        }
+        frames.push({ transform: 'translate3d(0,0,0) rotate(0deg) scale(1)' });
+        cell._shake = cell.animate(frames, { duration: 330, delay: 74, easing: 'linear' });
+    }
+
+    function popCell(cell, dir, seen) {
+        const u = cell.firstElementChild;
+        if (dir > 0) {
+            popFlip ^= 1;
+            cell.classList.toggle('pa', popFlip === 0);
+            cell.classList.toggle('pb', popFlip === 1);
+        }
+        if (dir > 0) cellShake(cell);
+        if (!u || REDUCED || !u.animate) return;
+        /* الحذف ثم الكتابة في أقل من رمشة: لو تُركت حركة المحو تعمل لسحبت
+           الرقم الجديد معها عند انتهائها، فيُلغى أولًا */
+        if (u._pop) { try { u._pop.cancel(); } catch (e) {} u._pop = null; }
+        if (dir > 0) {
+            u._pop = u.animate([
+                { transform: 'translate3d(0,13px,0) scale(.6)', opacity: 0 },
+                { transform: 'translate3d(0,-1.6px,0) scale(1.06)', opacity: 1, offset: .26 },
+                { transform: 'translate3d(0,.9px,0) scale(.986)', opacity: 1, offset: .55 },
+                { transform: 'translate3d(0,-.35px,0) scale(1.008)', opacity: 1, offset: .78 },
+                { transform: 'translate3d(0,0,0) scale(1)', opacity: 1 }
+            ], { duration: POP_IN, easing: 'cubic-bezier(.2,.85,.25,1)' });
+        } else if (seen) {
+            u.textContent = seen;
+            const a = u.animate([
+                { transform: 'translate3d(0,0,0) scale(1)', opacity: 1 },
+                { transform: 'translate3d(0,-9px,0) scale(.6)', opacity: 0 }
+            ], { duration: 165, easing: 'cubic-bezier(.4,0,.75,.25)' });
+            a.onfinish = () => { u.textContent = ''; u._pop = null; };
+            u._pop = a;
+        }
+    }
+
     const maskTimers = [];
     function paintOtp(input, shell) {
         const host = shell || document.getElementById(LOGIN_ID);
@@ -2983,7 +3453,9 @@ html.is-mobile .modal-footer-sticky {
         cellsIn(host).forEach((c, i) => {
             const raw = v[i] || '';
             const u = c.firstElementChild || c;
+            const seen = c.dataset.d || '';
             if (u.textContent !== raw) u.textContent = raw;
+            if (raw !== seen) { c.dataset.d = raw; popCell(c, raw ? 1 : -1, seen); }
             c.classList.toggle('filled', !!raw);
             c.classList.toggle('cur', i === Math.min(v.length, OTP_LEN - 1));
             if (MASK_DIGITS && raw) {
@@ -2992,6 +3464,8 @@ html.is-mobile .modal-footer-sticky {
                 }, MASK_AFTER + i * 40));
             }
         });
+        const go = host.querySelector && host.querySelector('.modal-actions .btn-confirm');
+        if (go) go.classList.toggle('armed', v.length === OTP_LEN);
         paintGlide(input, host);
     }
 
@@ -3009,13 +3483,16 @@ html.is-mobile .modal-footer-sticky {
                 transform: 'translate3d(0,' + (y * (1 - p)).toFixed(2) + 'px,0) scale(' + (scale + (1 - scale) * p).toFixed(4) + ')'
             }), { stiffness: 190, damping: 22, maxMs: maxMs || 560, delay: REDUCED ? 0 : delay / ENTRANCE_SPEED, speed: ENTRANCE_SPEED }, null, true);
         };
-        enter(shell, 100, 22, .94, 680);
-        enter(shell.querySelector('.m-lk-chip'), 390, 10, .84, 500);
-        qsa('.m-lk-word', shell).forEach((n, i) => enter(n, 470 + i * 72, 10, .96, 480));
-        enter(shell.querySelector('.m-lk-sub'), 700, 10, .98, 460);
-        cellsIn(shell).forEach((n, i) => enter(n, 760 + i * 112, 16, .84, 540));
-        qsa('.m-pad button', shell).forEach((n, i) => enter(n, 880 + i * 42, 14, .88, 500));
-        qsa('.modal-actions, .m-lk-foot, .m-lk-hint', shell).forEach((n, i) => enter(n, 1260 + i * 70, 8, .98, 440));
+        enter(shell, 90, 22, .94, 660);
+        enter(shell.querySelector('.m-lk-chip'), 330, 10, .86, 480);
+        qsa('.m-lk-word', shell).forEach((n, i) => enter(n, 410 + i * 70, 10, .96, 460));
+        enter(shell.querySelector('.m-lk-sub'), 640, 8, .98, 440);
+        cellsIn(shell).forEach((n, i) => enter(n, 700 + i * 105, 15, .86, 520));
+        /* اللوحة تدخل ككتلة واحدة: أحد عشر عنصراً متحركاً في لحظة فتح
+           النافذة هو ثمن طبقات لا يرى المستخدم منها فرقاً */
+        enter(shell.querySelector('.m-pad'), 860, 12, .95, 500);
+        enter(shell.querySelector('.modal-actions'), 1000, 10, .97, 460);
+        enter(shell.querySelector('.m-lk-hint'), 1090, 6, .99, 420);
     }
 
     let fxPending = null;
@@ -3047,7 +3524,17 @@ html.is-mobile .modal-footer-sticky {
         stage.className = 'm-lk-fx';
         stage.setAttribute('aria-hidden', 'true');
         const scene = modal.querySelector('.m-lk-scene');
-        if (scene) stage.appendChild(scene.cloneNode(true));
+        if (scene) {
+            const copy = scene.cloneNode(true);
+            /* شريط الضوء والشبكة أضخم طبقتين في المشهد وأولاهم كلفةً في
+               إطار الاستلام الأول؛ حذفهما من المسرح يرفع اللقطة ولا يُفقد
+               شيئاً يرى المستخدم: البطاقة وكل ما يتحرك فوقها يبقى كما هو */
+            for (let i = copy.children.length - 1; i >= 4; i--) copy.children[i].remove();
+            stage.appendChild(copy);
+        }
+        /* التلميح كلمة تُقرأ ثم تُمحى: يُطفأ قبل النسخ حتى لا يصل المسرحَ
+           وهو يحمل الفقاعة معه */
+        qsa('.m-lk-tip', real).forEach((t) => t.classList.remove('on'));
         const shell = real.cloneNode(true);
         shell.removeAttribute('data-entered');
         const dup = shell.querySelector('.m-otp-input');
@@ -3056,6 +3543,10 @@ html.is-mobile .modal-footer-sticky {
         cellsIn(shell).forEach((c, i) => {
             c.style.animation = 'none';
             c.classList.remove('bad');
+            /* الحلقة والخوارية كانا في منتصف كتابتهما على الشاشة الأصلية؛
+               المسرح يستلمهما ساكنتَين لا من نصف الطريق */
+            c.classList.remove('pa', 'pb');
+            c.dataset.d = digits[i] || '';
             c.classList.toggle('filled', !!digits[i]);
             const u = c.firstElementChild || c;
             u.textContent = digits[i] || '';
@@ -3096,6 +3587,27 @@ html.is-mobile .modal-footer-sticky {
         return { svg: svg, path: path, dots: dots };
     }
 
+    const SPR = 32;
+    const sprCache = {};
+    /* صورة مصغّرة جاهزة لكل لون، تُرسم مرة واحدة ويُستنسخ منها في كل إطار.
+       shadowBlur لكل جسيمة كان يجعل لحظة النجاح هي أثقل لحظة في الشاشة. */
+    function spriteOf(hex) {
+        if (sprCache[hex]) return sprCache[hex];
+        const cv = document.createElement('canvas');
+        cv.width = cv.height = SPR;
+        const g = cv.getContext('2d');
+        const n = parseInt(hex.slice(1), 16);
+        const rgb = ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255);
+        const grad = g.createRadialGradient(SPR / 2, SPR / 2, 0, SPR / 2, SPR / 2, SPR / 2);
+        grad.addColorStop(0, 'rgba(' + rgb + ',1)');
+        grad.addColorStop(.4, 'rgba(' + rgb + ',.55)');
+        grad.addColorStop(1, 'rgba(' + rgb + ',0)');
+        g.fillStyle = grad;
+        g.fillRect(0, 0, SPR, SPR);
+        sprCache[hex] = cv;
+        return cv;
+    }
+
     function burst(host, cx, cy) {
         if (REDUCED || !host || !host.getContext) return null;
         const dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -3104,9 +3616,10 @@ html.is-mobile .modal-footer-sticky {
         host.height = Math.round(h * dpr);
         const ctx = host.getContext('2d');
         ctx.scale(dpr, dpr);
+        ctx.globalCompositeOperation = 'lighter';
         const cols = ['#22c55e', '#4ade80', '#38bdf8', '#4da3ff', '#e0f2fe'];
         const parts = [];
-        for (let i = 0; i < 64; i++) {
+        for (let i = 0; i < 56; i++) {
             const a = Math.random() * Math.PI * 2;
             const sp = 150 + Math.random() * 360;
             parts.push({
@@ -3122,6 +3635,8 @@ html.is-mobile .modal-footer-sticky {
                 c: cols[i % cols.length]
             });
         }
+        const sp2 = {};
+        cols.forEach((c) => { sp2[c] = spriteOf(c); });
         let prev = 0, raf = 0, dead = false;
         function frame(now) {
             if (dead) return;
@@ -3143,18 +3658,19 @@ html.is-mobile .modal-footer-sticky {
                 p.rot += p.spin * dt;
                 const k = Math.max(0, 1 - p.age / p.life);
                 ctx.globalAlpha = k * k;
-                ctx.fillStyle = p.c;
-                ctx.shadowColor = p.c;
-                ctx.shadowBlur = p.r * 1.4;
-                ctx.save();
-                ctx.translate(p.x, p.y);
-                ctx.rotate(p.rot);
-                if (p.sq) ctx.fillRect(-p.r / 2, -p.r / 2, p.r, p.r);
-                else { ctx.beginPath(); ctx.arc(0, 0, p.r / 2, 0, Math.PI * 2); ctx.fill(); }
-                ctx.restore();
+                if (p.sq) {
+                    ctx.save();
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate(p.rot);
+                    ctx.fillStyle = p.c;
+                    ctx.fillRect(-p.r / 2, -p.r / 2, p.r, p.r);
+                    ctx.restore();
+                } else {
+                    const s = p.r * 3;
+                    ctx.drawImage(sp2[p.c], p.x - s / 2, p.y - s / 2, s, s);
+                }
             }
             ctx.globalAlpha = 1;
-            ctx.shadowBlur = 0;
             if (alive) raf = requestAnimationFrame(frame);
             else ctx.clearRect(0, 0, w, h);
         }
@@ -3220,7 +3736,7 @@ html.is-mobile .modal-footer-sticky {
         }
         window.addEventListener('resize', onShape, { passive: true });
 
-        const fadeA = qsa('.m-lk-chip, .modal-title, .m-lk-sub, .m-lk-foot, .m-lk-hint, .modal-actions, .m-lk-err, .m-pad', st.shell);
+        const fadeA = qsa('.m-lk-chip, .modal-title, .m-lk-sub, .m-lk-hint, .modal-actions, .m-lk-err, .m-pad', st.shell);
         fadeA.forEach((n) => spring(n, (p) => ({ opacity: (1 - p).toFixed(3) }), { stiffness: 210, damping: 28, maxMs: 420 }, keep, true));
         clock.start();
 
@@ -3309,12 +3825,16 @@ html.is-mobile .modal-footer-sticky {
                 if (!verdict) { clock.after(90, poll); return; }
                 fx.done = true;
                 if (verdict === 'ok') verified();
-                else rejected(verdict === 'net' ? 'تعذّر التحقق: لا يوجد اتصال بالخدمة' : 'رمز الدخول خاطئ');
+                else rejected(verdict === 'net' ? 'تعذّر التحقق: لا يوجد اتصال بالخدمة' : 'رمز الدخول خاطئ', verdict);
             };
             poll();
         });
 
         function verified() {
+            /* الرمز الصحيح يمحو سجل التخمين: العدّاد للصفرد واللمبة تنطفئ */
+            guardPass();
+            coolStop();
+            syncBulb();
             const title = st.shell.querySelector('.modal-title');
             announce('تم التحقق بنجاح');
             if (title) {
@@ -3363,7 +3883,7 @@ html.is-mobile .modal-footer-sticky {
             });
         }
 
-        function rejected(msg) {
+        function rejected(msg, kind) {
             announce(msg);
             core.classList.add('bad');
             st.cells.forEach((c) => c.classList.add('bad'));
@@ -3398,26 +3918,41 @@ html.is-mobile .modal-footer-sticky {
                 input.value = '';
                 paintOtp(input);
                 const realErr = document.querySelector('#' + LOGIN_ID + ' .m-lk-err');
-                if (realErr) { realErr.textContent = msg; realErr.classList.add('on'); }
+                if (realErr) { realErr.textContent = msg; realErr.classList.add('on', 'bad'); }
                 st.stage.classList.add('gone');
             });
             clock.after(1920, () => {
                 fx.dispose();
+                /* المحاولة الخاطئة تُحسب هنا لا قبلها: وقت الحركة لا يُحاسب */
+                if (kind === 'bad') {
+                    const sec = guardFail();
+                    syncBulb();
+                    if (sec) coolStart(sec, 1400);
+                }
                 try { input.focus({ preventScroll: true }); } catch (e) {}
             });
         }
         return true;
     }
 
+    let submitting = false;
     function lockSubmit(input) {
-        if (fxPending) return;
+        if (fxPending || submitting) return;
         const v = input.value || '';
         if (v.length < OTP_LEN) return;
         input.blur();
         haptic(8);
         announce('جارٍ التحقق…');
         const digits = v.slice(0, OTP_LEN).split('');
-        if (runUnlockFx(input, digits) && typeof window.checkAdminPassword === 'function') window.checkAdminPassword();
+        submitting = true;
+        setTimeout(() => {
+            submitting = false;
+            const modal = document.getElementById(LOGIN_ID);
+            /* النقر الرابع لا يبني المسرح في نفس المهمة: الرقم يُرسم أولاً،
+               ثم إن أُغلقت النافذة في هذا الأثناء لا نُنزِل ستاراً فوق فراغ */
+            if (!modal || !/display:\s*(flex|block)/.test(modal.getAttribute('style') || '')) return;
+            if (runUnlockFx(input, digits) && typeof window.checkAdminPassword === 'function') window.checkAdminPassword();
+        }, REDUCED ? 60 : SUBMIT_HOLD);
     }
 
     function buildLockScreen() {
@@ -3445,7 +3980,6 @@ html.is-mobile .modal-footer-sticky {
         card.innerHTML =
             '<div class="m-lk-chip">' + LK_SVG.lock + '</div>' +
             '<p class="m-lk-err" role="alert"></p>' +
-            '<p class="m-lk-foot">نسيت الرمز؟ <button type="button">إعادة الضبط</button></p>' +
             '<p class="m-lk-hint"></p>' +
             '<p class="m-lk-live" aria-live="polite" role="status"></p>';
         shell.appendChild(card);
@@ -3455,7 +3989,12 @@ html.is-mobile .modal-footer-sticky {
         if (oldTitle) {
             const crown = oldTitle.querySelector('i');
             const words = (oldTitle.textContent || '').trim().split(/\s+/).filter(Boolean);
-            oldTitle.innerHTML = words.map((w, i) => '<span class="m-lk-word' + (i === words.length - 1 ? ' m-lk-key' : '') + '">' + esc(w) + '</span>').join(' ');
+            /* آخر كلمتين — «إدارة رويال» — في غلاف واحد: التدرّج يمرّ بينهما
+               شريطاً واحداً، لا منصلاً على كل كلمة على حدة */
+            const cut = Math.max(0, words.length - 2);
+            const parts = words.slice(0, cut).map((w) => '<span class="m-lk-word">' + esc(w) + '</span>');
+            if (words.length > cut) parts.push('<span class="m-lk-word m-lk-key">' + words.slice(cut).map(esc).join(' ') + '</span>');
+            oldTitle.innerHTML = parts.join(' ');
             card.insertBefore(oldTitle, anchor);
             const hint = card.querySelector('.m-lk-hint');
             if (crown && hint) hint.appendChild(crown);
@@ -3484,19 +4023,15 @@ html.is-mobile .modal-footer-sticky {
         input.readOnly = true;
         boxes.setAttribute('aria-hidden', 'true');
 
-        if (actions) card.insertBefore(actions, card.querySelector('.m-lk-foot'));
-        const enter = actions && actions.querySelector('.btn-confirm');
+        /* نسخة الجوال لا تعرف إلغاءً ولا «نسيت الرمز»: بقى زر واحد في الوسط */
         const cancel = actions && actions.querySelector('.btn-cancel');
-        if (enter) enter.removeAttribute('onclick');
-        const footBtn = card.querySelector('.m-lk-foot button');
-        if (footBtn) {
-            footBtn.type = 'button';
-            footBtn.addEventListener('click', () => {
-                if (typeof window.royalPasswordReset === 'function') { try { window.royalPasswordReset(); } catch (e) {} return; }
-                const live = card.querySelector('.m-lk-live');
-                if (live) live.textContent = 'إعادة ضبط الرمز متاحة من جهاز الكمبيوتر';
-            });
+        if (cancel) cancel.remove();
+        const enter = actions && actions.querySelector('.btn-confirm');
+        if (enter) {
+            enter.removeAttribute('onclick');
+            enter.innerHTML = '<span>' + esc((enter.textContent || '').trim()) + '</span>';
         }
+        if (actions) card.insertBefore(actions, card.querySelector('.m-lk-hint'));
 
         let lastLen = 0;
         const onType = () => {
@@ -3511,7 +4046,7 @@ html.is-mobile .modal-footer-sticky {
         };
         input.addEventListener('input', onType);
         input.addEventListener('paste', () => setTimeout(onType, 0));
-        input.addEventListener('keyup', (e) => { if (e.key === 'Enter') lockSubmit(input); });
+        input.addEventListener('keyup', (e) => { if (e.key === 'Enter') trySubmit(); });
         input.addEventListener('focus', () => paintOtp(input));
         input.addEventListener('blur', () => paintOtp(input));
         boxes.addEventListener('pointerdown', (e) => { e.preventDefault(); try { input.focus({ preventScroll: true }); } catch (err) {} });
@@ -3521,13 +4056,32 @@ html.is-mobile .modal-footer-sticky {
         pad.setAttribute('role', 'group');
         pad.setAttribute('aria-label', 'لوحة أرقام الرمز');
         const DEL_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-6-7z"/><path d="m12.5 9.5 5 5m0-5-5 5"/></svg>';
-        pad.innerHTML = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'clr', '0', 'del'].map((k, i) => {
-            const isFn = k === 'clr' || k === 'del';
-            const label = k === 'clr' ? 'مسح' : (k === 'del' ? DEL_SVG : k);
-            const aria = k === 'clr' ? 'مسح الكل' : (k === 'del' ? 'حذف رقم' : 'الرقم ' + k);
-            return '<button type="button" data-k="' + k + '" class="' + (isFn ? 'fn' : '') + '" aria-label="' + aria + '" style="--k:' + i + '"><span>' + label + '</span></button>';
-        }).join('');
-        card.insertBefore(pad, card.querySelector('.modal-actions') || card.querySelector('.m-lk-foot'));
+        const BULB_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.2a5.8 5.8 0 0 0-3.5 10.4c.6.5.9 1.2 1 1.9l.1.5h4.8l.1-.5c.1-.7.4-1.4 1-1.9A5.8 5.8 0 0 0 12 3.2z"/><path d="M9.8 19h4.4M10.7 21.4h2.6"/></svg>';
+        /* بلا زر مسح: الحذف بالإكس وحده، والصفر في وسط الصف الرابع، وإلى
+           جانبه مصباح التلميح — لمبة لا رقم، تُرى ولا تُكتب */
+        pad.innerHTML = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'hint', '0', 'del'].map((k) => {
+            const isFn = k === 'del';
+            const isTip = k === 'hint';
+            const label = isTip ? BULB_SVG : (isFn ? DEL_SVG : k);
+            const aria = isTip ? 'تلميح الرمز' : (isFn ? 'حذف آخر رقم' : 'الرقم ' + k);
+            const cls = isTip ? 'fn bulb' : (isFn ? 'fn' : '');
+            return '<button type="button" data-k="' + k + '" class="' + cls + '" aria-label="' + aria + '"><span>' + label + '</span></button>';
+        }).join('') + '<span class="m-lk-tip" aria-hidden="true"><span class="m-lk-tip-tag">' + TIP_TAG + '</span><b>' + TIP_TEXT + '</b></span>';
+        const tip = pad.querySelector('.m-lk-tip');
+        let tipTimer = null;
+        function hideTip() {
+            if (tipTimer) { clearTimeout(tipTimer); tipTimer = null; }
+            if (tip) tip.classList.remove('on');
+        }
+        function showTip() {
+            if (!tip) return;
+            if (tipTimer) clearTimeout(tipTimer);
+            tip.classList.add('on');
+            haptic(8);
+            announce(TIP_TAG + ': ' + TIP_TEXT);
+            tipTimer = setTimeout(() => { tipTimer = null; tip.classList.remove('on'); }, TIP_MS);
+        }
+        card.insertBefore(pad, actions || card.querySelector('.m-lk-hint'));
 
         function padFlash(btn, x, y) {
             btn.classList.add('on');
@@ -3559,13 +4113,19 @@ html.is-mobile .modal-footer-sticky {
         }
 
         function padHit(btn, x, y) {
-            if (fxPending) return;
+            if (fxPending || submitting) return;
             const k = btn.dataset.k;
+            if (k === 'hint') {
+                if (!guardTipOpen()) { shakeBulb(btn); return; }
+                padFlash(btn, x, y);
+                showTip();
+                return;
+            }
+            if (guardLeft() > 0) { coolFlash(); return; }
             padFlash(btn, x, y);
             const cur = input.value || '';
             let next = cur;
             if (k === 'del') next = cur.slice(0, -1);
-            else if (k === 'clr') next = '';
             else if (cur.length < OTP_LEN) next = cur + k;
             else return;
             if (next === cur) return;
@@ -3599,18 +4159,53 @@ html.is-mobile .modal-footer-sticky {
             if (/^[0-9]$/.test(e.key)) k = e.key;
             else if (/^[\u0660-\u0669]$/.test(e.key)) k = String(e.key.charCodeAt(0) - 0x660);
             else if (e.key === 'Backspace') k = 'del';
-            else if (e.key === 'Delete') k = 'clr';
             if (!k) return;
             e.preventDefault();
             const btn = pad.querySelector('[data-k="' + k + '"]');
             if (btn) padHit(btn);
         });
 
-        if (enter) enter.addEventListener('click', (e) => { e.preventDefault(); lockSubmit(input); });
-        if (cancel) cancel.addEventListener('click', () => {
-            if (fxPending) fxPending.dispose();
-            lastLen = 0;
-        });
+        /* اللمبة مطفأة: تنفضّ نفضة خفيفة ولا تُلمس — لا كلمة تُقال مجاناً */
+        function shakeBulb(btn) {
+            haptic(4);
+            announce('التلميح مطفأ');
+            if (REDUCED || !btn.animate) return;
+            const frames = [];
+            for (let i = 0; i <= 12; i++) {
+                const p = i / 12;
+                frames.push({ transform: 'translate3d(' + (Math.exp(-5 * p) * Math.sin(p * Math.PI * 3) * 4).toFixed(2) + 'px,0,0)' });
+            }
+            frames.push({ transform: 'translate3d(0,0,0)' });
+            btn.animate(frames, { duration: 260, easing: 'linear' });
+        }
+        /* من نقر وهو في الانتظار: سطر العدّاد يومض، ولا رقم يُكتب */
+        function coolFlash() {
+            announce('انتظر ' + fmtWait(guardLeft()) + ' قبل المحاولة التالية');
+            const err = card.querySelector('.m-lk-err');
+            if (!err || REDUCED || !err.animate) return;
+            err.animate([{ opacity: 1 }, { opacity: .3 }, { opacity: 1 }], { duration: 260, easing: 'ease-out' });
+        }
+
+        /* استعجل أحدٌ الدخول قبل أربع أرقام: نُنّب الصف ولا نُنزِل ستاراً */
+        function nudge() {
+            announce('أكمل الأرقام الأربعة أولاً');
+            if (REDUCED || !boxes.animate) return;
+            const frames = [];
+            for (let i = 0; i <= 18; i++) {
+                const p = i / 18;
+                frames.push({ transform: 'translate3d(' + (Math.exp(-4.6 * p) * Math.sin(p * Math.PI * 4) * 7).toFixed(2) + 'px,0,0)' });
+            }
+            frames.push({ transform: 'translate3d(0,0,0)' });
+            boxes.animate(frames, { duration: 340, easing: 'linear' });
+        }
+
+        const trySubmit = () => {
+            if (guardLeft() > 0) { coolFlash(); return; }
+            if ((input.value || '').length < OTP_LEN) { nudge(); return; }
+            lockSubmit(input);
+        };
+
+        if (enter) enter.addEventListener('click', (e) => { e.preventDefault(); trySubmit(); });
 
         if (window.MutationObserver) {
             let wasOpen = false;
@@ -3619,6 +4214,15 @@ html.is-mobile .modal-footer-sticky {
                 if (open && !wasOpen) {
                     lkRowW = 0;
                     shell.dataset.entered = '0';
+                    /* ذاكرة كل مربع من الجولة السابقة تُصفَّر: وإلا رجع الرقم
+                       خاطفاً وهو يتلاشى حين يفتح الشاشة من جديد */
+                    cellsIn(shell).forEach((c) => { c.dataset.d = ''; });
+                    hideTip();
+                    /* العدّاد يسبق الشاشة: إغلاقها وفتحها لا يمحو ما فات */
+                    guardLoad();
+                    syncBulb();
+                    const resting = guardLeft();
+                    if (resting > 0) coolStart(resting, 0); else coolStop();
                     paintOtp(input);
                     requestAnimationFrame(() => playEntrance(shell));
                     setTimeout(() => { try { input.focus({ preventScroll: true }); } catch (err) {} }, 90);
@@ -3631,6 +4235,13 @@ html.is-mobile .modal-footer-sticky {
                 wasOpen = open;
             }).observe(modal, { attributes: true, attributeFilter: ['style'] });
         }
+        /* رجوع الجهاز من الخلفية: المؤقتات تتعطّل فيها، والوقت نفسه لا يتوقف */
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) return;
+            const left = guardLeft();
+            if (left > 0) coolPaint(lkRefs(), left);
+            else if (coolTick) coolStop();
+        });
         window.addEventListener('resize', () => { lkRowW = 0; }, { passive: true });
         paintOtp(input);
     }

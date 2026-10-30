@@ -553,8 +553,111 @@ window.confirmCloseApp = () => {
     }, '<i class="fa-solid fa-power-off"></i> تأكيد الإغلاق', 'نعم، أغلق النظام');
 };
 // ----------------------------------------
-window.openAdminLogin = () => { document.getElementById('modal-admin-login').style.display = 'flex'; };
-window.closeModals = () => { document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none'); };
+/* ============ حارس محاولات الرمز — نسخة الكمبيوتر ============
+   نفس سياسة الجوال وبنفس مفتاح التخزين royal.lk.guard.v1، والحارس يعمل على
+   ثلاث محاولات مجانية ثم سلّم انتظار: ٢٠ ثانية، دقيقة، ثلاث، خمس وتقف.
+   العدّاد في localStorage خاصة بالجهاز: لا يُمسح برفرش الصفحة، ولا يلمس
+   مديراً حقيقياً على جهاز آخر في نفس اللحظة. نسخة الجوال لا تنفذ من هنا
+   إطلاقاً — هناك حارسها الذي يعدّ ويمنع، ولو جمعنا الاثنين لتضاعف العدّ. */
+const LKG_KEY = 'royal.lk.guard.v1';
+const LKG_FREE = 3;
+const LKG_WAIT = [20, 60, 180, 300];
+const LKG_FORGET = 15 * 60 * 1000;
+let lkgTimer = 0;
+
+function lkgIsMobile() { return document.documentElement.classList.contains('is-mobile'); }
+function lkgRead() {
+    const out = { n: 0, until: 0 };
+    try {
+        const j = JSON.parse(localStorage.getItem(LKG_KEY) || '{}') || {};
+        const now = Date.now();
+        if (typeof j.n === 'number' && now - (j.at || 0) < LKG_FORGET) out.n = Math.max(0, Math.floor(j.n));
+        if (typeof j.until === 'number' && j.until > now) out.until = j.until;
+    } catch (e) {}
+    return out;
+}
+function lkgWrite(n, until) {
+    try { localStorage.setItem(LKG_KEY, JSON.stringify({ n: n, until: until, at: Date.now() })); } catch (e) {}
+}
+function lkgLeft() {
+    const s = lkgRead();
+    return s.until > Date.now() ? Math.ceil((s.until - Date.now()) / 1000) : 0;
+}
+function lkgFmt(sec) {
+    return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0');
+}
+/* العدد مذكّر مؤنّث: «محاولة واحدة» غير «محاولتان» غير «٣ محاولات» */
+function lkgTries(n) {
+    return n === 1 ? 'محاولة واحدة' : (n === 2 ? 'محاولتان' : n + ' محاولات');
+}
+function lkgFail() {
+    const s = lkgRead();
+    s.n += 1;
+    const step = s.n - LKG_FREE;
+    const sec = step > 0 ? LKG_WAIT[Math.min(step, LKG_WAIT.length) - 1] : 0;
+    s.until = sec ? Date.now() + sec * 1000 : 0;
+    lkgWrite(s.n, s.until);
+    return { sec: sec, free: Math.max(0, LKG_FREE - s.n) };
+}
+function lkgReset() {
+    lkgWrite(0, 0);
+    lkgTimerStop();
+    lkgLock(false);
+    lkgPaint('');
+}
+/* السطر محجوز الموضع دائماً: ظهوره واختفاؤه لا يهزّ النافذة ولا يزيح الزر */
+function lkgPaint(text, tone) {
+    const content = document.querySelector('#modal-admin-login .modal-content');
+    if (!content) return;
+    let line = content.querySelector('.d-lk-wait');
+    if (!line) {
+        line = document.createElement('p');
+        line.className = 'd-lk-wait';
+        line.setAttribute('role', 'alert');
+        line.style.cssText = 'min-height:20px;margin:10px 0 0;text-align:center;font-size:14px;font-weight:700;opacity:0;transition:opacity .25s ease,color .25s ease;';
+        const actions = content.querySelector('.modal-actions');
+        if (actions) content.insertBefore(line, actions);
+        else content.appendChild(line);
+    }
+    line.textContent = text || '';
+    line.style.color = tone === 'warn' ? 'var(--gold)' : (tone === 'bad' ? 'var(--red-danger)' : 'var(--text-gray)');
+    line.style.opacity = text ? '1' : '0';
+}
+function lkgLock(on) {
+    const btn = document.querySelector('#modal-admin-login .btn-confirm');
+    if (!btn) return;
+    btn.disabled = !!on;
+    btn.style.opacity = on ? '0.45' : '';
+    btn.style.cursor = on ? 'not-allowed' : '';
+}
+function lkgTimerPaint() {
+    const left = lkgLeft();
+    if (left <= 0) {
+        lkgTimerStop();
+        lkgLock(false);
+        lkgPaint('تفضّل، يمكنك المحاولة الآن', 'bad');
+        setTimeout(() => { if (lkgLeft() <= 0) lkgPaint(''); }, 2600);
+        return;
+    }
+    lkgLock(true);
+    lkgPaint('انتظر ' + lkgFmt(left) + ' قبل المحاولة التالية', 'warn');
+}
+function lkgTimerStart() {
+    lkgTimerPaint();
+    if (lkgTimer) return;
+    lkgTimer = setInterval(lkgTimerPaint, 1000);
+}
+function lkgTimerStop() {
+    if (lkgTimer) { clearInterval(lkgTimer); lkgTimer = 0; }
+}
+
+window.openAdminLogin = () => {
+    document.getElementById('modal-admin-login').style.display = 'flex';
+    if (lkgIsMobile()) return;
+    if (lkgLeft() > 0) lkgTimerStart();
+    else { lkgLock(false); lkgPaint(''); }
+};
+window.closeModals = () => { document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none'); lkgTimerStop(); };
 // ---------------- نظام رسائل التأكيد المخصصة ----------------
 let pendingConfirmAction = null;
 window.showConfirm = (msg, actionCallback, title = 'تأكيد الحذف', btnText = 'نعم، احذف نهائياً') => {
@@ -574,12 +677,19 @@ window.executeConfirm = () => {
 };
 window.checkAdminPassword = () => {
     const inputPass = String(document.getElementById('admin-password').value || '').trim();
+    /* الباب مقفل على هذا الجهاز: لا نُزحم السحابة بسؤال لا طائل منه */
+    if (!lkgIsMobile() && lkgLeft() > 0) {
+        lkgTimerStart();
+        window.showAlert('انتظر ' + lkgFmt(lkgLeft()) + ' قبل المحاولة التالية', 'error');
+        return;
+    }
     // التدخل الجراحي: جلب الرمز من السحابة مباشرة لحظة التحقق فقط
     get(ref(database, 'royal_data/settings/password')).then((snapshot) => {
         const cloudPass = String(snapshot.val() == null ? '' : snapshot.val());
         // الرمز يجب أن يكون 4 أرقام (يتوافق مع شاشة الدخول)، وإلا نستخدم 2003
         const realPassword = /^\d{4}$/.test(cloudPass) ? cloudPass : "2003";
         if(inputPass === realPassword) {
+            if (!lkgIsMobile()) lkgReset();
             secureAdminToken = "AUTH_ROYAL_" + Math.random().toString(36).substring(2, 15);
             sessionStorage.setItem('active_screen', 'admin'); 
             window.closeModals();
@@ -587,8 +697,13 @@ window.checkAdminPassword = () => {
             document.getElementById('admin-screen').classList.add('active-screen');
             document.getElementById('admin-password').value = '';
             window.updateAdminDashboard();
-        } else { 
-            window.showAlert('رمز الدخول خاطئ!', 'error'); 
+        } else {
+            if (!lkgIsMobile()) {
+                const r = lkgFail();
+                if (r.sec > 0) lkgTimerStart();
+                else lkgPaint(r.free > 0 ? 'رمز خاطئ — بقيت ' + lkgTries(r.free) + ' قبل الانتظار' : 'رمز خاطئ — المحاولة التالية عليها انتظار', 'bad');
+            }
+            window.showAlert('رمز الدخول خاطئ!', 'error');
         }
     });
 };

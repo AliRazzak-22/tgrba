@@ -77,6 +77,322 @@
         document.head.appendChild(royalMobileLayer);
     }
     </script>
+
+    <!-- ===== شاشة الانتظار الجديدة — الجوال فقط =====
+         نسخة الكمبيوتر تقرأ التاج والنص كما هما: كل قاعدة هنا تبدأ بـ html.is-mobile
+         ولا تصل إليها. لا backdrop-filter ولا blur: البطاقة فوق خلفية داكنة صافية
+         والشفافية فيها توهّج ثابت، لأن blur داخل blur هو أغلى ما على معالج الرسوم.
+         كل حركة في هذا الملف transform وopacity وحدهما. -->
+    <style id="m-splash-css">
+    html.is-mobile #loading-screen {
+        background:
+            radial-gradient(120% 78% at 50% 8%, rgba(20,52,88,.62), transparent 62%),
+            radial-gradient(90% 60% at 50% 108%, rgba(12,38,66,.55), transparent 60%),
+            #04070e;
+        gap: 0;
+        overflow: hidden;
+    }
+    /* نسخة الكمبيوتر تبقى بأطفالها الأصليين، والجوال يخفيهم */
+    html.is-mobile #loading-screen > .loading-icon,
+    html.is-mobile #loading-screen > h2,
+    html.is-mobile #loading-screen > .top-bar-btn { display: none; }
+    .m-sp { display: none; }
+
+    html.is-mobile .m-sp {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+        padding: 0 26px;
+    }
+    html.is-mobile .m-sp-aura {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        overflow: hidden;
+        pointer-events: none;
+    }
+    html.is-mobile .m-sp-aura i {
+        position: absolute;
+        display: block;
+        border-radius: 50%;
+        will-change: transform, opacity;
+    }
+    html.is-mobile .m-sp-aura i:nth-child(1) {
+        width: 78vmax; height: 78vmax; left: 50%; top: 34%;
+        margin: -39vmax 0 0 -39vmax;
+        background: radial-gradient(circle, rgba(56,189,248,.16), rgba(56,189,248,0) 62%);
+        animation: mSpDrift 15s ease-in-out infinite;
+    }
+    html.is-mobile .m-sp-aura i:nth-child(2) {
+        width: 46vmax; height: 46vmax; left: 26%; top: 76%;
+        margin: -23vmax 0 0 -23vmax;
+        background: radial-gradient(circle, rgba(125,211,252,.10), rgba(125,211,252,0) 64%);
+        animation: mSpDriftB 19s ease-in-out infinite;
+    }
+    html.is-mobile .m-sp-aura i:nth-child(3) {
+        width: 34vmax; height: 34vmax; left: 78%; top: 16%;
+        margin: -17vmax 0 0 -17vmax;
+        background: radial-gradient(circle, rgba(224,242,254,.075), rgba(224,242,254,0) 66%);
+        animation: mSpDriftC 12s ease-in-out infinite;
+    }
+    /* شبكة نور شعرية بطيئة: طبقة واحدة تتحرك، بلا إعادة رسم */
+    html.is-mobile .m-sp-grid {
+        position: absolute;
+        inset: -20% -10%;
+        z-index: 1;
+        pointer-events: none;
+        opacity: .5;
+        background-image: linear-gradient(rgba(148,197,255,.055) 1px, transparent 1px);
+        background-size: 100% 34px;
+        animation: mSpGrid 9s linear infinite;
+    }
+    html.is-mobile .m-sp-card {
+        position: relative;
+        z-index: 2;
+        isolation: isolate;
+        overflow: hidden;
+        width: min(84vw, 336px);
+        padding: 30px 26px 26px;
+        border-radius: 28px;
+        border: 1px solid rgba(148,220,255,.20);
+        background:
+            linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,0) 44%),
+            linear-gradient(160deg, rgba(14,36,63,.72), rgba(6,14,26,.86));
+        box-shadow:
+            inset 0 1px 0 rgba(255,255,255,.22),
+            inset 0 -22px 42px rgba(3,10,22,.42),
+            0 26px 60px rgba(2,8,18,.62),
+            0 0 34px rgba(56,189,248,.10);
+        animation: mSpRise .72s cubic-bezier(.18,.86,.24,1) both;
+    }
+    /* مسحة ضوء تمرّ على الزجاج مرة كل دورتين: العنصر نفسه يتحرك، لا التدرّج */
+    html.is-mobile .m-sp-card::after {
+        content: "";
+        position: absolute;
+        inset: -60% -40%;
+        z-index: 3;
+        pointer-events: none;
+        background: linear-gradient(104deg, transparent 42%, rgba(224,242,254,.16) 50%, transparent 58%);
+        animation: mSpSheen 4.6s cubic-bezier(.5,0,.5,1) infinite;
+    }
+    html.is-mobile .m-sp-mark {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 15px;
+        margin-bottom: 16px;
+        animation: mSpFade .6s ease .12s both;
+    }
+    /* النبضة بدل اللوغو: نقطتان وشريط يتنفّس — بلا تاج ولا أيقونة */
+    html.is-mobile .m-sp-pulse {
+        position: relative;
+        width: 11px; height: 11px;
+        border-radius: 50%;
+        background: #dff5ff;
+        box-shadow: 0 0 12px rgba(125,211,252,.9), 0 0 26px rgba(56,189,248,.45);
+        animation: mSpBeat 2.1s ease-in-out infinite;
+    }
+    html.is-mobile .m-sp-pulse::after {
+        content: "";
+        position: absolute;
+        inset: -5px;
+        border-radius: 50%;
+        border: 1px solid rgba(125,211,252,.42);
+        animation: mSpWave 2.1s ease-out infinite;
+    }
+    html.is-mobile .m-sp-kicker {
+        font-size: 10.5px;
+        font-weight: 700;
+        letter-spacing: 2.4px;
+        color: rgba(191,224,255,.60);
+    }
+    html.is-mobile .m-sp-brand {
+        display: flex;
+        align-items: baseline;
+        justify-content: center;
+        gap: 8px;
+        font-size: 27px;
+        font-weight: 800;
+        letter-spacing: .2px;
+        color: #eef7ff;
+        text-shadow: 0 0 22px rgba(56,189,248,.28);
+    }
+    html.is-mobile .m-sp-brand span { display: inline-block; }
+    html.is-mobile .m-sp-brand span:first-child { animation: mSpFade .6s cubic-bezier(.2,.8,.3,1) .22s both; }
+    /* التدرّج ثابت: لا لون متحرك على الاسم — مطلوب من المالك */
+    html.is-mobile .m-sp-brand .m-sp-ice {
+        background: linear-gradient(96deg, #eaf7ff 4%, #7dd3fc 42%, #38bdf8 72%, #cfeaff 96%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        -webkit-text-fill-color: transparent;
+        animation: mSpFade .6s cubic-bezier(.2,.8,.3,1) .34s both;
+    }
+    html.is-mobile .m-sp-sub {
+        margin: 8px 0 22px;
+        font-size: 11.5px;
+        font-weight: 600;
+        letter-spacing: .4px;
+        text-align: center;
+        color: rgba(191,224,255,.52);
+        animation: mSpFade .6s ease .46s both;
+    }
+    html.is-mobile .m-sp-track {
+        position: relative;
+        direction: ltr;
+        height: 4px;
+        width: 100%;
+        border-radius: 999px;
+        /* الشفّة لا تُقصّ: الملء محكوم بعرضه فلا يتجاوز المسار، والنقطة
+           المتوهّجة على رأسه تحتاج أن تخرج فوق حافته */
+        overflow: visible;
+        background: rgba(255,255,255,.07);
+        box-shadow: inset 0 1px 2px rgba(2,8,18,.6);
+        animation: mSpFade .5s ease .58s both;
+    }
+    /* الملء من اليمين لليسار: أصله على الحافة اليمنى، فيقرأه العربي طبيعياً */
+    html.is-mobile .m-sp-fill {
+        position: absolute;
+        right: 0; top: 0; bottom: 0;
+        width: 100%;
+        transform-origin: right center;
+        transform: scaleX(0);
+        border-radius: 999px;
+        background: linear-gradient(90deg, rgba(56,189,248,.55), #7dd3fc 46%, #e0f2fe 92%);
+        box-shadow: 0 0 14px rgba(125,211,252,.55);
+        will-change: transform;
+    }
+    html.is-mobile .m-sp-spark {
+        position: absolute;
+        right: -1px;
+        top: 50%;
+        z-index: 2;
+        width: 7px; height: 7px;
+        margin: -3.5px 0 0 -3.5px;
+        border-radius: 50%;
+        background: #f4fbff;
+        box-shadow: 0 0 10px rgba(224,242,254,.95), 0 0 22px rgba(56,189,248,.6);
+        transform: translate3d(0,-50%,0);
+        will-change: transform;
+        animation: mSpFade .5s ease .58s both;
+    }
+    html.is-mobile .m-sp-meta {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 12px;
+        font-size: 11.5px;
+        font-weight: 600;
+        color: rgba(191,224,255,.62);
+        animation: mSpFade .5s ease .66s both;
+    }
+    html.is-mobile .m-sp-pct {
+        direction: ltr;
+        font-family: Inter, 'Cairo', sans-serif;
+        font-variant-numeric: tabular-nums;
+        font-weight: 800;
+        color: #dff5ff;
+        text-shadow: 0 0 12px rgba(56,189,248,.4);
+    }
+    html.is-mobile .m-sp-ready .m-sp-fill { background: linear-gradient(90deg, #7dd3fc, #e0f2fe); }
+    html.is-mobile .m-sp-ready .m-sp-meta { color: rgba(223,245,255,.82); }
+    html.is-mobile .m-sp-help {
+        position: absolute;
+        z-index: 4;
+        left: 50%;
+        bottom: calc(28px + env(safe-area-inset-bottom, 0px));
+        transform: translate3d(-50%, 0, 0);
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        padding: 9px 16px;
+        border-radius: 999px;
+        border: 1px solid rgba(148,220,255,.20);
+        background: rgba(8,18,32,.66);
+        color: rgba(199,229,255,.78);
+        font-size: 12px;
+        font-weight: 700;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity .45s ease;
+        -webkit-tap-highlight-color: transparent;
+    }
+    html.is-mobile .m-sp-help i { font-size: 11px; color: #7dd3fc; }
+    html.is-mobile .m-sp-help.show { opacity: 1; pointer-events: auto; }
+    html.is-mobile .m-sp-help:active { color: #eaf6ff; border-color: rgba(125,211,252,.5); }
+
+    /* الخروج: البطاقة تبتعد قليلاً والخلفية تنطفي، ثم تُحذف الشاشة فعلاً */
+    html.is-mobile #loading-screen.m-sp-out .m-sp-card { animation: mSpOutCard .56s cubic-bezier(.4,0,.65,1) both; }
+    html.is-mobile #loading-screen.m-sp-out .m-sp-aura,
+    html.is-mobile #loading-screen.m-sp-out .m-sp-grid { animation: mSpOutGlow .5s ease-out both; }
+    html.is-mobile #loading-screen.m-sp-out .m-sp-help { opacity: 0; transition: opacity .18s ease; }
+
+    @keyframes mSpDrift {
+        0%, 100% { transform: translate3d(0,0,0) scale(1); opacity: .82; }
+        50% { transform: translate3d(3%, -4%, 0) scale(1.07); opacity: 1; }
+    }
+    @keyframes mSpDriftB {
+        0%, 100% { transform: translate3d(0,0,0) scale(1.02); opacity: .7; }
+        50% { transform: translate3d(-5%, -6%, 0) scale(.94); opacity: 1; }
+    }
+    @keyframes mSpDriftC {
+        0%, 100% { transform: translate3d(0,0,0) scale(.96); opacity: .62; }
+        50% { transform: translate3d(4%, 5%, 0) scale(1.06); opacity: .95; }
+    }
+    @keyframes mSpGrid { from { transform: translate3d(0,0,0); } to { transform: translate3d(0,34px,0); } }
+    @keyframes mSpRise {
+        from { opacity: 0; transform: translate3d(0,18px,0) scale(.94); }
+        to { opacity: 1; transform: translate3d(0,0,0) scale(1); }
+    }
+    @keyframes mSpFade {
+        from { opacity: 0; transform: translate3d(0,7px,0); }
+        to { opacity: 1; transform: translate3d(0,0,0); }
+    }
+    @keyframes mSpSheen {
+        0% { transform: translate3d(-120%,0,0); }
+        58%, 100% { transform: translate3d(120%,0,0); }
+    }
+    @keyframes mSpBeat {
+        0%, 100% { transform: scale(1); opacity: .92; }
+        50% { transform: scale(1.22); opacity: 1; }
+    }
+    @keyframes mSpWave {
+        0% { transform: scale(.7); opacity: .85; }
+        70%, 100% { transform: scale(1.6); opacity: 0; }
+    }
+    @keyframes mSpOutCard {
+        from { opacity: 1; transform: translate3d(0,0,0) scale(1); }
+        to { opacity: 0; transform: translate3d(0,-14px,0) scale(1.045); }
+    }
+    @keyframes mSpOutGlow { from { opacity: 1; } to { opacity: 0; } }
+
+    @media (prefers-reduced-motion: reduce) {
+        html.is-mobile .m-sp-aura i,
+        html.is-mobile .m-sp-grid,
+        html.is-mobile .m-sp-card::after,
+        html.is-mobile .m-sp-pulse,
+        html.is-mobile .m-sp-pulse::after { animation: none; }
+        html.is-mobile .m-sp-card,
+        html.is-mobile .m-sp-mark,
+        html.is-mobile .m-sp-brand span,
+        html.is-mobile .m-sp-brand .m-sp-ice,
+        html.is-mobile .m-sp-sub,
+        html.is-mobile .m-sp-track,
+        html.is-mobile .m-sp-spark,
+        html.is-mobile .m-sp-meta { animation-duration: .01s; }
+        html.is-mobile #loading-screen.m-sp-out .m-sp-card { animation-duration: .01s; }
+    }
+    @media (max-height: 430px) {
+        html.is-mobile .m-sp-card { padding: 20px 20px 18px; }
+        html.is-mobile .m-sp-brand { font-size: 22px; }
+        html.is-mobile .m-sp-sub { margin: 6px 0 16px; }
+    }
+    </style>
 </head>
 <body>
     
@@ -89,7 +405,112 @@
         <button class="top-bar-btn" style="margin-top: 20px; font-size: 16px; padding: 10px 20px; background: rgba(255,255,255,0.05); border-color: var(--text-gray); color: var(--gold); border-radius: 50px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);" onclick="window.location.href = window.location.pathname + '?reload=' + Date.now()">
             <i class="fa-solid fa-rotate-right"></i> إنعاش النظام (في حال التعليق)
         </button>
+
+        <!-- نسخة الجوال: بلا تاج ولا أيقونة — زجاج أزرق يمتلئ تدريجياً -->
+        <div class="m-sp">
+            <div class="m-sp-aura" aria-hidden="true"><i></i><i></i><i></i></div>
+            <div class="m-sp-grid" aria-hidden="true"></div>
+            <div class="m-sp-card">
+                <div class="m-sp-mark"><span class="m-sp-pulse"></span><span class="m-sp-kicker">ROYAL</span></div>
+                <div class="m-sp-brand"><span>مكوى</span><span class="m-sp-ice">رويال</span></div>
+                <p class="m-sp-sub">نظام الإدارة — جارٍ تجهيز البيئة</p>
+                <div class="m-sp-track"><i class="m-sp-fill"></i><i class="m-sp-spark" aria-hidden="true"></i></div>
+                <div class="m-sp-meta">
+                    <span class="m-sp-status" role="status">تهيئة النظام</span>
+                    <span class="m-sp-pct">0%</span>
+                </div>
+            </div>
+            <button class="m-sp-help" type="button" onclick="window.location.href = window.location.pathname + '?reload=' + Date.now()">
+                <i class="fa-solid fa-rotate-right"></i> الشاشة متوقّفة؟ أنعش النظام
+            </button>
+        </div>
     </div>
+    <script>
+    /* ===== محرّك شاشة الانتظار — الجوال فقط =====
+       لا يوجد تقدّم حقيقي يُقاس: فايربيس يردّ بدفعة واحدة. يعدو العدّاد إلى
+       ٩٢٪ ثم يقف يتنفّس، ولو وصل الردّ أكمل المئة وانطفأ الستار. نسخة
+       الكمبيوتر تخرج من السطر الأول ولا ترى شيئاً من هذا. */
+    (function () {
+        if (!document.documentElement.classList.contains('is-mobile')) return;
+        var screen = document.getElementById('loading-screen');
+        if (!screen) return;
+        var fill = screen.querySelector('.m-sp-fill');
+        var spark = screen.querySelector('.m-sp-spark');
+        var pctEl = screen.querySelector('.m-sp-pct');
+        var statusEl = screen.querySelector('.m-sp-status');
+        var helpEl = screen.querySelector('.m-sp-help');
+        var reduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+        var STAGES = [[0, 'تهيئة النظام'], [24, 'ربط البيانات السحابية'], [52, 'فحص الرمز والإعدادات'], [76, 'تحضير شاشة الإدارة']];
+        var shown = -1, stage = -1, p = 0, t0 = 0, trackW = 0, raf = 0, gone = false;
+
+        function measure() {
+            var tr = screen.querySelector('.m-sp-track');
+            trackW = tr ? tr.clientWidth : 0;
+        }
+        function paint(v) {
+            var x = v < 0 ? 0 : (v > 100 ? 100 : v);
+            if (fill) fill.style.transform = 'scaleX(' + (x / 100).toFixed(4) + ')';
+            if (spark && trackW) spark.style.transform = 'translate3d(' + (-(x / 100) * trackW).toFixed(1) + 'px,-50%,0)';
+            var n = Math.round(x);
+            if (n !== shown) { shown = n; if (pctEl) pctEl.textContent = n + '%'; }
+            for (var i = STAGES.length - 1; i >= 0; i--) {
+                if (x < STAGES[i][0]) continue;
+                if (i !== stage) { stage = i; if (statusEl) statusEl.textContent = STAGES[i][1]; }
+                break;
+            }
+        }
+        function loop(now) {
+            if (!t0) t0 = now;
+            p = 92 * (1 - Math.exp(-(now - t0) / 2400));
+            /* بلغ القاع: لا داعي لإطار كل رمشة وهو ينتظر بلا طائل */
+            if (p > 91.6) { paint(92); return; }
+            paint(p);
+            raf = requestAnimationFrame(loop);
+        }
+        measure();
+        window.addEventListener('resize', function () { measure(); paint(p); }, { passive: true });
+        raf = requestAnimationFrame(loop);
+        setTimeout(function () { if (helpEl && !gone) helpEl.classList.add('show'); }, reduce ? 1200 : 5200);
+
+        function leave() {
+            if (gone) return;
+            gone = true;
+            if (raf) cancelAnimationFrame(raf);
+            /* app.js أخفاها للتوّ: نُعيد إظهارها لحظة لنُكمل المشهد ثم نعود ونُخفيها */
+            screen.style.display = 'flex';
+            screen.classList.add('m-sp-ready');
+            if (helpEl) helpEl.classList.remove('show');
+            if (statusEl) statusEl.textContent = 'جاهز';
+            var from = p, t1 = 0, dur = reduce ? 40 : 300;
+            function up(now) {
+                if (!t1) t1 = now;
+                var k = Math.min(1, (now - t1) / dur);
+                paint(from + (100 - from) * (1 - Math.pow(1 - k, 2)));
+                if (k < 1) { requestAnimationFrame(up); return; }
+                setTimeout(exit, reduce ? 0 : 150);
+            }
+            raf = requestAnimationFrame(up);
+        }
+        function exit() {
+            screen.classList.add('m-sp-out');
+            setTimeout(function () {
+                screen.style.display = 'none';
+                screen.classList.remove('m-sp-out');
+            }, reduce ? 40 : 620);
+        }
+        /* التنصّت على الإخفاء بدل تعديل app.js: الحركة التي تُطبقها السحابة
+           على الشاشة نتلقّفها ونؤجّلها خمس أعشار ثانية فقط */
+        if (window.MutationObserver) {
+            var mo = new MutationObserver(function () {
+                if (gone) return;
+                if (!/display:\s*none/.test(screen.getAttribute('style') || '')) return;
+                mo.disconnect();
+                leave();
+            });
+            mo.observe(screen, { attributes: true, attributeFilter: ['style'] });
+        }
+    })();
+    </script>
 
     <!-- الشاشة الرئيسية (اختيار الحساب) -->
     <div id="main-screen">
