@@ -1265,6 +1265,7 @@ html.is-mobile .m-lk-card .modal-title {
     line-height: 1.4;
     color: #f4f8ff;
     text-shadow: 0 1px 2px rgba(0,0,0,.48);
+    transition: opacity .3s ease;
 }
 html.is-mobile .m-lk-card .modal-title > i { display: none; }
 html.is-mobile .m-lk-word { display: inline-block; }
@@ -1291,6 +1292,7 @@ html.is-mobile .m-lk-sub {
     line-height: 1.65;
     font-weight: 400;
     color: rgba(213,227,245,.62);
+    transition: opacity .3s ease, transform .42s cubic-bezier(.2,.8,.3,1);
 }
 html.is-mobile .m-lk-live { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); }
 html.is-mobile .m-lk-err {
@@ -1355,10 +1357,23 @@ html.is-mobile .m-otp b::after {
 }
 /* اسمان يتبادلانه:إعادة تشغيل الحركة بلا قراءة تخطيط تُجبر المتصفح على الحساب */
 html.is-mobile .m-otp b.pa::after,
-html.is-mobile .m-otp b.pb::after { animation: mLkRing 360ms var(--m-ease-out) both; }
+html.is-mobile .m-otp b.pb::after { animation: mLkRing 520ms var(--m-ease-out) both; }
 @keyframes mLkRing {
-    from { opacity: .8; transform: scale(.84); }
-    to { opacity: 0; transform: scale(1.16); }
+    from { opacity: .6; transform: scale(.9); }
+    to { opacity: 0; transform: scale(1.34); }
+}
+/* الهالة خلف المربّع: ضوء مُعدّ سلفاً في gradient، لا blur ولا box-shadow
+   متحرّك — يبقى الرسم على طبقة واحدة ويمشي الخيّاط على transform وحده */
+html.is-mobile .m-otp-glow {
+    position: absolute;
+    inset: -11px;
+    z-index: -1;
+    border-radius: 28px;
+    pointer-events: none;
+    opacity: 0;
+    background: radial-gradient(closest-side,
+        rgba(125,211,252,.42), rgba(56,189,248,.18) 54%, rgba(56,189,248,0) 76%);
+    will-change: transform, opacity;
 }
 html.is-mobile .m-otp b.filled { background: rgba(255,255,255,.068); border-color: rgba(255,255,255,.20); }
 html.is-mobile .m-otp b.bad { --m-lk-neon-a: #fb7185; --m-lk-neon-b: #f43f5e; border-color: rgba(251,113,133,.72); }
@@ -1540,33 +1555,34 @@ html.is-mobile .m-pad.cooling button.bulb:not(.lit) {
     opacity: .5;
 }
 
-/* فقاعة التلميح تطفو في الممرّ الفارغ بين المربعات واللوحة: موضعها مطلق
-   فلا قفزة ولا إعادة قياس عند ظهورها، وشفاها مغلقة أمام اللمس. */
+/* فقاعة التلميح تقف فوق مربّعات الرقم — الممرّ تحتها صار للعدّاد وحده.
+   موضعها مطلق داخل صفّ المربّعات (position:relative) فلا يزيح سطراً ولا
+   يعيد قياس، وسطر الشرح يُطفأ أثناء ظهورها حتى لا يقف نصّ خلفها. */
 html.is-mobile .m-lk-tip {
     position: absolute;
-    bottom: calc(100% + 4px);
+    bottom: calc(100% + 13px);
     left: 50%;
-    z-index: 4;
+    z-index: 6;
     direction: rtl;
     display: flex;
     align-items: center;
-    gap: 7px;
+    gap: 10px;
     max-width: 100%;
-    padding: 5px 10px 6px;
-    border-radius: 13px;
-    border: 1px solid rgba(251,191,36,.32);
-    background: linear-gradient(180deg, rgba(255,255,255,.13), rgba(255,255,255,0) 46%), rgba(26,18,6,.62);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.20), 0 10px 22px rgba(2,8,18,.5), 0 0 16px rgba(251,191,36,.12);
+    padding: 10px 18px 11px;
+    border-radius: 18px;
+    border: 1px solid rgba(251,191,36,.34);
+    background: linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,0) 46%), rgba(26,18,6,.66);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.22), 0 12px 26px rgba(2,8,18,.52), 0 0 20px rgba(251,191,36,.14);
     color: #fde68a;
-    font-size: 13px;
-    line-height: 1.2;
+    font-size: 19px;
+    line-height: 1.25;
     white-space: nowrap;
     pointer-events: none;
     opacity: 0;
     overflow: hidden;
-    transform: translate3d(-50%, 8px, 0) scale(.92);
+    transform: translate3d(-50%, 10px, 0) scale(.9);
     /* منحنى يتجاوز الهدف ثم يرتد: الفقاعة تُقذف إلى عينك لا تنزلق */
-    transition: opacity .24s ease, transform .46s cubic-bezier(.16,1.16,.3,1);
+    transition: opacity .26s ease, transform .5s cubic-bezier(.16,1.16,.3,1);
 }
 html.is-mobile .m-lk-tip.on {
     opacity: 1;
@@ -1588,18 +1604,17 @@ html.is-mobile .m-lk-tip.on::after { animation: mLkTipSweep 900ms cubic-bezier(.
     from { opacity: .9; transform: translate3d(-108%,0,0); }
     to { opacity: 0; transform: translate3d(108%,0,0); }
 }
-/* رسالة الغلط تسكن الممرّ نفسه: إن ظهرت فلا تلاقاها كلمة التلميح فوقها.
-   انتظار العدّاد لا يُطفئها: التلميح يُقرأ وهو مطروح بالظبط */
-html.is-mobile .m-lk-err.bad:not(.cool) ~ .m-pad .m-lk-tip {
-    opacity: 0;
-    transform: translate3d(-50%, 8px, 0) scale(.92);
-}
-html.is-mobile .m-lk-tip b { font-weight: 800; color: #fff4d1; }
+/* لا نصّ خلف الفقاعة: الشرح يَنطفئ وهي ظاهرة، ويرجع بهدوء بعدها.
+   «!important» لأن حركة الإقلاع تترك على العنصر شفّية مضمّنة في
+   style السطر، والكلاس وحده لا يرفعها */
+html.is-mobile .m-lk-card.tip-live .m-lk-sub { opacity: 0 !important; transform: translate3d(0,-4px,0) !important; }
+/* strong لا b: الفقاعة صارت داخل صفّ المربّعات، و«b» كانت تُحسب مربعاً خامساً */
+html.is-mobile .m-lk-tip strong { font-weight: 800; color: #fff4d1; }
 html.is-mobile .m-lk-tip .m-lk-tip-tag {
-    font-size: 10px;
+    font-size: 13px;
     font-weight: 800;
-    padding: 2px 6px;
-    border-radius: 7px;
+    padding: 4px 11px 5px;
+    border-radius: 10px;
     background: rgba(251,191,36,.15);
     border: 1px solid rgba(251,191,36,.28);
     color: #fcd34d;
@@ -1843,7 +1858,9 @@ html.is-mobile .m-lk-pill svg path { fill: none; stroke: #4ade80; stroke-width: 
     html.is-mobile .m-otp-glide, html.is-mobile .m-otp-neon { border-radius: 16px; }
     html.is-mobile .m-pad { gap: 7px; margin-top: 10px; max-width: 252px; }
     html.is-mobile .m-pad button { height: 40px; border-radius: 15px; font-size: 20px; }
-    html.is-mobile .m-lk-tip { font-size: 12px; padding: 4px 9px 5px; bottom: calc(100% + 3px); border-radius: 12px; }
+    html.is-mobile .m-lk-tip { font-size: 16px; padding: 7px 13px 8px; bottom: calc(100% + 9px); border-radius: 15px; }
+    /* في هذا المقاس لا مساحة فوق المربّعات تكفي فقاعة وشروحها: العنوان يَنطفئ معها */
+    html.is-mobile .m-lk-card.tip-live .modal-title { opacity: 0 !important; }
     html.is-mobile .m-lk-card .modal-actions { margin-top: 10px; }
     html.is-mobile .m-lk-card .modal-actions .btn-confirm { min-height: 40px; width: min(100%, 184px); }
     html.is-mobile .m-lk-hint { margin-top: 4px; }
@@ -3125,8 +3142,12 @@ html.is-mobile .modal-footer-sticky {
        مهلة قصيرة. بلا هذه المهلة يُبنى المسرح داخل نفس المهمة فلا يظهر رقم. */
     const SUBMIT_HOLD = 200;
     const POP_IN = 340;
-    /* سعة ارتجاج المربع عند نزول الرقم: رقم واحد يتحكّم بالقوة كلها */
-    const CELL_SHAKE = 3.2;
+    /* نزول الرقم: هَبْطة واحدة تستقر بلا رجّات — المربّع يغوص مليماً وينضغط
+       انضغاطاً خفيفاً، وحلقة ضوء تتّسع حوله. رقم واحد يمسك كل المقادير */
+    const LAND_SINK = 1.5;
+    const LAND_SQUASH = .05;
+    const LAND_MS = 470;
+    const GLOW_MS = 640;
     const TIP_TAG = 'مقترح';
     const TIP_TEXT = 'مواليد';
     const TIP_MS = 5200;
@@ -3183,6 +3204,7 @@ html.is-mobile .modal-footer-sticky {
         if (!shell) return null;
         return {
             shell,
+            card: shell.querySelector('.m-lk-card'),
             pad: shell.querySelector('.m-pad'),
             bulb: shell.querySelector('[data-k="hint"]'),
             btn: shell.querySelector('.modal-actions .btn-confirm'),
@@ -3196,7 +3218,10 @@ html.is-mobile .modal-footer-sticky {
         const open = guardTipOpen();
         const was = r.bulb.classList.contains('lit');
         r.bulb.classList.toggle('lit', open);
-        if (!open && r.tip) r.tip.classList.remove('on');
+        if (!open && r.tip) {
+            r.tip.classList.remove('on');
+            if (r.card) r.card.classList.remove('tip-live');
+        }
         /* الاشتعال مرة واحدة عند انتقال الحالة لا في كل استدعاء: وإلا ومضت
            اللمبة مع كل نقرة وهو مطفأ أصلاً */
         if (open && !was) bulbIgnite(r.bulb);
@@ -3392,25 +3417,41 @@ html.is-mobile .modal-footer-sticky {
 
     let popFlip = 0;
     /* الرقم لا يُكتب بل يهبط إلى موضعه ثم يستقر — لغة المحو نفسها معكوسة:
-       المحو يصعد ويذوب، والدخول يصعد من تحته ويظهر. الاهتزاز على المربع نفسه
-       لا على الخوارية، والاثنان transform خالص فلا إعادة تخطيط. */
-    function cellShake(cell) {
-        if (REDUCED || !cell.animate) return;
-        if (cell._shake) { try { cell._shake.cancel(); } catch (e) {} }
-        const frames = [];
-        for (let i = 0; i <= 20; i++) {
-            const p = i / 20;
-            const k = Math.exp(-5.2 * p);
-            const s = Math.sin(p * Math.PI * 4.6);
-            frames.push({
-                transform: 'translate3d(' + (CELL_SHAKE * k * s).toFixed(2) + 'px,' +
-                    (CELL_SHAKE * .45 * k * Math.sin(p * Math.PI * 3.1)).toFixed(2) + 'px,0) rotate(' +
-                    (0.7 * k * s).toFixed(2) + 'deg) scale(' +
-                    (1 + .034 * k * Math.cos(p * Math.PI * 2)).toFixed(3) + ')'
-            });
+       المحو يصعد ويذوب، والدخول يصعد من تحته ويظهر. */
+    /* الهَبْطة بدل الاهتزاز: غوصة مليمتين وانضغاط خفيف، ثم نَفَسان يخفتان
+       حتى السكون. بلا دوران وبلا رجّة على المحور الأفقي — العين ترتاح لها.
+       transform خالص: لا قراءة تخطيط، ولا إعادة رسم للمربّع. */
+    function cellLand(cell) {
+        if (!cell.animate) return;
+        if (cell._land) { try { cell._land.cancel(); } catch (e) {} }
+        if (!REDUCED) {
+            const y = LAND_SINK, s = LAND_SQUASH;
+            cell._land = cell.animate([
+                { transform: 'translate3d(0,0,0) scale(1,1)', offset: 0 },
+                { transform: 'translate3d(0,' + y.toFixed(2) + 'px,0) scale(' + (1 + s).toFixed(3) + ',' + (1 - s).toFixed(3) + ')', offset: .18 },
+                { transform: 'translate3d(0,' + (-y * .5).toFixed(2) + 'px,0) scale(' + (1 - s * .42).toFixed(3) + ',' + (1 + s * .42).toFixed(3) + ')', offset: .46 },
+                { transform: 'translate3d(0,' + (y * .14).toFixed(2) + 'px,0) scale(' + (1 + s * .14).toFixed(3) + ',' + (1 - s * .14).toFixed(3) + ')', offset: .72 },
+                { transform: 'translate3d(0,0,0) scale(1,1)', offset: 1 }
+            ], { duration: LAND_MS, easing: 'cubic-bezier(.22,.86,.24,1)' });
         }
-        frames.push({ transform: 'translate3d(0,0,0) rotate(0deg) scale(1)' });
-        cell._shake = cell.animate(frames, { duration: 330, delay: 74, easing: 'linear' });
+        /* ضوء يتّسع خلف المربّع ويطفئ: الطبقة مُعدّة مسبقاً بـ radial-gradient
+           فلا blur متحرك ولا ظل يتغيّر إطاراً تلو الآخر */
+        if (REDUCED || !cell.animate) return;
+        if (cell._glow && cell._glow.parentNode) cell._glow.parentNode.removeChild(cell._glow);
+        const glow = document.createElement('i');
+        glow.className = 'm-otp-glow';
+        glow.setAttribute('aria-hidden', 'true');
+        cell.appendChild(glow);
+        cell._glow = glow;
+        const a = glow.animate([
+            { opacity: 0, transform: 'scale(.66)' },
+            { opacity: .95, transform: 'scale(1)', offset: .2 },
+            { opacity: 0, transform: 'scale(1.55)' }
+        ], { duration: GLOW_MS, easing: 'cubic-bezier(.16,.84,.3,1)' });
+        a.onfinish = () => {
+            if (cell._glow === glow) cell._glow = null;
+            if (glow.parentNode) glow.parentNode.removeChild(glow);
+        };
     }
 
     function popCell(cell, dir, seen) {
@@ -3420,18 +3461,19 @@ html.is-mobile .modal-footer-sticky {
             cell.classList.toggle('pa', popFlip === 0);
             cell.classList.toggle('pb', popFlip === 1);
         }
-        if (dir > 0) cellShake(cell);
+        if (dir > 0) cellLand(cell);
         if (!u || REDUCED || !u.animate) return;
         /* الحذف ثم الكتابة في أقل من رمشة: لو تُركت حركة المحو تعمل لسحبت
            الرقم الجديد معها عند انتهائها، فيُلغى أولًا */
         if (u._pop) { try { u._pop.cancel(); } catch (e) {} u._pop = null; }
         if (dir > 0) {
+            /* الرقم يظهر وهو يُضبط: ضباب خفيف يزول في أول ثلث — كعدسة تقَع
+               على الهدف، لا كحرف يُطبع */
             u._pop = u.animate([
-                { transform: 'translate3d(0,13px,0) scale(.6)', opacity: 0 },
-                { transform: 'translate3d(0,-1.6px,0) scale(1.06)', opacity: 1, offset: .26 },
-                { transform: 'translate3d(0,.9px,0) scale(.986)', opacity: 1, offset: .55 },
-                { transform: 'translate3d(0,-.35px,0) scale(1.008)', opacity: 1, offset: .78 },
-                { transform: 'translate3d(0,0,0) scale(1)', opacity: 1 }
+                { transform: 'translate3d(0,12px,0) scale(.72)', opacity: 0, filter: 'blur(2.2px)' },
+                { transform: 'translate3d(0,-1.4px,0) scale(1.05)', opacity: 1, filter: 'blur(0px)', offset: .3 },
+                { transform: 'translate3d(0,.6px,0) scale(.992)', opacity: 1, filter: 'blur(0px)', offset: .62 },
+                { transform: 'translate3d(0,0,0) scale(1)', opacity: 1, filter: 'blur(0px)' }
             ], { duration: POP_IN, easing: 'cubic-bezier(.2,.85,.25,1)' });
         } else if (seen) {
             u.textContent = seen;
@@ -3535,6 +3577,7 @@ html.is-mobile .modal-footer-sticky {
         /* التلميح كلمة تُقرأ ثم تُمحى: يُطفأ قبل النسخ حتى لا يصل المسرحَ
            وهو يحمل الفقاعة معه */
         qsa('.m-lk-tip', real).forEach((t) => t.classList.remove('on'));
+        qsa('.m-lk-card', real).forEach((c) => c.classList.remove('tip-live'));
         const shell = real.cloneNode(true);
         shell.removeAttribute('data-entered');
         const dup = shell.querySelector('.m-otp-input');
@@ -3781,6 +3824,7 @@ html.is-mobile .modal-footer-sticky {
             });
             net.path.setAttribute('d', d + 'Z');
             const len = net.path.getTotalLength ? net.path.getTotalLength() : 400;
+            net.len = len;
             net.path.style.strokeDasharray = len + ' ' + len;
             if (net.path.animate) {
                 keep.push(net.path.animate([{ strokeDashoffset: len }, { strokeDashoffset: 0 }],
@@ -3883,20 +3927,107 @@ html.is-mobile .modal-footer-sticky {
             });
         }
 
+        /* ===== الرفض: تراجعٌ لا شاشة سوداء =====
+           ما بُني بالعكس يُهدَم بالعكس، ويبقى المسرح ظاهراً طول الوقت: لا
+           يسودّ بياض ولا تُقلب شاشة على أثرها. القرص ينطفئ، والشبكة تنكمش
+           من حيث مدت، والمربّعات ترجع من مربّعها الصغير إلى صفّها، والارتفاع
+           يمتلئ، والعناصر التي أُخفيت تُفتح في مواضعها — ولا يبدأ الذوبان إلا
+           والبطاقتان متطابقتين، فيمرّ الذوبان بلا أن يُرى. */
+        let handed = false;
+        function handoff() {
+            if (handed) return;
+            handed = true;
+            /* الإطار الواحد: تُرفع كل أصناف المسرح دفعة واحدة، ويؤخذ قبلها
+               موضع المربّعات. إن بقي فرق بين الموضعين صحّحه نَبْض FLIP قصير
+               بدل أن يقفز حرف */
+            const before = st.cells.map((c) => c.getBoundingClientRect());
+            st.shell.classList.remove('compact');
+            st.shell.style.height = '';
+            st.card.style.height = '';
+            st.group.classList.remove('m-lk-stage-group');
+            st.row.classList.remove('m-lk-stage-row');
+            st.cells.forEach((c) => {
+                c.classList.remove('m-lk-stage-cell', 'bad', 'pa', 'pb');
+                c.style.transform = '';
+                c.style.width = '';
+                c.style.height = '';
+                c.style.opacity = '';
+            });
+            const stErr = st.shell.querySelector('.m-lk-err');
+            fadeA.forEach((n) => {
+                n.classList.remove('m-lk-stage-hidden');
+                /* سطر الغلط يُقاد بالكلاس لا بالنَبْض: يُمسح عنه الصفر المضمّن
+                   ليأخذ طوله المحجوز وموضعه، ثم يُشعل حين يصل الخبر */
+                if (n === stErr) { n.style.opacity = ''; return; }
+                n.style.opacity = '0';
+            });
+            st.cells.forEach((c, i) => {
+                const b = c.getBoundingClientRect();
+                const dx = before[i].left - b.left, dy = before[i].top - b.top;
+                if (Math.abs(dx) < .5 && Math.abs(dy) < .5) return;
+                spring(c, (p) => ({ transform: 'translate3d(' + (dx * (1 - p)).toFixed(2) + 'px,' + (dy * (1 - p)).toFixed(2) + 'px,0)' }),
+                    { stiffness: 250, damping: 27, maxMs: 420 }, keep, true);
+            });
+            fadeA.forEach((n, i) => {
+                if (n === stErr) return;
+                spring(n, (p) => ({ opacity: p.toFixed(3) }),
+                    { stiffness: 230, damping: 27, maxMs: 460, delay: REDUCED ? 0 : 26 + i * 30 }, keep, true);
+            });
+        }
+
+        function eraseStage() {
+            /* المحو بلغة الحذف نفسها التي يعرفها المالك: الرقم يصعد ويذوب،
+               وآخر رقم يُمحى أولاً */
+            st.cells.forEach((c, i) => {
+                const u = c.firstElementChild || c;
+                c.dataset.d = '';
+                if (REDUCED || !u.animate) { u.textContent = ''; return; }
+                const k = OTP_LEN - 1 - i;
+                const a = u.animate([
+                    { transform: 'translate3d(0,0,0) scale(1)', opacity: 1 },
+                    { transform: 'translate3d(0,-9px,0) scale(.6)', opacity: 0 }
+                ], { duration: 165, delay: k * 55, easing: 'cubic-bezier(.4,0,.75,.25)' });
+                a.onfinish = () => { u.textContent = ''; };
+                keep.push(a);
+            });
+        }
+
         function rejected(msg, kind) {
+            const late = !grid.length;
             announce(msg);
             core.classList.add('bad');
-            st.cells.forEach((c) => c.classList.add('bad'));
-            spring(core, (p) => ({ opacity: (1 - p).toFixed(3), transform: 'scale(' + (1 - .25 * p).toFixed(3) + ')' }),
-                { stiffness: 250, damping: 26, maxMs: 420 }, keep, true);
-            st.cells.forEach((c, i) => {
-                spring(c, (p) => ({
-                    transform: xf(mix(center[i].x, grid[i].x, p), mix(center[i].y, grid[i].y, p), mix(center[i].s, grid[i].s, p)).transform,
-                    opacity: p.toFixed(3)
-                }), { stiffness: 220, damping: 23, maxMs: 520 }, keep, true);
-            });
-            haptic([30, 40, 30]);
-            clock.after(440, () => {
+            haptic([26, 36, 26]);
+            if (spinAnim) { try { spinAnim.cancel(); } catch (e) {} spinAnim = null; }
+
+            /* ١ — القرص والحلقة والشبكة: تُطفأ وتُنسحب من حيث جاءت */
+            spring(core, (p) => ({ opacity: (1 - p).toFixed(3), transform: 'scale(' + (1 - .2 * p).toFixed(3) + ')' }),
+                { stiffness: 250, damping: 27, maxMs: 380 }, keep, true);
+            if (ring.parentNode) {
+                spring(ring, (p) => ({ opacity: (1 - p).toFixed(3) }), { stiffness: 300, damping: 30, maxMs: 300 }, keep, true);
+            }
+            if (net) {
+                const svg = net.svg, len = net.len || 400;
+                if (net.path.animate) {
+                    keep.push(net.path.animate([{ strokeDashoffset: 0 }, { strokeDashoffset: len }],
+                        { duration: REDUCED ? 120 : 420, easing: 'cubic-bezier(.4,0,.6,1)', fill: 'forwards' }));
+                }
+                net.dots.forEach((d, i) => {
+                    spring(d, (p) => ({ opacity: (1 - p).toFixed(3) }),
+                        { stiffness: 300, damping: 30, maxMs: 260, delay: REDUCED ? 0 : (OTP_LEN - 1 - i) * 40 }, keep, true);
+                });
+                clock.after(REDUCED ? 140 : 480, () => { if (svg.parentNode) svg.parentNode.removeChild(svg); });
+            }
+
+            /* ٢ — المربّعات ترجع من مركزها إلى مربّعها الصغير */
+            if (!late) {
+                st.cells.forEach((c, i) => {
+                    spring(c, (p) => ({
+                        transform: xf(mix(center[i].x, grid[i].x, p), mix(center[i].y, grid[i].y, p), mix(center[i].s, grid[i].s, p)).transform,
+                        opacity: p.toFixed(3)
+                    }), { stiffness: 240, damping: 24, maxMs: 460, delay: REDUCED ? 0 : 110 }, keep, true);
+                });
+            }
+            clock.after(REDUCED ? 60 : 180, () => {
                 if (!st.row.animate) return;
                 const frames = [];
                 for (let i = 0; i <= 26; i++) {
@@ -3906,22 +4037,44 @@ html.is-mobile .modal-footer-sticky {
                 frames.push({ transform: 'translate3d(0,0,0)' });
                 keep.push(st.row.animate(frames, { duration: REDUCED ? 160 : 450, easing: 'linear' }));
             });
-            clock.after(820, () => {
-                st.cells.forEach((c, i) => {
-                    spring(c, (p) => xf(mix(grid[i].x, base[i].x, p), mix(grid[i].y, base[i].y, p), mix(grid[i].s, 1, p)),
-                        { stiffness: 200, damping: 24, maxMs: 620 }, keep, true);
+
+            /* ٣ — الصفّ يكتمل والارتفاع يمتلئ معاً */
+            const backMs = late ? 0 : 480;
+            if (!late) {
+                clock.after(backMs, () => {
+                    st.cells.forEach((c, i) => {
+                        spring(c, (p) => xf(mix(grid[i].x, base[i].x, p), mix(grid[i].y, base[i].y, p), mix(grid[i].s, 1, p)),
+                            { stiffness: 210, damping: 24, maxMs: 520, delay: REDUCED ? 0 : (OTP_LEN - 1 - i) * 36 }, keep, true);
+                    });
+                    spring(st.shell, (p) => ({ height: mix(compactH, startHeight, p).toFixed(2) + 'px' }),
+                        { stiffness: 205, damping: 26, maxMs: 540 }, keep, true);
                 });
-                spring(st.shell, (p) => ({ height: mix(compactH, startHeight, p).toFixed(2) + 'px' }),
-                    { stiffness: 190, damping: 25, maxMs: 620 }, keep, true);
-            });
-            clock.after(1480, () => {
+            }
+
+            /* ٤ — كل شيء لمحله، والرمز الخاطئ يُمحى أمامك */
+            const settleMs = late ? 120 : backMs + 660;
+            clock.after(settleMs, () => {
+                handoff();
+                /* رفع الستار عن الشاشة الحقيقية قبل الذوبان: المسرح كان يُخفي
+                   الأصل بـ«m-lk-busy»، فلو بقي مخفياً صار الذوبان إلى سواد
+                   لا إلى البطاقة نفسها — وهذا بالضبط ما رفضه المالك */
+                document.body.classList.remove('m-lk-busy');
+                eraseStage();
                 input.value = '';
                 paintOtp(input);
+            });
+
+            /* ٥ — سطر الغلط، ثم ذوبان لا يُرى */
+            clock.after(settleMs + (REDUCED ? 160 : 420), () => {
+                const stErr = st.shell.querySelector('.m-lk-err');
+                if (stErr) { stErr.textContent = msg; stErr.classList.add('on', 'bad'); }
                 const realErr = document.querySelector('#' + LOGIN_ID + ' .m-lk-err');
                 if (realErr) { realErr.textContent = msg; realErr.classList.add('on', 'bad'); }
+            });
+            clock.after(settleMs + (REDUCED ? 220 : 470), () => {
                 st.stage.classList.add('gone');
             });
-            clock.after(1920, () => {
+            clock.after(settleMs + (REDUCED ? 420 : 900), () => {
                 fx.dispose();
                 /* المحاولة الخاطئة تُحسب هنا لا قبلها: وقت الحركة لا يُحاسب */
                 if (kind === 'bad') {
@@ -4066,20 +4219,30 @@ html.is-mobile .modal-footer-sticky {
             const aria = isTip ? 'تلميح الرمز' : (isFn ? 'حذف آخر رقم' : 'الرقم ' + k);
             const cls = isTip ? 'fn bulb' : (isFn ? 'fn' : '');
             return '<button type="button" data-k="' + k + '" class="' + cls + '" aria-label="' + aria + '"><span>' + label + '</span></button>';
-        }).join('') + '<span class="m-lk-tip" aria-hidden="true"><span class="m-lk-tip-tag">' + TIP_TAG + '</span><b>' + TIP_TEXT + '</b></span>';
-        const tip = pad.querySelector('.m-lk-tip');
+        }).join('');
+        /* الفقاعة تُبنى فوق مربّعات الرقم، لا فوق اللوحة: الممرّ تحت المربّعات
+           صار للعدّاد وحده، فلا يقف تلميحٌ فوق انتظار */
+        const tip = document.createElement('span');
+        tip.className = 'm-lk-tip';
+        tip.setAttribute('aria-hidden', 'true');
+        tip.innerHTML = '<span class="m-lk-tip-tag">' + TIP_TAG + '</span><strong>' + TIP_TEXT + '</strong>';
+        boxes.appendChild(tip);
         let tipTimer = null;
+        function setTip(live) {
+            tip.classList.toggle('on', live);
+            card.classList.toggle('tip-live', live);
+        }
         function hideTip() {
             if (tipTimer) { clearTimeout(tipTimer); tipTimer = null; }
-            if (tip) tip.classList.remove('on');
+            if (tip) setTip(false);
         }
         function showTip() {
             if (!tip) return;
             if (tipTimer) clearTimeout(tipTimer);
-            tip.classList.add('on');
+            setTip(true);
             haptic(8);
             announce(TIP_TAG + ': ' + TIP_TEXT);
-            tipTimer = setTimeout(() => { tipTimer = null; tip.classList.remove('on'); }, TIP_MS);
+            tipTimer = setTimeout(() => { tipTimer = null; setTip(false); }, TIP_MS);
         }
         card.insertBefore(pad, actions || card.querySelector('.m-lk-hint'));
 

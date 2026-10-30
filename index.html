@@ -25,6 +25,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- خطوط جوجل (Cairo) -->
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- خط الاسم على شاشة الجوال فقط: Lalezar للعرض + Noto Kufi احتياطاً — الكمبيوتر لا يطلبهما -->
+    <link href="https://fonts.googleapis.com/css2?family=Lalezar&family=Noto+Kufi+Arabic:wght@700;900&display=swap"
+          media="(max-width: 820px)" rel="stylesheet">
     <!-- مكتبة محرك التصميم الرسومي للفواتير (Fabric.js): defer حتى لا تحجب أول رسم -->
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
     <!-- ربط ملف التصميم -->
@@ -211,28 +214,32 @@
         letter-spacing: 2.4px;
         color: rgba(191,224,255,.60);
     }
+    /* الاسم كلّه شريط تدرّج واحد يمرّ فيه اللون: أبيض ثلجي ← سماوي ← أزرق ← نيلي
+       القصّة كلها على عنصر واحد (لا تدرّج لكل كلمة) حتى لا ينفصل الإيقاع */
     html.is-mobile .m-sp-brand {
-        display: flex;
-        align-items: baseline;
-        justify-content: center;
-        gap: 8px;
-        font-size: 27px;
-        font-weight: 800;
-        letter-spacing: .2px;
-        color: #eef7ff;
-        text-shadow: 0 0 22px rgba(56,189,248,.28);
-    }
-    html.is-mobile .m-sp-brand span { display: inline-block; }
-    html.is-mobile .m-sp-brand span:first-child { animation: mSpFade .6s cubic-bezier(.2,.8,.3,1) .22s both; }
-    /* التدرّج ثابت: لا لون متحرك على الاسم — مطلوب من المالك */
-    html.is-mobile .m-sp-brand .m-sp-ice {
-        background: linear-gradient(96deg, #eaf7ff 4%, #7dd3fc 42%, #38bdf8 72%, #cfeaff 96%);
+        display: block;
+        text-align: center;
+        white-space: nowrap;
+        font-family: 'Lalezar', 'Noto Kufi Arabic', 'Cairo', system-ui, sans-serif;
+        font-size: clamp(34px, 12.6vw, 52px);
+        font-weight: 900;
+        letter-spacing: .6px;
+        word-spacing: 6px;
+        line-height: 1.16;
+        background: linear-gradient(100deg,
+            #eef9ff 0%, #7dd3fc 11%, #38bdf8 22%, #4f46e5 34%,
+            #818cf8 45%, #38bdf8 58%, #a5f3fc 69%, #2563eb 82%, #eef9ff 100%);
+        background-size: 300% 100%;
+        background-position: 0% 50%;
         -webkit-background-clip: text;
         background-clip: text;
         color: transparent;
         -webkit-text-fill-color: transparent;
-        animation: mSpFade .6s cubic-bezier(.2,.8,.3,1) .34s both;
+        text-shadow: 0 0 30px rgba(56,189,248,.22);
+        animation: mSpFade .62s cubic-bezier(.2,.8,.3,1) .2s both,
+                   mSpFlow 6.4s linear 1s infinite;
     }
+    html.is-mobile .m-sp-brand span { display: inline; }
     html.is-mobile .m-sp-sub {
         margin: 8px 0 22px;
         font-size: 11.5px;
@@ -365,6 +372,11 @@
         0% { transform: scale(.7); opacity: .85; }
         70%, 100% { transform: scale(1.6); opacity: 0; }
     }
+    /* الشريط يتحرّج تحت الحروف: لا قفزة عند الدورة — الطول 300% والموقع يعود إلى 0 */
+    @keyframes mSpFlow {
+        from { background-position: 0% 50%; }
+        to   { background-position: 300% 50%; }
+    }
     @keyframes mSpOutCard {
         from { opacity: 1; transform: translate3d(0,0,0) scale(1); }
         to { opacity: 0; transform: translate3d(0,-14px,0) scale(1.045); }
@@ -377,10 +389,10 @@
         html.is-mobile .m-sp-card::after,
         html.is-mobile .m-sp-pulse,
         html.is-mobile .m-sp-pulse::after { animation: none; }
+        /* من يطفئ الحركة يرى الاسم ثابتاً على لون جميل لا متحرّكاً */
+        html.is-mobile .m-sp-brand { animation: none; background-position: 62% 50%; }
         html.is-mobile .m-sp-card,
         html.is-mobile .m-sp-mark,
-        html.is-mobile .m-sp-brand span,
-        html.is-mobile .m-sp-brand .m-sp-ice,
         html.is-mobile .m-sp-sub,
         html.is-mobile .m-sp-track,
         html.is-mobile .m-sp-spark,
@@ -389,7 +401,7 @@
     }
     @media (max-height: 430px) {
         html.is-mobile .m-sp-card { padding: 20px 20px 18px; }
-        html.is-mobile .m-sp-brand { font-size: 22px; }
+        html.is-mobile .m-sp-brand { font-size: min(30px, 9vw); }
         html.is-mobile .m-sp-sub { margin: 6px 0 16px; }
     }
     </style>
@@ -412,7 +424,7 @@
             <div class="m-sp-grid" aria-hidden="true"></div>
             <div class="m-sp-card">
                 <div class="m-sp-mark"><span class="m-sp-pulse"></span><span class="m-sp-kicker">ROYAL</span></div>
-                <div class="m-sp-brand"><span>مكوى</span><span class="m-sp-ice">رويال</span></div>
+                <div class="m-sp-brand"><span>مكوى</span> <span class="m-sp-ice">رويال</span></div>
                 <p class="m-sp-sub">نظام الإدارة — جارٍ تجهيز البيئة</p>
                 <div class="m-sp-track"><i class="m-sp-fill"></i><i class="m-sp-spark" aria-hidden="true"></i></div>
                 <div class="m-sp-meta">
