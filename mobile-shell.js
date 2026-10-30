@@ -1061,9 +1061,10 @@ html.is-mobile .modal-overlay.m-sheet .modal-content {
     border: 1px solid rgba(172,218,255,.28) !important;
     border-bottom: none !important;
     background:
-        radial-gradient(150% 90% at 84% -14%, rgba(112,104,255,.30), transparent 62%),
+        radial-gradient(150% 90% at 84% -14%, rgba(112,104,255,.32), transparent 62%),
+        radial-gradient(120% 80% at 0% 106%, rgba(52,132,255,.22), transparent 66%),
         linear-gradient(180deg, rgba(170,213,255,.16), rgba(146,200,255,.02) 40%),
-        rgba(17,36,68,.92) !important;
+        rgba(21,44,84,.92) !important;
     box-shadow: 0 -18px 60px rgba(0,4,14,.62), inset 0 1px 0 rgba(210,238,255,.36) !important;
     padding: 6px 14px calc(14px + env(safe-area-inset-bottom)) !important;
     overflow-y: auto !important;
@@ -1100,8 +1101,10 @@ html.is-mobile .modal-overlay.m-sheet .modal-title {
     position: sticky; top: -6px; z-index: 3;
     margin: 0 -14px 10px;
     padding: 14px 14px 12px;
-    background: linear-gradient(180deg, rgba(14,26,46,.99), rgba(10,19,34,.97));
-    border-bottom: 1px solid rgba(150,200,255,.12);
+    background:
+        linear-gradient(180deg, rgba(160,206,255,.14), rgba(146,200,255,.02) 74%),
+        rgba(18,38,72,.72);
+    border-bottom: 1px solid rgba(160,210,255,.20);
     border-radius: var(--m-radius-sheet) var(--m-radius-sheet) 0 0;
     font-size: 16.5px;
     font-weight: 900;
@@ -1110,7 +1113,12 @@ html.is-mobile .modal-overlay.m-sheet .modal-title {
 }
 html.is-mobile .modal-overlay.m-sheet .modal-actions {
     position: sticky; bottom: 0; padding-top: 10px;
-    background: linear-gradient(to top, rgba(8,16,29,.99) 62%, rgba(8,16,29,0));
+    background: linear-gradient(to top, rgba(15,32,62,.96) 38%, rgba(15,32,62,0));
+}
+html.is-mobile .modal-overlay:not(#modal-admin-login) .input-group label { color: #bad5f1 !important; }
+html.is-mobile .modal-overlay:not(#modal-admin-login) input::placeholder,
+html.is-mobile .modal-overlay:not(#modal-admin-login) textarea::placeholder {
+    color: rgba(178,206,238,.55) !important;
 }
 html.is-mobile .m-sheet-x {
     position: absolute; top: 11px; inset-inline-end: 12px; z-index: 4;
@@ -1119,10 +1127,10 @@ html.is-mobile .m-sheet-x {
     clip-path: var(--m-plate);
     border: none;
     background:
-        linear-gradient(160deg, rgba(160,210,255,.16), rgba(120,165,235,.03) 50%, rgba(130,175,255,.10)),
-        rgba(12,23,42,.78);
+        linear-gradient(160deg, rgba(170,216,255,.22), rgba(120,165,235,.04) 50%, rgba(130,175,255,.14)),
+        rgba(22,46,88,.82);
     color: #e8f2ff; font-size: 20px; line-height: 1;
-    box-shadow: inset 0 1px 0 rgba(186,226,255,.24);
+    box-shadow: inset 0 1px 0 rgba(196,230,255,.30);
     text-shadow: 0 1px 2px rgba(0,0,0,.6);
     filter: drop-shadow(0 6px 12px rgba(0,0,0,.5));
 }
