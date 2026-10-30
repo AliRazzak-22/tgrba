@@ -35,7 +35,9 @@ html.is-mobile {
     --m-deep: #2148a8;
     /* زجاج ياقوتي بنفس كثافة شاشة القفل: جسم مائل للأزرق أفتح، وضوء علوي
        سماوي، وحافة داخلية ساطعة. كل الألوان زرقاء — لا تدرّج أبيض إلى أزرق. */
-    --m-glass-bg: rgba(24,50,98,.34);
+    /* كثافة أعلى قليلاً: شبكة المشهد المحفورة كانت تنفذ عبر البطاقة فتُقرأ
+       كخطوط قطرية تقطعها. الآن التعبئة نظيفة والخطوط تبقى في الفراغ بينها. */
+    --m-glass-bg: rgba(22,47,94,.68);
     --m-glass: linear-gradient(160deg, rgba(170,214,255,.20) 0%, rgba(90,140,226,.045) 46%, rgba(128,184,255,.14) 100%);
     --m-sheen: radial-gradient(130% 62% at 50% -14%, rgba(160,210,255,.32), rgba(160,210,255,0) 64%);
     --m-edge: rgba(162,212,255,.26);
@@ -47,7 +49,6 @@ html.is-mobile {
     --m-facet-xl: polygon(30px 0, 100% 0, 100% calc(100% - 30px), calc(100% - 30px) 100%, 0 100%, 0 30px);
     --m-facet-sm: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
     --m-plate: polygon(30% 0, 70% 0, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0 70%, 0 30%);
-    --m-etch: repeating-linear-gradient(122deg, rgba(150,200,255,.042) 0 1px, transparent 1px 15px);
     --m-gold: #5aa8ff;
     --m-gold-soft: rgba(90,168,255,.14);
     --m-green: #3ddc97;
@@ -101,9 +102,10 @@ html.is-mobile body {
     margin: 0;
 }
 
-/* مشهد الخلفية: أسود مزرق يسبح فيه نيلي وأزرق ياقوتي، فوقه حقل هندسي محفور
-   بميلين. كل الحركة transform على طبقتين مثبّتَين فقط — لا background-position
-   ولا blur: الطبقتان تُرسمان مرة واحدة ثم ينزلقان على معالج الرسوم.
+/* مشهد الخلفية: أسود مزرق تسبح فيه سحب نيلي وأزرق ياقوتي. أُزيلت الشبكة
+   المحفورة بالميلين: خطوطها الرفيعة كانت تنفذ عبر الزجاج فتُقرأ كخدوش تقطع
+   البطاقات. كل الحركة transform على طبقتين مثبّتَين فقط — لا background-position
+   ولا blur: الطبقتان تُرسمان مرة واحدة ثم تنزلقان على معالج الرسوم.
    ما يشبه البلور في البطاقات أعلاه هو ضوء وحواف، لا فلتر. */
 html.is-mobile body::before {
     content: "";
@@ -117,8 +119,6 @@ html.is-mobile body::before {
         radial-gradient(64% 42% at 8% 34%, rgba(34,128,255,.50), transparent 72%),
         radial-gradient(44% 30% at 34% 62%, rgba(74,62,226,.32), transparent 76%),
         radial-gradient(94% 52% at 50% 112%, rgba(46,102,236,.58), transparent 72%),
-        repeating-linear-gradient(122deg, rgba(140,190,255,.115) 0 1px, transparent 1px 96px),
-        repeating-linear-gradient(58deg, rgba(140,190,255,.085) 0 1px, transparent 1px 96px),
         linear-gradient(175deg, #081022 0%, #040812 46%, #0a1430 100%);
     animation: mFieldDrift 38s ease-in-out infinite alternate;
 }
@@ -288,52 +288,58 @@ html.is-mobile #admin-screen .admin-section * {
    البطاقة ترتفع، أيقونتها تنبثق، ثم يُمسح العنوان والرقم تدريجياً من جهة
    القراءة، ويُملأ شريط التلوين أسفلها. التأخيرات تُحسب من --m-k لكل عنصر. */
 @keyframes mRise {
-    from { opacity: 0; transform: translate3d(0, 26px, 0) scale(.972); }
-    to   { opacity: 1; transform: none; }
+    0%   { opacity: 0; transform: translate3d(0, 30px, 0) scale(.955); }
+    62%  { opacity: 1; transform: translate3d(0, -3px, 0) scale(1.005); }
+    100% { opacity: 1; transform: none; }
 }
-@keyframes mFade { from { opacity: .55; } to { opacity: 1; } }
 @keyframes mPop {
-    0%   { opacity: 0; transform: translate3d(0,-10px,0) scale(.72); }
-    62%  { opacity: 1; transform: translate3d(0,2px,0) scale(1.06); }
+    0%   { opacity: 0; transform: translate3d(0,-12px,0) scale(.70); }
+    60%  { opacity: 1; transform: translate3d(0,2px,0) scale(1.055); }
     100% { opacity: 1; transform: none; }
 }
 /* mWipe لم تعد تقصّ بـ clip-path: القصّ المتحرك على خلايا داخل حاوية تمرير
    كان يجعل النص يختفي عشوائياً على آيفون، ويرسم طبقة إضافية لكل خلية. */
 @keyframes mWipe {
-    from { opacity: 0; transform: translate3d(0,5px,0); }
+    from { opacity: 0; transform: translate3d(0,8px,0); }
     to   { opacity: 1; transform: none; }
 }
 @keyframes mGrow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+/* تعبئة الأشرطة تنمو من جهة القراءة بلا لمس العرض: scaleX على المعالج فقط */
+@keyframes mFill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 
-html.is-mobile .admin-section.m-enter { animation: mFade .34s linear both; }
+/* لا تلاشي على مستوى الصفحة: طبقة opacity لحاوية كاملة تضم ثلاثين زجاجة
+   تُجبر المعالج على إعادة رسم الشجرة كلها كل إطار — كان هذا سبب الإطارات
+   الـ 66م.س. البطاقات نفسها تتلاشى وتتحرك، وهي الطبقات المطلوبة فقط. */
+/* التدرّج بطيء ومقصود: 88م.س بين الأصناف، والحركة نفسها تقارب الثانية */
 html.is-mobile .admin-section .m-anim {
-    animation: mRise .66s var(--m-ease-out) both;
-    animation-delay: calc(min(var(--m-k, 0), 11) * 66ms);
+    animation: mRise .96s var(--m-ease-out) both;
+    animation-delay: calc(60ms + min(var(--m-k, 0), 11) * 88ms);
 }
 html.is-mobile .admin-section .m-anim > .stat-icon {
-    animation: mPop .62s var(--m-ease-out) both;
-    animation-delay: calc(min(var(--m-k, 0), 11) * 66ms + 130ms);
+    animation: mPop .78s var(--m-ease-out) both;
+    animation-delay: calc(180ms + min(var(--m-k, 0), 11) * 88ms);
 }
 html.is-mobile .admin-section .m-anim .stat-title {
-    animation: mWipe .66s var(--m-ease-out) both;
-    animation-delay: calc(min(var(--m-k, 0), 11) * 66ms + 250ms);
+    animation: mWipe .8s var(--m-ease-out) both;
+    animation-delay: calc(330ms + min(var(--m-k, 0), 11) * 88ms);
 }
 html.is-mobile .admin-section .m-anim .stat-value {
-    animation: mWipe .78s var(--m-ease-out) both;
-    animation-delay: calc(min(var(--m-k, 0), 11) * 66ms + 330ms);
+    animation: mWipe .9s var(--m-ease-out) both;
+    animation-delay: calc(430ms + min(var(--m-k, 0), 11) * 88ms);
 }
 html.is-mobile .admin-section .m-anim > tr,
 html.is-mobile .admin-section tr.m-anim {
-    animation: mRise .58s var(--m-ease-out) both;
-    animation-delay: calc(min(var(--m-k, 0), 14) * 46ms + 180ms);
+    animation: mRise .8s var(--m-ease-out) both;
+    animation-delay: calc(240ms + min(var(--m-k, 0), 14) * 58ms);
 }
-html.is-mobile .admin-section .m-anim td {
-    animation: mWipe .6s var(--m-ease-out) both;
-    animation-delay: calc(min(var(--m-k, 0), 14) * 46ms + 300ms);
+/* الخلايا لا تُحرَّك منفردة: صف واحد متحرك فيه أربع خلايا كان يعني مئة طبقة
+   إضافية في الجدول الواحد. الصف كتلة واحدة يرتفع، والنص بداخله يظهر معه. */
+html.is-mobile .admin-section .m-anim .m-today-bar i,
+html.is-mobile .admin-section .m-anim .customer-stat-bar-fill {
+    transform-origin: right center;
+    animation: mFill 1.05s var(--m-ease-out) both;
+    animation-delay: calc(520ms + min(var(--m-k, 0), 11) * 88ms + var(--m-r, 0) * 90ms);
 }
-html.is-mobile body.m-dragging .admin-section.m-enter,
-html.is-mobile body.m-dragging .admin-section .m-anim,
-html.is-mobile body.m-dragging .admin-section .m-anim * { animation: none; }
 
 html.is-mobile .admin-section h2 {
     font-size: 19px !important; font-weight: 900; margin: 4px 2px 16px !important;
@@ -360,7 +366,6 @@ html.is-mobile .monthly-strip {
     background:
         linear-gradient(152deg, rgba(198,230,255,.13) 0%, rgba(120,172,240,.02) 42%, rgba(150,200,255,.08) 100%),
         radial-gradient(120% 90% at 50% 0%, rgba(96,160,255,.20), transparent 62%),
-        var(--m-etch),
         var(--m-glass),
         var(--m-glass-bg) !important;
     border: 1px solid var(--m-edge) !important;
@@ -407,8 +412,8 @@ html.is-mobile #admin-screen .stat-card::after {
 }
 html.is-mobile .admin-section .m-anim.stat-card::after,
 html.is-mobile .admin-section .m-anim .stat-card::after {
-    animation: mGrow .9s var(--m-ease-out) both;
-    animation-delay: calc(min(var(--m-k, 0), 11) * 66ms + 420ms);
+    animation: mGrow 1.05s var(--m-ease-out) both;
+    animation-delay: calc(520ms + min(var(--m-k, 0), 11) * 88ms);
 }
 
 /* بطاقات بدل الجداول */
@@ -551,7 +556,6 @@ html.is-mobile .stat-icon {
     line-height: 1;
     color: #f2faff !important;
     background:
-        repeating-linear-gradient(122deg, rgba(198,230,255,.075) 0 1px, transparent 1px 9px),
         linear-gradient(152deg, rgba(180,220,255,.34) 0%, rgba(120,165,235,.10) 46%, rgba(140,190,255,.20) 100%),
         rgba(22,44,80,.60) !important;
     box-shadow: none;
@@ -605,8 +609,7 @@ html.is-mobile #admin-daily-report .bento-hero {
         radial-gradient(120% 96% at 88% -14%, rgba(122,104,255,.42), transparent 62%),
         radial-gradient(110% 86% at -4% 110%, rgba(44,134,255,.36), transparent 64%),
         linear-gradient(152deg, rgba(206,234,255,.16), rgba(120,172,240,.03) 48%, rgba(150,200,255,.10) 100%),
-        var(--m-etch),
-        rgba(16,36,76,.46) !important;
+        rgba(18,40,80,.70) !important;
     box-shadow:
         0 26px 54px rgba(1,6,16,.56),
         inset 0 1px 0 rgba(222,242,255,.42),
@@ -743,8 +746,8 @@ html.is-mobile .m-today-row.sum { background: linear-gradient(90deg, rgba(198,22
 html.is-mobile .m-today-row.sum .m-today-val { font-size: 17px; color: #ffffff; }
 html.is-mobile .admin-section .m-anim.m-today .m-today-row,
 html.is-mobile .m-today.m-anim .m-today-row {
-    animation: mWipe .7s var(--m-ease-out) both;
-    animation-delay: calc(min(var(--m-k, 0), 11) * 66ms + 260ms + var(--m-r, 0) * 90ms);
+    animation: mWipe .82s var(--m-ease-out) both;
+    animation-delay: calc(330ms + min(var(--m-k, 0), 11) * 88ms + var(--m-r, 0) * 90ms);
 }
 
 /* ------------------------- صفحة المزيد -------------------------
@@ -2145,7 +2148,6 @@ html.is-mobile .stat-card[onclick*="logs"] .stat-icon {
 html.is-mobile #admin-screen #admin-daily-reports-body tr {
     background:
         linear-gradient(180deg, rgba(146,198,255,.15), rgba(146,198,255,0) 28%),
-        var(--m-etch),
         var(--m-glass),
         rgba(9,17,31,.62) !important;
     border: none !important;
@@ -2219,7 +2221,6 @@ html.is-mobile #admin-screen .cart-table tbody tr:hover,
 html.is-mobile #admin-screen .invoices-table tbody tr:hover {
     background:
         linear-gradient(180deg, rgba(146,198,255,.18), rgba(146,198,255,.02) 30%),
-        var(--m-etch),
         var(--m-glass),
         rgba(10,20,36,.76) !important;
 }
@@ -2252,7 +2253,6 @@ html.is-mobile .modal-footer-sticky {
     html.is-mobile .m-lk-scene i { animation: none !important; }
     /* حركة الطبقة تُخفَّف ولا تُلغى: إلغاؤها الكامل هو ما جعل المستخدم يقول
        «الموشن لم يعمل» حين تكون خاصية تقليل الحركة مفعّلة في الجهاز */
-    html.is-mobile .admin-section.m-enter,
     html.is-mobile .admin-section .m-anim,
     html.is-mobile .admin-section .m-anim *,
     html.is-mobile .modal-overlay.m-sheet,
@@ -2621,6 +2621,15 @@ html.is-mobile .modal-footer-sticky {
             motionDirect = true;
             document.body.classList.add('m-dragging');
             setBusy(true);
+            /* اللوحة المجاورة بدأت تُكشف: تبدأ بطاقاتها تُبنى من هذه اللحظة،
+               فتُرى وهي تتكوّن أثناء السحب بدل أن تظهر كاملة ثم تُعاد */
+            const base = Math.round(phys.P0);
+            const dP = (dirSign() < 0 ? dx : -dx) / state.width;
+            const want = base + (dP > 0 ? 1 : -1);
+            if (want >= 0 && want <= state.swipeHi) {
+                const ni = pageForPos(want);
+                if (ni !== state.index && vpos(ni) === want) enterAnimate(state.pages[ni]);
+            }
         }
 
         /* 1:1 مع الإصبع + مرونة عند الحدود — والحد هنا هو مدى الشريط لا كل اللوحات */
@@ -2736,7 +2745,6 @@ html.is-mobile .modal-footer-sticky {
 
     function commit(vPos) {
         const i = pageForPos(vPos);
-        const moved = i !== state.index;
         phys.P = vpos(i);
         state.index = i;
         cancelPaint();
@@ -2748,9 +2756,10 @@ html.is-mobile .modal-footer-sticky {
         syncA11y();
         onArrive(key);
         setBusy(false);
-        /* «changed» لم يكن معرَّفاً قط: رميه كان يقطع commit عند هذا السطر، فكان
-           تبويب السحب ينتقل بلا حركة التكوين التدريجي — والرسم المؤجَّل لا يُجدول */
-        if (moved) enterAnimate(state.pages[i]);
+        /* التكوين بدأ لحظة كشف اللوحة أثناء السحب — لا نعيده هنا حتى لا تهتز
+           الصفحة كاملة ثم تُبنى. اللوحات الأخرى (ومنها التي رجعنا عنها)
+           تُنظَّف لتُبنى من جديد في زيارتها القادمة. */
+        resetOtherEntrances(state.pages[i]);
         setTimeout(() => { flushRepaint(); syncFlow(); }, 520);
     }
 
@@ -4154,6 +4163,10 @@ html.is-mobile .modal-footer-sticky {
                 { stiffness: 220, damping: 23, maxMs: 520, delay: REDUCED ? 0 : 360 }, keep, true);
             clock.after(1700, () => {
                 st.stage.classList.add('gone');
+                /* الكشف: المسرح يتلاشى والصفحة تُبنى في اللحظة نفسها */
+                if (state.started && document.getElementById(ADMIN_ID).classList.contains('active-screen')) {
+                    enterAnimate(state.pages[state.index]);
+                }
                 clock.after(440, () => fx.dispose());
             });
         }
@@ -4713,38 +4726,54 @@ html.is-mobile .modal-footer-sticky {
        دفعة واحدة لحظة الدخول، ولا يراها أحد. */
     function enterRows(page) {
         const out = [];
-        const limit = page.clientHeight * 1.25;
+        const limit = page.clientHeight * 1.05;
         const base = page.getBoundingClientRect().top;
         qsa('tbody tr', page).forEach((r) => {
-            if (out.length >= 26) return;
+            /* 12 صفاً تكفي ما يظهر فوق الطية؛ الباقي يبقى ساكناً في الظل */
+            if (out.length >= 12) return;
             if (r.getBoundingClientRect().top - base > limit) return;
             out.push(r);
         });
         return out;
     }
 
+    /* كل دخول يبدأ من اللحظة الأولى للانتقال — قبل أن تُرسم اللوحة —
+       فنراها تُبنى وهي تدخل، بدل أن تظهر كاملة ثم تختفي وتُبنى (الوميض
+       الذي كان يزعج المستخدم). السجل يمنع إعادة التشغيل عند الوصول. */
+    const entered = new Map();
+
+    function clearEnter(page) {
+        if (!page) return;
+        const rec = entered.get(page);
+        if (!rec) return;
+        clearTimeout(rec.timer);
+        rec.nodes.forEach((n) => n.classList.remove('m-anim'));
+        rec.rows.forEach((r) => r.classList.remove('m-anim'));
+        entered.delete(page);
+    }
+
     function enterAnimate(page) {
         if (!page) return;
+        clearEnter(page);
         const nodes = enterNodes(page);
         const rows = enterRows(page);
-        page.classList.remove('m-enter');
-        nodes.forEach((n, i) => {
-            n.classList.remove('m-anim');
-            n.style.setProperty('--m-k', String(i));
-        });
-        rows.forEach((r, i) => {
-            r.classList.remove('m-anim');
-            r.style.setProperty('--m-k', String(i));
-        });
+        nodes.forEach((n, i) => n.style.setProperty('--m-k', String(i)));
+        rows.forEach((r, i) => r.style.setProperty('--m-k', String(i)));
         void page.offsetWidth;
-        page.classList.add('m-enter');
         nodes.forEach((n) => n.classList.add('m-anim'));
         rows.forEach((r) => r.classList.add('m-anim'));
-        setTimeout(() => {
-            page.classList.remove('m-enter');
+        const rec = { nodes, rows, timer: 0 };
+        /* عمر أطول حركة (آخر صنف + مدته) حتى لا تُمسح الأصناف في منتصفها */
+        rec.timer = setTimeout(() => {
             nodes.forEach((n) => n.classList.remove('m-anim'));
             rows.forEach((r) => r.classList.remove('m-anim'));
-        }, 1240);
+            if (entered.get(page) === rec) entered.delete(page);
+        }, 2600);
+        entered.set(page, rec);
+    }
+
+    function resetOtherEntrances(current) {
+        entered.forEach((rec, p) => { if (p !== current) clearEnter(p); });
     }
 
     /* ================== تجاوز switchAdminTab (عرض فقط) ================== */
@@ -4788,10 +4817,12 @@ html.is-mobile .modal-footer-sticky {
            فلا انزلاق — الهدف يحلّ مكانها بحركة دخوله الخاصة. */
         if (vfrom === vto) {
             if (src) src.style.willChange = 'auto';
+            /* البناء قبل الظهور: تُرسم اللوحة أول مرة وهي في حالتها الابتدائية */
+            enterAnimate(dst);
             paintTransforms();
             syncA11y();
             setBusy(false);
-            enterAnimate(dst);
+            resetOtherEntrances(dst);
             setTimeout(() => { flushRepaint(); syncFlow(); }, 520);
             return;
         }
@@ -4800,13 +4831,15 @@ html.is-mobile .modal-footer-sticky {
            بناء الجداول بأكملها، ولو جرى والانزلاق جارٍ انقطعت الحركة واختفت
            اللوحة ربع ثانية ثم رجعت. */
         flushRepaint();
+        /* الحركة تبدأ الآن لا عند الوصول: تظهر اللوحة وهي تُبنى */
+        enterAnimate(dst);
         paintTransforms();
         if (src) { src.classList.add('m-seen'); src.style.willChange = 'transform'; }
         if (dst) { dst.style.willChange = 'transform'; }
         setOffset(src, 0);
         setOffset(dst, s);
         const s0 = now();
-        const dur = 280;
+        const dur = 320;
         const step = () => {
             const k = clamp((now() - s0) / dur, 0, 1);
             const e = 1 - Math.pow(1 - k, 3);
@@ -4825,7 +4858,7 @@ html.is-mobile .modal-footer-sticky {
             setBusy(false);
             paintTransforms();
             syncA11y();
-            enterAnimate(dst);
+            resetOtherEntrances(dst);
             /* ما استجد أثناء الحركة يُرسم بعد اكتمال الدخول، لا فوقه */
             setTimeout(() => { flushRepaint(); syncFlow(); }, 520);
         };
@@ -4965,7 +4998,9 @@ html.is-mobile .modal-footer-sticky {
         mirrorConnection();
         state.started = true;
         flushRepaint();
-        enterAnimate(state.pages[state.index]);
+        /* أثناء مسرح فتح الرمز لا نُشغّل البناء خلفه عبثاً: الكشف يشغّله
+           في اللحظة التي يبدأ فيها المسرح بالتلاشي */
+        if (!document.querySelector('.m-lk-fx')) enterAnimate(state.pages[state.index]);
     }
 
     /* شاشة تحميل تختفي بتلاشٍ .6s عند جهوزية الهيكل */
