@@ -2222,6 +2222,11 @@ html.is-mobile .modal-footer-sticky {
 
     /* المصدر الوحيد للظهور والحالة الجارية */
     let calcOk = true;
+    /* رسم مباشر أثناء الحركة فقط. حين يكون مفتوحاً لا نكتب --m-p على وسم html:
+       متغيّر موروث على الجذر يُبطل حساب الأنماط للشجرة كلها في كل إطار — وهو
+       ثِقل السحب نفسه. عند السكون يُغلق ويعود الحساب لورقة الأنماط كما كان. */
+    let motionDirect = false;
+    let paintQueued = 0;
 
     /* يدقّ بعد حقن الأنماط: يتأكد أن translate3d(calc(var)) يُحسب فعلاً في هذا المتصفح */
     function probeCalc() {
@@ -2239,7 +2244,7 @@ html.is-mobile .modal-footer-sticky {
     }
 
     function paintTransforms() {
-        root.style.setProperty('--m-p', phys.P.toFixed(4));
+        if (!motionDirect) root.style.setProperty('--m-p', phys.P.toFixed(4));
         const P = phys.P;
         for (let i = 0; i < state.pages.length; i++) {
             const el = state.pages[i];
@@ -2251,7 +2256,7 @@ html.is-mobile .modal-footer-sticky {
             const cur = i === state.index;
             if (cur !== el.classList.contains('m-cur')) el.classList.toggle('m-cur', cur);
             if (seen && state.keys[i] === 'invoice-designer') ensureStudioFonts();
-            if (!calcOk) {
+            if (!calcOk || motionDirect) {
                 const d = v - P;
                 el.style.transform = seen
                     ? 'translate3d(' + (dirSign() * d * state.width).toFixed(2) + 'px,0,0)'
@@ -2259,17 +2264,30 @@ html.is-mobile .modal-footer-sticky {
                 el.style.opacity = seen ? String(1 - Math.min(1, Math.abs(d)) * 0.2) : '';
             }
         }
-        paintIndicator();
+        /* للمؤشّر دورته النابضة الخاصة: نداؤه كل إطار من هنا يجعله يرسم مرتين */
+        if (!ind.raf) paintIndicator();
+    }
+
+    /* إقفال الرسم المباشر: تُكتب النهاية في --m-p أولاً ثم تُمسح الأنماط المضمّنة،
+       وكلاهما في المهمة نفسها فلا يرى المستخدم لحظة انتقال بين الطريقتين */
+    function settleDirect() {
+        if (!motionDirect) return;
+        motionDirect = false;
+        root.style.setProperty('--m-p', phys.P.toFixed(4));
+        for (let i = 0; i < state.pages.length; i++) {
+            const el = state.pages[i];
+            if (!el) continue;
+            el.style.removeProperty('transform');
+            el.style.removeProperty('opacity');
+        }
     }
 
     /* إزاحة لوحة واحدة سطرياً فوق حساب الشريط: الحساب يبقى في ورقة الأنماط لبقية اللوحات */
     function setOffset(el, d) {
         if (!el) return;
         el.style.setProperty('--m-d', d.toFixed(4));
-        if (!calcOk) {
-            el.style.transform = 'translate3d(' + (dirSign() * d * state.width).toFixed(2) + 'px,0,0)';
-            el.style.opacity = String(1 - Math.min(1, Math.abs(d)) * 0.2);
-        }
+        el.style.transform = 'translate3d(' + (dirSign() * d * state.width).toFixed(2) + 'px,0,0)';
+        el.style.opacity = String(1 - Math.min(1, Math.abs(d)) * 0.2);
     }
 
     function clearOffsets() {
@@ -2277,7 +2295,8 @@ html.is-mobile .modal-footer-sticky {
             const el = state.pages[i];
             if (!el) continue;
             el.style.removeProperty('--m-d');
-            if (!calcOk) { el.style.transform = ''; el.style.opacity = ''; }
+            el.style.removeProperty('transform');
+            el.style.removeProperty('opacity');
         }
     }
 
@@ -2408,6 +2427,7 @@ html.is-mobile .modal-footer-sticky {
             if (Math.abs(dy) > Math.abs(dx)) { abortGesture(); return; }
             if (blocksHorizontalScroll(e.target, dx)) { abortGesture(); return; }
                   phys.axis = 'x';
+            motionDirect = true;
             document.body.classList.add('m-dragging');
             setBusy(true);
         }
@@ -2422,7 +2442,20 @@ html.is-mobile .modal-footer-sticky {
         phys.P = clamp(raw + rubber(over), lim[0] - 0.5, lim[1] + 0.5);
         phys.samples.push({ t: now(), x: phys.P });
         while (phys.samples.length > 2 && now() - phys.samples[0].t > 100) phys.samples.shift();
-        paintTransforms();
+        /* لمسة واحدة تُطلق مئات الأحداث في الثانية على شاشة ١٢٠هرتز: رسم واحد
+           لكل إطار كافٍ، والزائد رسم مكرّر لنفس الإصبع */
+        requestPaint();
+    }
+
+    function requestPaint() {
+        if (paintQueued) return;
+        paintQueued = requestAnimationFrame(() => { paintQueued = 0; paintTransforms(); });
+    }
+
+    function cancelPaint() {
+        if (!paintQueued) return;
+        cancelAnimationFrame(paintQueued);
+        paintQueued = 0;
     }
 
     /* لا نبدأ سحب التبويبات إذا بدأت اللمسة داخل منطقة تمرير أفقي ولم تصل لحافتها */
@@ -2504,22 +2537,29 @@ html.is-mobile .modal-footer-sticky {
         /* سحب عمودي عادي: لا نابض ولا commit ولا حركة دخول */
         if (moved) { springTo(Math.round(phys.P), 0); return; }
         phys.P = Math.round(phys.P);
+        settleDirect();
+        paintTransforms();
     }
 
     function finishGesture() { setBusy(false); setTimeout(flushRepaint, 260); }
 
     function commit(vPos) {
         const i = pageForPos(vPos);
+        const moved = i !== state.index;
         phys.P = vpos(i);
         state.index = i;
+        cancelPaint();
         paintTransforms();
+        settleDirect();
         document.body.classList.remove('m-dragging');
         const key = state.keys[i];
         if (key && key !== currentTabKey()) routeOriginal(key);
         syncA11y();
         onArrive(key);
         setBusy(false);
-        if (changed) enterAnimate(state.pages[i]);
+        /* «changed» لم يكن معرَّفاً قط: رميه كان يقطع commit عند هذا السطر، فكان
+           تبويب السحب ينتقل بلا حركة التكوين التدريجي — والرسم المؤجَّل لا يُجدول */
+        if (moved) enterAnimate(state.pages[i]);
         setTimeout(() => { flushRepaint(); syncFlow(); }, 520);
     }
 
@@ -4537,6 +4577,7 @@ html.is-mobile .modal-footer-sticky {
             return;
         }
         stopSpring();
+        settleDirect();
         clearOffsets();
         const src = state.pages[from];
         const dst = state.pages[i];
