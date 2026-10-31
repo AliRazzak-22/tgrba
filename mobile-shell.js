@@ -2859,6 +2859,233 @@ html.is-mobile body.rg-light .m-ptr-label {
     html.is-mobile .m-ptr.busy .m-ptr-ring { animation: none; }
 }
 
+/* ------------------------- لوحة الأوامر: بحث سريع -------------------------
+   بحث واحد يصل إلى الأقسام والزبائن والفواتير والإجراءات. تُبنى عند أول فتح،
+   وتُقرأ بياناتها من الجسر عند كل فتح، ولا تكتب شيئاً في قاعدة البيانات. */
+html.is-mobile .m-head-search {
+    flex: none;
+    width: 32px; height: 32px;
+    margin-inline-start: 2px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 50%;
+    border: 1px solid var(--m-edge);
+    background: linear-gradient(160deg, rgba(255,255,255,.14), rgba(255,255,255,.02)), rgba(9,18,34,.42);
+    color: var(--m-accent2);
+    font-size: 13px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.22);
+    transition: transform .18s var(--m-ease), background .3s var(--m-ease);
+}
+html.is-mobile .m-head-search:active { transform: scale(.92); }
+html.is-mobile .m-head-search i { pointer-events: none; }
+html.is-mobile body.rg-light .m-head-search {
+    border-color: rgba(255,255,255,.95);
+    background: linear-gradient(160deg, rgba(255,255,255,.96), rgba(255,255,255,.70));
+    color: #1c4a7a;
+    box-shadow: 0 6px 14px rgba(28,62,110,.10), inset 0 1px 0 #fff;
+}
+
+html.is-mobile .m-cmd {
+    position: fixed;
+    inset: 0;
+    z-index: 9650;
+    visibility: hidden;
+    pointer-events: none;
+}
+html.is-mobile .m-cmd.on { visibility: visible; pointer-events: auto; }
+html.is-mobile .m-cmd-scrim {
+    position: absolute; inset: 0;
+    background: rgba(3,8,18,.52);
+    -webkit-backdrop-filter: blur(9px) saturate(130%);
+    backdrop-filter: blur(9px) saturate(130%);
+    opacity: 0;
+    transition: opacity .26s var(--m-ease);
+}
+html.is-mobile .m-cmd.on .m-cmd-scrim { opacity: 1; }
+html.is-mobile .m-cmd-card {
+    position: absolute;
+    top: calc(env(safe-area-inset-top, 0px) + 12px);
+    left: 10px; right: 10px;
+    max-width: 560px;
+    margin-inline: auto;
+    max-height: calc(100vh - var(--m-kb, 0px) - env(safe-area-inset-top, 0px) - 74px);
+    display: flex;
+    flex-direction: column;
+    border-radius: 24px;
+    border: 1px solid rgba(170,215,255,.22);
+    background:
+        linear-gradient(158deg, rgba(190,222,255,.14), rgba(120,172,240,.02) 46%, rgba(160,205,255,.08)),
+        rgba(9,19,37,.86);
+    -webkit-backdrop-filter: blur(24px) saturate(150%);
+    backdrop-filter: blur(24px) saturate(150%);
+    box-shadow: 0 30px 70px rgba(0,4,14,.60), inset 0 1px 0 rgba(210,240,255,.22);
+    overflow: hidden;
+    transform: translate3d(0, -14px, 0) scale(.985);
+    opacity: 0;
+    transition: transform .34s var(--m-ease-out), opacity .24s var(--m-ease);
+}
+html.is-mobile .m-cmd.on .m-cmd-card { transform: none; opacity: 1; }
+html.is-mobile .m-cmd.closing .m-cmd-card {
+    transform: translate3d(0, -10px, 0) scale(.99);
+    opacity: 0;
+    transition: transform .18s ease, opacity .16s ease;
+}
+html.is-mobile .m-cmd.closing .m-cmd-scrim { opacity: 0; transition-duration: .18s; }
+html.is-mobile .m-cmd-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 12px 12px 14px;
+    border-bottom: 1px solid rgba(150,200,255,.14);
+    flex: none;
+}
+html.is-mobile .m-cmd-bar > i.fa-magnifying-glass { color: var(--m-accent2); font-size: 15px; flex: none; }
+html.is-mobile .m-cmd-input {
+    flex: 1;
+    min-width: 0;
+    background: none;
+    border: 0;
+    outline: none;
+    color: #eaf4ff;
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 700;
+    padding: 4px 0;
+}
+html.is-mobile .m-cmd-input::placeholder { color: rgba(178,205,238,.55); font-weight: 600; }
+html.is-mobile .m-cmd-x {
+    flex: none;
+    width: 30px; height: 30px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 50%;
+    border: 1px solid rgba(160,205,255,.18);
+    background: rgba(255,255,255,.06);
+    color: #cfe4ff;
+    font-size: 12px;
+}
+html.is-mobile .m-cmd-list {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 4px 8px 8px;
+    overscroll-behavior: contain;
+}
+html.is-mobile .m-cmd-grp {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 10px 6px;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: .6px;
+    color: rgba(168,198,232,.62);
+}
+html.is-mobile .m-cmd-grp::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(150,200,255,.18), transparent);
+}
+html.is-mobile .m-cmd-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 9px 10px;
+    border-radius: 14px;
+    border: 1px solid transparent;
+    background: none;
+    color: #e8f2ff;
+    text-align: start;
+    font-family: inherit;
+    transition: background .16s ease, border-color .16s ease, transform .14s ease;
+}
+html.is-mobile .m-cmd.on .m-cmd-row {
+    animation: mCmdRow .36s var(--m-ease-out) both;
+    animation-delay: calc(min(var(--i, 0), 10) * 26ms);
+}
+@keyframes mCmdRow {
+    from { opacity: 0; transform: translate3d(0, 7px, 0); }
+    to   { opacity: 1; transform: none; }
+}
+html.is-mobile .m-cmd-row.sel {
+    background: linear-gradient(160deg, rgba(120,180,255,.16), rgba(60,110,190,.06));
+    border-color: rgba(150,205,255,.26);
+}
+html.is-mobile .m-cmd-row:active { transform: scale(.985); }
+html.is-mobile .m-cmd-ic {
+    flex: none;
+    width: 32px; height: 32px;
+    display: grid;
+    place-items: center;
+    border-radius: 10px;
+    background: rgba(140,195,255,.10);
+    border: 1px solid rgba(150,205,255,.18);
+    color: var(--m-accent2);
+    font-size: 13px;
+}
+html.is-mobile .m-cmd-txt { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+html.is-mobile .m-cmd-txt b {
+    font-size: 13.5px;
+    font-weight: 800;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+html.is-mobile .m-cmd-txt small {
+    font-size: 10.5px;
+    color: rgba(170,198,230,.68);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+html.is-mobile .m-cmd-go { flex: none; color: rgba(160,200,245,.38); font-size: 10px; }
+html.is-mobile .m-cmd-empty { padding: 30px 18px 34px; text-align: center; }
+html.is-mobile .m-cmd-empty i { display: block; font-size: 22px; color: rgba(150,195,245,.5); margin-bottom: 10px; }
+html.is-mobile .m-cmd-empty b { display: block; font-size: 13px; font-weight: 800; color: #dbe9fb; margin-bottom: 4px; }
+html.is-mobile .m-cmd-empty span { font-size: 11px; color: var(--m-muted); }
+html.is-mobile .m-cmd-hint {
+    flex: none;
+    padding: 8px 14px calc(10px + env(safe-area-inset-bottom, 0px) * .3);
+    border-top: 1px solid rgba(150,200,255,.10);
+    font-size: 9.5px;
+    letter-spacing: .2px;
+    color: rgba(160,190,225,.50);
+    text-align: center;
+}
+html.is-mobile body.rg-light .m-cmd-scrim { background: rgba(232,240,250,.55); }
+html.is-mobile body.rg-light .m-cmd-card {
+    border-color: rgba(255,255,255,.95);
+    background: linear-gradient(158deg, rgba(255,255,255,.97), rgba(255,255,255,.88));
+    box-shadow: 0 30px 70px rgba(24,54,100,.24), inset 0 1px 0 #fff;
+}
+html.is-mobile body.rg-light .m-cmd-bar { border-bottom-color: rgba(30,70,120,.10); }
+html.is-mobile body.rg-light .m-cmd-bar > i.fa-magnifying-glass { color: #2f7fd0; }
+html.is-mobile body.rg-light .m-cmd-input { color: #0e2138; }
+html.is-mobile body.rg-light .m-cmd-input::placeholder { color: rgba(70,100,135,.55); }
+html.is-mobile body.rg-light .m-cmd-x { border-color: rgba(30,70,120,.14); background: rgba(30,70,120,.06); color: #24466f; }
+html.is-mobile body.rg-light .m-cmd-grp { color: rgba(60,90,125,.62); }
+html.is-mobile body.rg-light .m-cmd-grp::after { background: linear-gradient(90deg, rgba(47,127,208,.20), transparent); }
+html.is-mobile body.rg-light .m-cmd-row { color: #16324f; }
+html.is-mobile body.rg-light .m-cmd-row.sel {
+    background: linear-gradient(160deg, rgba(47,127,208,.12), rgba(47,127,208,.04));
+    border-color: rgba(47,127,208,.22);
+}
+html.is-mobile body.rg-light .m-cmd-ic {
+    background: rgba(47,127,208,.08);
+    border-color: rgba(47,127,208,.18);
+    color: #2f7fd0;
+}
+html.is-mobile body.rg-light .m-cmd-txt small { color: rgba(70,100,135,.70); }
+html.is-mobile body.rg-light .m-cmd-go { color: rgba(47,127,208,.40); }
+html.is-mobile body.rg-light .m-cmd-empty b { color: #24466f; }
+html.is-mobile body.rg-light .m-cmd-hint { border-top-color: rgba(30,70,120,.08); color: rgba(70,100,135,.55); }
+@media (prefers-reduced-motion: reduce) {
+    html.is-mobile .m-cmd-card,
+    html.is-mobile .m-cmd.on .m-cmd-row { transition: none; animation: none; }
+    html.is-mobile .m-cmd-scrim { transition: none; }
+}
+
 /* ------------------------- التنبيهات والعناصر الصغيرة ------------------------- */
 html.is-mobile #toast-container {
     top: auto !important; left: 12px !important; right: 12px !important;
@@ -3138,6 +3365,7 @@ html.is-mobile .modal-footer-sticky {
             '<span class="m-brand">' + esc(brandName()) + '</span>' +
             '<span class="m-conn"><i class="m-dot"></i><span class="m-conn-text">متصل</span></span>' +
             '<span class="m-time">--:--</span>' +
+            '<button type="button" class="m-head-search" aria-label="بحث سريع في النظام"><i class="fa-solid fa-magnifying-glass"></i></button>' +
             '<i class="m-head-prog" aria-hidden="true"></i>';
         admin.insertBefore(head, admin.firstChild);
         headRef = head;
@@ -3859,6 +4087,348 @@ html.is-mobile .modal-footer-sticky {
         state.pages.forEach((p) => { if (p) p.addEventListener('scroll', schedule, { passive: true }); });
         window.addEventListener('resize', schedule, { passive: true });
         update();
+    }
+
+    /* ================== لوحة الأوامر: بحث سريع ==================
+       قراءة فقط من الجسر. الأسماء تُفكّ ثم تُرمّز قبل الحقن، وتبقى نسخة خام
+       للمطابقة مع مفاتيح مركز الزبائن نفسه. */
+    const CMD_MAX = 8;
+    let cmdEl = null, cmdInput = null, cmdList = null, cmdRows = [], cmdSel = 0, cmdOpen = false, cmdCloseTimer = 0;
+
+    function cmdDecode(v) {
+        const s = String(v == null ? '' : v);
+        return typeof window.decodeText === 'function' ? window.decodeText(s) : s;
+    }
+    function cmdNorm(v) {
+        return cmdDecode(v).toLowerCase()
+            .replace(/[\u064B-\u0652\u0670\u0640]/g, '')
+            .replace(/[أإآٱ]/g, 'ا')
+            .replace(/ى/g, 'ي')
+            .replace(/ة/g, 'ه')
+            .replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)))
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+    function cmdNum(v) { const n = Number(v); return isFinite(n) ? n : 0; }
+    function cmdMoney(n) { return Math.round(cmdNum(n)).toLocaleString('en-US'); }
+    function cmdTs(inv) {
+        const t = cmdNum(inv && inv.timestamp);
+        if (t > 0) return t;
+        const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String((inv && inv.date) || ''));
+        return m ? new Date(+m[1], +m[2] - 1, +m[3], 12).getTime() : 0;
+    }
+    function cmdDay(ms) {
+        if (!ms) return '';
+        const d = new Date(ms);
+        const t = new Date();
+        if (d.toDateString() === t.toDateString()) return 'اليوم';
+        if (d.toDateString() === new Date(t.getTime() - 86400000).toDateString()) return 'أمس';
+        return d.getDate() + '/' + (d.getMonth() + 1);
+    }
+
+    function cmdSnapshot() {
+        const data = (typeof window.royalDataRead === 'function' && window.royalDataRead()) || {};
+        const invoices = Array.isArray(data.invoices) ? data.invoices : [];
+        const byId = new Map();
+        const customers = new Map();
+        invoices.forEach((inv) => {
+            if (!inv || !inv.id || byId.has(inv.id)) return;
+            byId.set(inv.id, inv);
+            const cust = inv.customer || {};
+            const name = String(cust.name || '').trim();
+            if (!name || name === 'عميل نقدي') return;
+            let c = customers.get(name);
+            if (!c) customers.set(name, c = { name, phone: '', visits: 0, spent: 0, last: 0, debt: 0 });
+            const ph = String(cust.phone || '').trim();
+            if (ph && !c.phone) c.phone = ph;
+            c.visits += 1;
+            c.spent += cmdNum(inv.total);
+            c.last = Math.max(c.last, cmdTs(inv));
+        });
+        (Array.isArray(data.debts) ? data.debts : []).forEach((d) => {
+            if (!d) return;
+            const name = String(d.name || '').trim();
+            const rem = cmdNum(d.remaining);
+            if (!name || rem <= 0) return;
+            const c = customers.get(name);
+            if (c) c.debt += rem;
+        });
+        return {
+            invoices: Array.from(byId.values()).sort((a, b) => cmdTs(b) - cmdTs(a)),
+            customers: Array.from(customers.values()).sort((a, b) => b.last - a.last)
+        };
+    }
+
+    /* عناوين نظيفة للصفحات المخفية: بعض عناوين h2 تجمع شظايا واجهة
+       («الاستوديو الفاتورة تقرير الشفت…»)، فالاسم الثابت أصدق هنا. */
+    const CMD_LABELS = {
+        'invoice-designer': 'مصمم الفاتورة',
+        'costs': 'التكاليف التشغيلية',
+        'debts': 'سجل الديون',
+        'logs': 'سجل الحركات والمراقبة',
+        'subscriptions': 'إدارة الاشتراكات',
+        'settings': 'تخصيصات النظام'
+    };
+
+    function cmdSections() {
+        return state.keys.map((k, i) => {
+            const page = state.pages[i];
+            const bi = state.barKeys ? state.barKeys.indexOf(k) : -1;
+            const btn = bi >= 0 ? state.barBtns[bi] : null;
+            const span = btn && btn.querySelector('span');
+            let label = span ? span.textContent.trim() : '';
+            if (!label && CMD_LABELS[k]) label = CMD_LABELS[k];
+            if (!label && page) {
+                const h = page.querySelector('h2');
+                if (h) label = h.textContent.replace(/\s+/g, ' ').trim();
+            }
+            if (!label) label = k;
+            if (label.length > 28) label = label.slice(0, 27).trim() + '…';
+            const icon = btn && btn.querySelector('i') ? btn.querySelector('i').className : 'fa-solid fa-layer-group';
+            return { key: k, label, icon };
+        });
+    }
+
+    function cmdActions() {
+        const light = document.body.classList.contains('rg-light');
+        const act = [];
+        if (window.RoyalGlass && typeof window.RoyalGlass.set === 'function') {
+            act.push({
+                id: 'theme',
+                label: light ? 'الوضع الليلي' : 'الوضع النهاري',
+                icon: 'fa-solid ' + (light ? 'fa-moon' : 'fa-sun'),
+                hint: 'تبديل فوري يُحفظ على هذا الجهاز',
+                run: () => window.RoyalGlass.set({ mode: light ? 'dark' : 'light' })
+            });
+        }
+        act.push({
+            id: 'refresh',
+            label: 'تحديث اللوحة',
+            icon: 'fa-solid fa-rotate',
+            hint: 'إعادة الرسم من البيانات الحيّة',
+            run: () => { if (typeof window.updateAdminDashboard === 'function') window.updateAdminDashboard(); }
+        });
+        act.push({
+            id: 'csv',
+            label: 'تصدير الزبائن CSV',
+            icon: 'fa-solid fa-file-csv',
+            hint: 'ملف يُنزَّل من تبويب الزبائن',
+            run: () => {
+                window.switchAdminTab('customers', 'none');
+                setTimeout(() => {
+                    const b = document.getElementById('ri-export');
+                    if (b) b.click();
+                }, 520);
+            }
+        });
+        return act;
+    }
+
+    function cmdResults(q) {
+        const n = cmdNorm(q);
+        const secs = cmdSections();
+        const acts = cmdActions();
+        const secRow = (s) => ({ kind: 'tab', key: s.key, label: s.label, icon: s.icon, hint: 'انتقال إلى القسم' });
+        const actRow = (a) => ({ kind: 'act', id: a.id, label: a.label, icon: a.icon, hint: a.hint });
+        if (!n) {
+            return [['الأقسام', secs.map(secRow)], ['إجراءات سريعة', acts.map(actRow)]];
+        }
+        const snap = cmdSnapshot();
+        const hit = (v) => cmdNorm(v).indexOf(n) !== -1;
+        const cRows = [];
+        snap.customers.forEach((c) => {
+            if (cRows.length >= CMD_MAX) return;
+            if (!hit(c.name) && !hit(c.phone)) return;
+            const meta = [c.visits + ' زيارة', c.phone || '', c.debt > 0 ? 'دين ' + cmdMoney(c.debt) + ' د.ع' : ''].filter(Boolean).join(' · ');
+            cRows.push({ kind: 'cust', name: c.name, label: cmdDecode(c.name), icon: 'fa-solid fa-user', hint: meta });
+        });
+        const iRows = [];
+        snap.invoices.forEach((inv) => {
+            if (iRows.length >= CMD_MAX) return;
+            const cust = inv.customer || {};
+            const name = String(cust.name || '').trim();
+            const dn = String(inv.dailyNumber || '').trim();
+            const id = String(inv.id);
+            if (!(hit(id) || hit(dn) || hit(name) || hit(cust.phone))) return;
+            const short = dn || id.slice(-6);
+            iRows.push({
+                kind: 'inv',
+                id,
+                label: name ? cmdDecode(name) : 'عميل نقدي',
+                icon: 'fa-solid fa-receipt',
+                hint: '#' + cmdDecode(short) + ' · ' + cmdMoney(inv.total) + ' د.ع · ' + cmdDay(cmdTs(inv))
+            });
+        });
+        return [
+            ['زبائن', cRows],
+            ['فواتير', iRows],
+            ['أقسام', secs.filter((s) => hit(s.label) || hit(s.key)).map(secRow)],
+            ['إجراءات', acts.filter((a) => hit(a.label)).map(actRow)]
+        ];
+    }
+
+    function cmdPaintSel() {
+        const nodes = cmdList ? cmdList.querySelectorAll('.m-cmd-row') : [];
+        for (let i = 0; i < nodes.length; i++) {
+            const on = i === cmdSel;
+            nodes[i].classList.toggle('sel', on);
+            if (on) nodes[i].setAttribute('aria-selected', 'true');
+            else nodes[i].removeAttribute('aria-selected');
+        }
+        const cur = nodes[cmdSel];
+        if (cur && cur.scrollIntoView) cur.scrollIntoView({ block: 'nearest' });
+    }
+
+    function cmdDraw() {
+        if (!cmdList) return;
+        const groups = cmdResults(cmdInput.value || '');
+        let html = '';
+        let i = 0;
+        cmdRows = [];
+        groups.forEach((g) => {
+            const rows = g[1];
+            if (!rows.length) return;
+            html += '<div class="m-cmd-grp">' + esc(g[0]) + '</div>';
+            rows.forEach((r) => {
+                let attrs = ' data-kind="' + esc(r.kind) + '"';
+                if (r.kind === 'tab') attrs += ' data-key="' + esc(r.key) + '"';
+                if (r.kind === 'cust') attrs += ' data-name="' + esc(r.name) + '"';
+                if (r.kind === 'inv') attrs += ' data-id="' + esc(r.id) + '"';
+                if (r.kind === 'act') attrs += ' data-act="' + esc(r.id) + '"';
+                html += '<button type="button" class="m-cmd-row" style="--i:' + i + '"' + attrs + '>'
+                    + '<span class="m-cmd-ic"><i class="' + esc(r.icon) + '"></i></span>'
+                    + '<span class="m-cmd-txt"><b>' + esc(r.label) + '</b><small>' + esc(r.hint) + '</small></span>'
+                    + '<i class="fa-solid fa-chevron-left m-cmd-go"></i></button>';
+                cmdRows.push(r);
+                i += 1;
+            });
+        });
+        if (!html) html = '<div class="m-cmd-empty"><i class="fa-solid fa-magnifying-glass"></i><b>لا نتائج مطابقة</b><span>جرّب اسماً أو رقم هاتف أو رقم فاتورة</span></div>';
+        cmdList.innerHTML = html;
+        cmdSel = 0;
+        cmdPaintSel();
+    }
+
+    function cmdRun(row) {
+        if (!row) return;
+        closeCmd();
+        if (row.kind === 'tab') { setTimeout(() => window.switchAdminTab(row.key, 'none'), 60); return; }
+        if (row.kind === 'act') {
+            const a = cmdActions().find((x) => x.id === row.id);
+            if (a) setTimeout(a.run, 60);
+            return;
+        }
+        if (row.kind === 'inv') {
+            setTimeout(() => {
+                if (typeof window.viewTransactionDetails === 'function') window.viewTransactionDetails(row.id);
+            }, 150);
+            return;
+        }
+        if (row.kind === 'cust') {
+            setTimeout(() => {
+                let opened = false;
+                if (window.RoyalInsight && typeof window.RoyalInsight.openCustomer === 'function') {
+                    try { window.RoyalInsight.openCustomer(row.name); opened = !!document.querySelector('.ri-sheet'); } catch (e) { opened = false; }
+                }
+                if (opened) return;
+                window.switchAdminTab('customers', 'none');
+                setTimeout(() => {
+                    const sec = document.getElementById('admin-customers');
+                    const allBtn = sec && sec.querySelector('[data-period="all"]');
+                    if (allBtn) allBtn.click();
+                    const inp = document.getElementById('ri-search');
+                    if (inp) {
+                        inp.value = cmdDecode(row.name);
+                        inp.dispatchEvent(new Event('input', { bubbles: true }));
+                    }
+                }, 420);
+            }, 130);
+        }
+    }
+
+    function cmdBuild() {
+        if (cmdEl) return;
+        cmdEl = document.createElement('div');
+        cmdEl.className = 'm-cmd';
+        cmdEl.setAttribute('aria-hidden', 'true');
+        cmdEl.innerHTML =
+            '<div class="m-cmd-scrim" data-cmd-close></div>' +
+            '<div class="m-cmd-card" role="dialog" aria-modal="true" aria-label="بحث سريع">' +
+                '<div class="m-cmd-bar">' +
+                    '<i class="fa-solid fa-magnifying-glass"></i>' +
+                    '<input class="m-cmd-input" type="search" placeholder="زبون، فاتورة، قسم أو إجراء…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="go" aria-label="بحث سريع">' +
+                    '<button type="button" class="m-cmd-x" data-cmd-close aria-label="إغلاق البحث"><i class="fa-solid fa-xmark"></i></button>' +
+                '</div>' +
+                '<div class="m-cmd-list" role="listbox" aria-label="النتائج"></div>' +
+                '<div class="m-cmd-hint">اكتب للتصفية · Esc للإغلاق</div>' +
+            '</div>';
+        document.body.appendChild(cmdEl);
+        cmdInput = cmdEl.querySelector('.m-cmd-input');
+        cmdList = cmdEl.querySelector('.m-cmd-list');
+        cmdEl.addEventListener('click', (e) => {
+            if (e.target.closest('[data-cmd-close]')) { closeCmd(); return; }
+            const btn = e.target.closest('.m-cmd-row');
+            if (!btn) return;
+            const all = cmdList.querySelectorAll('.m-cmd-row');
+            cmdRun(cmdRows[Array.prototype.indexOf.call(all, btn)]);
+        });
+        cmdInput.addEventListener('input', cmdDraw);
+        cmdInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') { e.preventDefault(); closeCmd(); return; }
+            if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (!cmdRows.length) return;
+                cmdSel = (cmdSel + (e.key === 'ArrowDown' ? 1 : cmdRows.length - 1)) % cmdRows.length;
+                cmdPaintSel();
+                return;
+            }
+            if (e.key === 'Enter') { e.preventDefault(); cmdRun(cmdRows[cmdSel]); }
+        });
+    }
+
+    function openCmd() {
+        if (!state.started || cmdOpen) return;
+        if (!document.body.classList.contains('m-admin')) return;
+        if (document.body.classList.contains('m-sheet-open')) return;
+        if (document.querySelector('.m-lk-fx')) return;
+        cmdBuild();
+        cmdOpen = true;
+        clearTimeout(cmdCloseTimer);
+        cmdEl.classList.remove('closing');
+        cmdEl.classList.add('on');
+        cmdEl.setAttribute('aria-hidden', 'false');
+        cmdInput.value = '';
+        cmdDraw();
+        setTimeout(() => {
+            if (!cmdOpen) return;
+            try { cmdInput.focus({ preventScroll: true }); } catch (e) { cmdInput.focus(); }
+        }, REDUCED ? 0 : 200);
+    }
+
+    function closeCmd() {
+        if (!cmdOpen || !cmdEl) return;
+        cmdOpen = false;
+        try { cmdInput.blur(); } catch (e) {}
+        cmdEl.classList.add('closing');
+        cmdEl.setAttribute('aria-hidden', 'true');
+        clearTimeout(cmdCloseTimer);
+        cmdCloseTimer = setTimeout(() => { cmdEl.classList.remove('on', 'closing'); }, REDUCED ? 0 : 200);
+    }
+
+    function bindCommandPalette() {
+        if (headRef && headRef.dataset.mCmdBound !== '1') {
+            headRef.dataset.mCmdBound = '1';
+            headRef.addEventListener('click', (e) => {
+                if (e.target.closest('.m-head-search')) openCmd();
+            });
+        }
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
+                if (!document.body.classList.contains('m-admin')) return;
+                e.preventDefault();
+                openCmd();
+            }
+        });
     }
 
     /* ================= إعادة الرسم المنظمة (debounce + إرجاء) ================= */
@@ -6241,6 +6811,7 @@ html.is-mobile .modal-footer-sticky {
                 addViewToggle();
             } else {
                 document.body.classList.remove('m-admin');
+                closeCmd();
             }
         };
         new MutationObserver(sync).observe(admin, { attributes: true, attributeFilter: ['class'] });
@@ -6313,6 +6884,7 @@ html.is-mobile .modal-footer-sticky {
         bindQuickPeek();
         bindPullRefresh();
         bindScrollProgress();
+        bindCommandPalette();
         observeSheets();
         bindKeyboard();
         bindTodayPanel();

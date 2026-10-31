@@ -677,8 +677,8 @@
         state.sheetCustomer = null;
     }
 
-    function openCustomer(name) {
-        const vm = build(periodDays());
+    function openCustomer(name, allTime) {
+        const vm = build(allTime ? 0 : periodDays());
         if (!vm) return;
         const c = vm.customers.find((x) => x.name === name);
         if (!c) return;
@@ -821,7 +821,12 @@
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true });
     else boot();
-    window.RoyalInsight = { refresh: () => draw(true), state };
+    window.RoyalInsight = {
+        refresh: () => draw(true),
+        state,
+        /* البحث السريع يفتح ملف الزبون من أي فترة، لا من الفترة المعروضة وحدها */
+        openCustomer: (name) => openCustomer(String(name == null ? '' : name), true)
+    };
 
     /* ---------------- الأنماط ---------------- */
     const CSS = `
