@@ -143,10 +143,20 @@ let secureAdminToken = null;
 // يقوم بجلب الوقت من خادم عالمي مع حساب فرق الوقت بين الاستجابة والتنفيذ
 let globalTimeOffset = 0;
 let isTimeSynced = false;
+let firebaseTimeOffset = null;
 
 async function syncGlobalTime() {
+    // توقيت سيرفر فايربيس (جوجل) هو الأدق عند توفره
+    if (firebaseTimeOffset !== null) {
+        globalTimeOffset = firebaseTimeOffset;
+        isTimeSynced = true;
+        return;
+    }
     try {
-        const response = await fetch('http://worldtimeapi.org/api/timezone/Asia/Baghdad');
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 5000);
+        const response = await fetch('https://worldtimeapi.org/api/timezone/Asia/Baghdad', { signal: ctrl.signal });
+        clearTimeout(timer);
         if (!response.ok) throw new Error('Network response was not ok');
         const data = await response.json();
         
@@ -161,10 +171,13 @@ async function syncGlobalTime() {
     }
 }
 
-// تشغيل المزامنة عند الإقلاع
-syncGlobalTime();
+// تشغيل المزامنة عند الإقلاع (مهلة قصيرة تتيح لفايربيس تقديم توقيعه الموثوق أولاً)
+setTimeout(syncGlobalTime, 8000);
 // إعادة المزامنة كل ساعة لضمان الدقة
 setInterval(syncGlobalTime, 60 * 60 * 1000);
+
+// قراءة تشخيصية للوقت المعتمد (للتحقق والدعم فقط)
+window.royalClock = () => ({ offset: globalTimeOffset, firebaseOffset: firebaseTimeOffset, synced: isTimeSynced });
 
 // دالة سحرية تُرجع الوقت الحقيقي والمحمي دائماً
 function getRealTime() {
@@ -273,6 +286,16 @@ async function initializeDB() {
                 if (live) window.processBlackBox();
             });
         } catch (e) { console.warn('net bridge:', e); }
+
+        // فرق توقيت سيرفر فايربيس: مصدر الوقت الموثوق على النشرات المشفرة
+        try {
+            onValue(ref(database, '.info/serverTimeOffset'), (snap) => {
+                const off = Number(snap.val()) || 0;
+                firebaseTimeOffset = off;
+                globalTimeOffset = off;
+                isTimeSynced = true;
+            });
+        } catch (e) { console.warn('time bridge:', e); }
 
        // التدخل الجراحي المطور: تشغيل محرك المزامنة الحية اللحظية (Realtime Engine)
         let isFirstLoad = true;
