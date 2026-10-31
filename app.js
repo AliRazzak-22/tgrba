@@ -194,6 +194,12 @@ window.escapeHTML = (str) => {
         '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
     }[tag]));
 };
+/* بعض الحقول تُخزَّن مُرمَّزة من مسارات قديمة، وبعضها خام. فكّ الترميز مرة ثم
+   إعادة ترميزه عند العرض يمنع الوسم من المرور ولا يُظهر &#39; حرفية. */
+window.decodeText = (str) => String(str == null ? '' : str).replace(/&(amp|lt|gt|quot|#39);/g, (m, k) => ({
+    amp: '&', lt: '<', gt: '>', quot: '"', '#39': "'"
+}[k]));
+window.plainText = (str) => window.escapeHTML(window.decodeText(str));
 // -----------------------------------------------------------------
 // --- التدخل الجراحي: الدالة المساعدة الآمنة لتوحيد التاريخ دون تشويه أساسيات اللغة ---
 window.formatRoyalDate = (dateObj) => {
@@ -522,6 +528,7 @@ window.showPOS = () => {
 };
 
 window.exitToMain = () => { 
+    secureAdminToken = null; // لا تبقى صلاحية اللوحة معلّقة بعد الخروج
     sessionStorage.removeItem('active_screen'); // تفريغ الذاكرة
     sessionStorage.removeItem('admin_tab');
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active-screen')); 
@@ -767,7 +774,7 @@ window.renderItems = () => {
             
             cell.innerHTML = `
                 <i class="fa-solid ${item.icon} item-icon"></i>
-                <div class="item-name">${item.name}</div>
+                <div class="item-name">${window.plainText(item.name)}</div>
             `;
             grid.appendChild(cell);
         });
@@ -873,7 +880,7 @@ window.openEditServiceModal = () => {
     if(!localData.catalog || localData.catalog.length === 0) return alert('لا توجد خدمات لتعديلها');
     const select = document.getElementById('edit-srv-select');
     select.innerHTML = '<option value="" disabled selected>-- اختر الخدمة --</option>';
-    localData.catalog.forEach(item => { select.innerHTML += `<option value="${item.id}">${item.name}</option>`; });
+    localData.catalog.forEach(item => { select.innerHTML += `<option value="${item.id}">${window.plainText(item.name)}</option>`; });
     
     document.getElementById('edit-srv-name').value = '';
     document.getElementById('edit-srv-price-wash').value = '';
@@ -953,7 +960,7 @@ window.openDeleteServiceModal = () => {
     if(!localData.catalog || localData.catalog.length === 0) return alert('لا توجد خدمات لحذفها');
     const select = document.getElementById('delete-srv-select');
     select.innerHTML = '<option value="" disabled selected>-- اختر الخدمة لحذفها --</option>';
-    localData.catalog.forEach(item => { select.innerHTML += `<option value="${item.id}">${item.name}</option>`; });
+    localData.catalog.forEach(item => { select.innerHTML += `<option value="${item.id}">${window.plainText(item.name)}</option>`; });
     document.getElementById('modal-delete-service').style.display = 'flex';
 };
 
@@ -1408,10 +1415,10 @@ window.filterCheckoutCustomerNames = (val) => {
         matches.slice(0, 5).forEach(c => {
             let div = document.createElement('div');
             div.className = 'autocomplete-item';
-            div.innerHTML = `${c.name} <span style="color:#888; font-size:12px;">(${c.phone || 'بدون رقم'})</span>`;
+            div.innerHTML = `${window.plainText(c.name)} <span style="color:#888; font-size:12px;">(${c.phone ? window.plainText(c.phone) : 'بدون رقم'})</span>`;
             div.onclick = () => {
-                document.getElementById('checkout-name').value = c.name;
-                document.getElementById('checkout-phone').value = c.phone || '';
+                document.getElementById('checkout-name').value = window.decodeText(c.name);
+                document.getElementById('checkout-phone').value = window.decodeText(c.phone || '');
                 list.style.display = 'none';
             };
             list.appendChild(div);
@@ -1679,7 +1686,7 @@ window.viewInvoice = (id) => {
     const tbody = document.getElementById('view-inv-items');
     tbody.innerHTML = '';
     invoice.items.forEach(item => {
-        tbody.innerHTML += `<tr><td>${item.name}</td><td>${item.serviceName}</td><td>${item.qty}</td><td>${(item.price * item.qty).toLocaleString()}</td></tr>`;
+        tbody.innerHTML += `<tr><td>${window.plainText(item.name)}</td><td>${window.plainText(item.serviceName)}</td><td>${item.qty}</td><td>${(item.price * item.qty).toLocaleString()}</td></tr>`;
     });
     document.getElementById('view-inv-total').innerText = invoice.total.toLocaleString();
     document.getElementById('btn-print-from-view').onclick = () => window.printInvoice(invoice);
@@ -1794,7 +1801,7 @@ window.openPickupCreditModal = () => {
     });
     
     uniqueCustomers.forEach(c => {
-        select.innerHTML += `<option value="${c.name}" data-phone="${c.phone || ''}">${c.name}</option>`;
+        select.innerHTML += `<option value="${window.escapeHTML(c.name)}" data-phone="${window.escapeHTML(c.phone || '')}">${window.plainText(c.name)}</option>`;
     });
 
     // جلب بيانات الطلب الحالي لملء الحقول تلقائياً
@@ -2340,11 +2347,11 @@ window.updateAdminDashboard = () => {
             let data = groupedDebts[customerName];
             let invList = data.invoices.join(' ، '); 
             debtsTbody.innerHTML += `<tr>
-                <td style="font-weight:bold; font-size:16px;">${customerName}</td>
-                <td>${data.phone || '-'}</td>
-                <td style="font-size:12px; color:var(--text-gray);">${invList}</td>
+                <td style="font-weight:bold; font-size:16px;">${window.plainText(customerName)}</td>
+                <td>${data.phone ? window.plainText(data.phone) : '-'}</td>
+                <td style="font-size:12px; color:var(--text-gray);">${window.plainText(invList)}</td>
                 <td style="color:var(--red-danger); font-weight:bold; font-size:18px;">${data.totalRemaining.toLocaleString()}</td>
-                <td><button class="top-bar-btn" style="background:#4a90e2; color:white; border-color:#4a90e2;" onclick="window.payDebtByName('${customerName}')">تسديد دفعة</button></td>
+                <td><button class="top-bar-btn" style="background:#4a90e2; color:white; border-color:#4a90e2;" data-debt-name="${window.escapeHTML(customerName)}" onclick="window.payDebtByName(this.getAttribute('data-debt-name'))">تسديد دفعة</button></td>
             </tr>`;
         }
     }
@@ -2622,10 +2629,10 @@ window.viewDayTransactions = (dateStr) => {
         }
 
         tbody.innerHTML += `
-            <tr onclick="window.viewTransactionDetails('${inv.id}'<tr onclick="window.viewTransactionDetails('${inv.id}')">)" >
+            <tr data-inv-id="${window.escapeHTML(inv.id)}" onclick="window.viewTransactionDetails(this.getAttribute('data-inv-id'))">
                 <td style="color:${typeColor}; font-weight:bold;">${typeStr}</td>
-                <td>${inv.dailyNumber || inv.id.slice(-4)}</td>
-                <td style="font-weight:bold;">${custName}</td>
+                <td>${inv.dailyNumber || window.escapeHTML(inv.id.slice(-4))}</td>
+                <td style="font-weight:bold;">${window.plainText(custName)}</td>
                 <td dir="ltr" style="color:var(--text-gray); font-size:12px;">${inv.time}</td>
                 <td style="font-weight:900;">${inv.total.toLocaleString()}</td>
                 <td>${discount > 0 ? discount.toLocaleString() : '-'}</td>
@@ -2643,16 +2650,17 @@ window.viewTransactionDetails = (invId) => {
     if(!inv) return;
     
     let custName = inv.customer ? inv.customer.name : 'عميل نقدي';
+    let custPhone = inv.customer && inv.customer.phone ? inv.customer.phone : '';
     let infoEl = document.getElementById('drill-cart-info');
     if(infoEl) {
         infoEl.innerHTML = `
             <div style="display:flex; justify-content:space-between; border-bottom:1px dashed #444; padding-bottom:10px; margin-bottom:10px;">
-                <span>رقم القائمة: <strong style="color:var(--gold);">${inv.dailyNumber || inv.id.slice(-6)}</strong></span>
+                <span>رقم القائمة: <strong style="color:var(--gold);">${inv.dailyNumber || window.escapeHTML(inv.id.slice(-6))}</strong></span>
                 <span dir="ltr">${inv.time}</span>
             </div>
-            <p><strong>الزبون:</strong> <span style="color:var(--text-white);">${custName}</span> ${(inv.customer?.phone ? ' - '+inv.customer.phone : '')}</p>
+            <p><strong>الزبون:</strong> <span style="color:var(--text-white);">${window.plainText(custName)}</span> ${(custPhone ? ' - ' + window.plainText(custPhone) : '')}</p>
             <p><strong>إجمالي القائمة:</strong> <span style="color:var(--green-success); font-weight:bold;">${inv.total.toLocaleString()} د.ع</span></p>
-            ${inv.notes ? `<p style="margin-top:8px;"><strong>ملاحظات:</strong> <span style="color:var(--text-gray);">${inv.notes}</span></p>` : ''}
+            ${inv.notes ? `<p style="margin-top:8px;"><strong>ملاحظات:</strong> <span style="color:var(--text-gray);">${window.plainText(inv.notes)}</span></p>` : ''}
         `;
     }
 
@@ -2661,8 +2669,8 @@ window.viewTransactionDetails = (invId) => {
     tbody.innerHTML = '';
     (inv.items || []).forEach(item => {
         tbody.innerHTML += `<tr>
-            <td style="font-weight:bold;">${item.name}</td>
-            <td style="color:var(--text-gray); font-size:12px;">${item.serviceName}</td>
+            <td style="font-weight:bold;">${window.plainText(item.name)}</td>
+            <td style="color:var(--text-gray); font-size:12px;">${window.plainText(item.serviceName)}</td>
             <td style="color:var(--gold); font-weight:900;">${item.qty}</td>
             <td style="font-weight:bold;">${(item.price * item.qty).toLocaleString()}</td>
         </tr>`;
@@ -3678,7 +3686,7 @@ window.renderPackages = () => {
 
 window.openBuySubModal = (pkgId) => {
     const pkg = VIP_PACKAGES.find(p => p.id === pkgId);
-    document.getElementById('buy-sub-title').innerHTML = `<i class="fa-solid ${pkg.icon}"></i> تفعيل الفئة ${pkg.name} (${pkg.pay.toLocaleString()} د.ع)`;
+    document.getElementById('buy-sub-title').innerHTML = `<i class="fa-solid ${pkg.icon}"></i> تفعيل الفئة ${window.plainText(pkg.name)} (${pkg.pay.toLocaleString()} د.ع)`;
     document.getElementById('sub-package-id').value = pkg.id;
     document.getElementById('sub-customer-name').value = '';
     document.getElementById('sub-customer-phone').value = '';
@@ -3824,7 +3832,7 @@ window.openEditSubModal = (subId) => {
     VIP_PACKAGES.forEach(pkg => {
         if (pkg.id === sub.packageId || pkg.pay > sub.paidAmount) {
             let isSelected = pkg.id === sub.packageId ? 'selected' : '';
-            select.innerHTML += `<option value="${pkg.id}" data-pay="${pkg.pay}" ${isSelected}>${pkg.name} (${pkg.pay.toLocaleString()} د.ع)</option>`;
+            select.innerHTML += `<option value="${pkg.id}" data-pay="${pkg.pay}" ${isSelected}>${window.plainText(pkg.name)} (${pkg.pay.toLocaleString()} د.ع)</option>`;
         }
     });
 
@@ -4005,7 +4013,7 @@ window.openPickupSubscription = () => {
     (localData.subscriptions || []).forEach(sub => {
         let remaining = sub.totalValue - sub.consumedAmount;
         if(remaining > 0) {
-            select.innerHTML += `<option value="${sub.id}">${sub.customerName} - المتبقي: ${remaining.toLocaleString()} د.ع</option>`;
+            select.innerHTML += `<option value="${sub.id}">${window.plainText(sub.customerName)} - المتبقي: ${remaining.toLocaleString()} د.ع</option>`;
             hasActive = true;
         }
     });
@@ -4248,10 +4256,10 @@ window.viewDayTransactions = (dateStr) => {
         }
 
         rows.push(`
-            <tr onclick="window.viewTransactionDetails('${inv.id}')">
+            <tr data-inv-id="${window.escapeHTML(inv.id)}" onclick="window.viewTransactionDetails(this.getAttribute('data-inv-id'))">
                 <td style="color:${typeColor}; font-weight:bold;">${typeStr}</td>
-                <td>${inv.dailyNumber || inv.id.slice(-4)}</td>
-                <td style="font-weight:bold;">${custName}</td>
+                <td>${inv.dailyNumber || window.escapeHTML(inv.id.slice(-4))}</td>
+                <td style="font-weight:bold;">${window.plainText(custName)}</td>
                 <td dir="ltr" style="color:var(--text-gray); font-size:12px;">${inv.time}</td>
                 <td style="font-weight:900;">${inv.total.toLocaleString()}</td>
                 <td>${discount > 0 ? discount.toLocaleString() : '-'}</td>
@@ -4270,23 +4278,24 @@ window.viewTransactionDetails = (invId) => {
     if(!inv) return;
     
     let custName = inv.customer ? inv.customer.name : 'عميل نقدي';
+    let custPhone = inv.customer && inv.customer.phone ? inv.customer.phone : '';
     
     document.getElementById('drill-cart-info').innerHTML = `
         <div style="display:flex; justify-content:space-between; border-bottom:1px dashed #444; padding-bottom:10px; margin-bottom:10px;">
-            <span>رقم القائمة: <strong style="color:var(--gold);">${inv.dailyNumber || inv.id.slice(-6)}</strong></span>
+            <span>رقم القائمة: <strong style="color:var(--gold);">${inv.dailyNumber || window.escapeHTML(inv.id.slice(-6))}</strong></span>
             <span dir="ltr">${inv.time}</span>
         </div>
-        <p><strong>الزبون:</strong> <span style="color:var(--text-white);">${custName}</span> ${(inv.customer?.phone ? ' - '+inv.customer.phone : '')}</p>
+        <p><strong>الزبون:</strong> <span style="color:var(--text-white);">${window.plainText(custName)}</span> ${(custPhone ? ' - ' + window.plainText(custPhone) : '')}</p>
         <p><strong>إجمالي القائمة:</strong> <span style="color:var(--green-success); font-weight:bold;">${inv.total.toLocaleString()} د.ع</span></p>
-        ${inv.notes ? `<p style="margin-top:8px;"><strong>ملاحظات:</strong> <span style="color:var(--text-gray);">${inv.notes}</span></p>` : ''}
+        ${inv.notes ? `<p style="margin-top:8px;"><strong>ملاحظات:</strong> <span style="color:var(--text-gray);">${window.plainText(inv.notes)}</span></p>` : ''}
     `;
 
     const tbody = document.getElementById('drill-cart-items-body');
     tbody.innerHTML = '';
     (inv.items || []).forEach(item => {
         tbody.innerHTML += `<tr>
-            <td style="font-weight:bold;">${item.name}</td>
-            <td style="color:var(--text-gray); font-size:12px;">${item.serviceName}</td>
+            <td style="font-weight:bold;">${window.plainText(item.name)}</td>
+            <td style="color:var(--text-gray); font-size:12px;">${window.plainText(item.serviceName)}</td>
             <td style="color:var(--gold); font-weight:900;">${item.qty}</td>
             <td style="font-weight:bold;">${(item.price * item.qty).toLocaleString()}</td>
         </tr>`;
