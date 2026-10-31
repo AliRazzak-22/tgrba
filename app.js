@@ -4212,7 +4212,6 @@ window.updateBentoBox = () => {
 window.viewDayTransactions = (dateStr) => {
     document.getElementById('drill-day-title').innerText = dateStr;
     const tbody = document.getElementById('drill-transactions-body');
-    tbody.innerHTML = '';
     
     let totalIn = 0; let totalOut = 0;
 
@@ -4228,7 +4227,8 @@ window.viewDayTransactions = (dateStr) => {
     document.getElementById('drill-day-in').innerText = totalIn.toLocaleString();
     document.getElementById('drill-day-out').innerText = totalOut.toLocaleString();
 
-    // استخراج فواتير هذا اليوم
+    // استخراج فواتير هذا اليوم — لصق واحد بدل إعادة تحليل الجدول لكل صف
+    const rows = [];
     let dayInvoices = (localData.invoices || []).filter(inv => inv.date === dateStr);
     
     dayInvoices.sort((a,b) => b.timestamp - a.timestamp).forEach(inv => {
@@ -4247,7 +4247,7 @@ window.viewDayTransactions = (dateStr) => {
             statusBadge = `<span style="color:var(--green-success);">المقبوض: ${paid.toLocaleString()}</span>`;
         }
 
-        tbody.innerHTML += `
+        rows.push(`
             <tr onclick="window.viewTransactionDetails('${inv.id}')">
                 <td style="color:${typeColor}; font-weight:bold;">${typeStr}</td>
                 <td>${inv.dailyNumber || inv.id.slice(-4)}</td>
@@ -4258,8 +4258,9 @@ window.viewDayTransactions = (dateStr) => {
                 <td>${deposit > 0 ? deposit.toLocaleString() : '-'}</td>
                 <td style="font-weight:bold;">${statusBadge}</td>
             </tr>
-        `;
+        `);
     });
+    tbody.innerHTML = rows.join('');
 
     document.getElementById('modal-daily-transactions').style.display = 'flex';
 };
@@ -4308,27 +4309,31 @@ window.getExpensesForMobile = () => (localData.expenses || []).map(exp => ({
 window.openAdminExpensesModal = () => {
     const tbody = document.getElementById('admin-expenses-detail-body');
     if(!tbody) return;
-    tbody.innerHTML = '';
     
-    // ترتيب من الأحدث للأقدم
+    // ترتيب من الأحدث للأقدم — بناء الصفوف في مصفوفة ثم لصق واحد:
+    // innerHTML += داخل حلقة يعيد تحليل الجدول كله مع كل صف ويثقل الفتح
+    const rows = [];
     const sorted = (localData.expenses || []).sort((a, b) => b.timestamp - a.timestamp);
+    // مُنسّق اليوم يُبنى مرة واحدة: بناؤه لكل صف كان يثقل فتح القوائم الطويلة
+    const dayFmt = new Intl.DateTimeFormat('ar-IQ', { weekday: 'long' });
     
     sorted.forEach(exp => {
         // استخراج اسم اليوم (جمعة، سبت...)
         const dateObj = new Date(exp.timestamp || Date.now());
-        const dayName = new Intl.DateTimeFormat('ar-IQ', { weekday: 'long' }).format(dateObj);
+        const dayName = dayFmt.format(dateObj);
         // التدخل الجراحي: تعقيم المدخلات
         const safeDetail = window.escapeHTML(exp.detail);
         
-        tbody.innerHTML += `
+        rows.push(`
             <tr>
                 <td>${exp.date}</td>
                 <td style="color:var(--gold); font-weight:bold;">${dayName}</td>
                 <td>${safeDetail}</td>
                 <td style="color:var(--red-danger); font-weight:bold;">${exp.amount.toLocaleString()} د.ع</td>
             </tr>
-        `;
+        `);
     });
+    tbody.innerHTML = rows.join('');
     
     document.getElementById('modal-admin-expenses').style.display = 'flex';
 };

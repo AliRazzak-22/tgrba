@@ -940,23 +940,26 @@ html.is-mobile .bottom-nav-btn {
     padding: 4px 2px;
     transition: color .30s var(--m-ease), transform .18s var(--m-ease);
 }
-html.is-mobile .bottom-nav-btn i { font-size: 18px; line-height: 1; transition: transform .34s var(--m-ease), filter .34s var(--m-ease); }
+html.is-mobile .bottom-nav-btn i { font-size: 18px; line-height: 1; transition: transform .34s var(--m-ease), filter .34s var(--m-ease), color .22s var(--m-ease), text-shadow .30s var(--m-ease); }
 html.is-mobile .bottom-nav-btn span {
     font-size: 10.5px; font-weight: 800; max-width: 100%; letter-spacing: .1px;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     opacity: .75; transition: opacity .34s var(--m-ease);
 }
+/* التوهّج البصري كله من m-hi وحده: هو الذي يتبع الإصبع والمؤشر لحظة بلحظة.
+   active في style.css تُلبس الأيقونة لون --gold الأزرق وتكبّرها وتضيف هالة،
+   وتبقى على التبويب السابق حتى ينتهي نابض الالتزام — فلا توهّجين ولا تبويب
+   قديم متوهج بعد رفع الإصبع. نُبطل أثر active ما دام ليس الوجهة الحالية. */
 html.is-mobile .bottom-nav-btn.m-hi { color: #eaf5ff; }
-html.is-mobile .bottom-nav-btn.m-hi i { transform: translateY(-2px) scale(1.08); filter: none; }
+html.is-mobile .bottom-nav-btn.m-hi i {
+    color: var(--gold);
+    text-shadow: 0 5px 12px rgba(90,168,255,.55);
+    transform: translateY(-2px) scale(1.10); filter: none;
+}
 html.is-mobile .bottom-nav-btn.m-hi span { opacity: 1; }
-html.is-mobile .bottom-nav-btn.active { color: #ffffff; }
-html.is-mobile .bottom-nav-btn.active i { transform: translateY(-2px) scale(1.08); filter: none; }
-html.is-mobile .bottom-nav-btn.active span { opacity: 1; }
-/* أثناء السحب يهدأ توهّج التبويب الذي غادرناه، فيبقى المؤشر وحده يقود العين
-   إلى الوجهة بدل توهّجين يتزاحمان */
-html.is-mobile body.m-dragging .bottom-nav-btn.active:not(.m-hi) { color: #a3bcdb; }
-html.is-mobile body.m-dragging .bottom-nav-btn.active:not(.m-hi) i { transform: none; }
-html.is-mobile body.m-dragging .bottom-nav-btn.active:not(.m-hi) span { opacity: .75; }
+html.is-mobile .bottom-nav-btn.active:not(.m-hi) { color: #a3bcdb; }
+html.is-mobile .bottom-nav-btn.active:not(.m-hi) i { color: inherit; transform: none; filter: none; text-shadow: none; }
+html.is-mobile .bottom-nav-btn.active:not(.m-hi) span { opacity: .75; }
 
 /* الكتلة السائلة: تتبع الإصبع بنبضة متأخرة، تنضغط في اتجاه الحركة، تتكتّل ثم تستقر */
 html.is-mobile .m-ind {
@@ -1050,8 +1053,8 @@ html.is-mobile .modal-overlay.m-sheet.m-on { opacity: 1; pointer-events: auto; }
 @keyframes mSheetIn { from { transform: translateY(105%); } to { transform: translateY(0); } }
 @keyframes mSheetOut {
     0% { transform: translateY(0) scale(1); opacity: 1; }
-    14% { transform: translateY(12px) scale(.998); opacity: 1; }
-    100% { transform: translateY(104%) scale(.984); opacity: .86; }
+    12% { transform: translateY(14px) scale(.998); opacity: 1; }
+    100% { transform: translateY(104%) scale(.985); opacity: .88; }
 }
 @keyframes mScrimIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes mScrimOut { from { opacity: 1; } to { opacity: 0; } }
@@ -1062,8 +1065,8 @@ html.is-mobile .modal-overlay.m-sheet.m-on { opacity: 1; pointer-events: auto; }
     to { opacity: 1; transform: none; }
 }
 html.is-mobile .m-rise {
-    animation: mRise .62s cubic-bezier(.2,.78,.22,1) both;
-    animation-delay: calc(160ms + var(--i, 0) * 58ms);
+    animation: mRise .70s cubic-bezier(.2,.78,.22,1) both;
+    animation-delay: calc(220ms + var(--i, 0) * 62ms);
 }
 /* تفكيك عند الإغلاق: البطاقات تنسحب من الأسفل إلى الأعلى بينما الورقة تتراجع */
 @keyframes mSink {
@@ -1075,8 +1078,16 @@ html.is-mobile .modal-overlay.m-sheet.m-closing .m-exp-card,
 html.is-mobile .modal-overlay.m-sheet.m-closing #drill-transactions-body tr,
 html.is-mobile .modal-overlay.m-sheet.m-closing #drill-cart-info,
 html.is-mobile .modal-overlay.m-sheet.m-closing #drill-cart-items-body tr {
-    animation: mSink .40s cubic-bezier(.35,.6,.3,1) both;
-    animation-delay: calc(var(--j, 0) * 24ms);
+    animation: mSink .46s cubic-bezier(.35,.6,.3,1) both;
+    animation-delay: calc(var(--j, 0) * 26ms);
+}
+/* حركات بناء الصفحة خلف النافذة تتجمّد أثناء فتحها: هي خلف ستارة معتمة أصلاً،
+   وترك عشرات الحركات تدور هناك ينافس الورقة على المعالج والرسّام فيظهر
+   فتح النافذة متقطعاً على الجوال. تستأنف من حيث توقفت لحظة الإغلاق. */
+html.is-mobile body.m-sheet-open .admin-section .m-anim,
+html.is-mobile body.m-sheet-open .admin-section .m-anim *,
+html.is-mobile body.m-sheet-open .admin-section tr.m-anim {
+    animation-play-state: paused !important;
 }
 @media (prefers-reduced-motion: reduce) {
     html.is-mobile .m-rise,
@@ -1088,13 +1099,13 @@ html.is-mobile .modal-overlay.m-sheet.m-closing #drill-cart-items-body tr {
 }
 html.is-mobile .modal-overlay.m-sheet .modal-content { animation: none; }
 html.is-mobile .modal-overlay.m-sheet.m-on { animation: mScrimIn .28s linear both; }
-html.is-mobile .modal-overlay.m-sheet.m-in .modal-content { animation: mSheetIn .46s cubic-bezier(.16,.9,.24,1) both; }
+html.is-mobile .modal-overlay.m-sheet.m-in .modal-content { animation: mSheetIn .52s cubic-bezier(.16,.9,.24,1) both; }
 html.is-mobile .modal-overlay.m-sheet.m-closing {
     display: flex !important;
     pointer-events: none;
-    animation: mScrimOut .46s cubic-bezier(.4,0,.6,1) both;
+    animation: mScrimOut .56s cubic-bezier(.4,0,.6,1) both;
 }
-html.is-mobile .modal-overlay.m-sheet.m-closing .modal-content { animation: mSheetOut .50s cubic-bezier(.5,.04,.72,.22) both; }
+html.is-mobile .modal-overlay.m-sheet.m-closing .modal-content { animation: mSheetOut .62s cubic-bezier(.5,.04,.72,.22) both; }
 html.is-mobile .modal-overlay.m-sheet .modal-content {
     position: relative;
     width: 100% !important;
@@ -1502,7 +1513,7 @@ html.is-mobile .modal-overlay.m-sheet.m-center.m-on .modal-content { transform: 
 html.is-mobile .modal-overlay.m-sheet.m-center.m-closing .modal-content {
     transform: translateY(22px) scale(.955);
     opacity: 0;
-    animation: mTxOut .42s cubic-bezier(.45,.06,.62,.2) both !important;
+    animation: mTxOut .52s cubic-bezier(.45,.06,.62,.2) both !important;
 }
 html.is-mobile .m-tx-modal .modal-header-sticky {
     flex: none;
@@ -3533,8 +3544,8 @@ html.is-mobile .modal-footer-sticky {
         el.classList.add('m-on', 'm-in');
         prepSheetMotion(content);
         armSheetRise(el);
-        /* مدّة الدخول 460م.س: الإزالة قبلها كانت تقصّ الحركة في اللحظة الأخيرة */
-        setTimeout(() => el.classList.remove('m-in'), 470);
+        /* مدّة الدخول 520م.س: الإزالة قبلها كانت تقصّ الحركة في اللحظة الأخيرة */
+        setTimeout(() => el.classList.remove('m-in'), 540);
     }
 
     function addCloseButton(el, content) {
@@ -3595,13 +3606,19 @@ html.is-mobile .modal-footer-sticky {
         return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
     }
 
+    /* بناء Intl.DateTimeFormat مكلف ويُدفع مرة لكل صف؛ نخزّن المنسّقين
+       فتُفتح قوائم الصرفيات الطويلة بلا عشرات المللي ثانية من التهيئة. */
+    let clockFmt = null;
+    let weekdayFmt = null;
+
     function clockOf(ts) {
         const t = Number(ts);
         if (!t) return '';
         try {
-            return new Intl.DateTimeFormat('en-GB', {
+            clockFmt = clockFmt || new Intl.DateTimeFormat('en-GB', {
                 timeZone: 'Asia/Baghdad', hour: '2-digit', minute: '2-digit', hour12: false
-            }).format(new Date(t));
+            });
+            return clockFmt.format(new Date(t));
         } catch (e) {
             const d = new Date(t);
             return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
@@ -3611,8 +3628,10 @@ html.is-mobile .modal-footer-sticky {
     function weekdayOf(ts) {
         const t = Number(ts);
         if (!t) return '';
-        try { return new Intl.DateTimeFormat('ar-IQ', { weekday: 'long' }).format(new Date(t)); }
-        catch (e) { return ''; }
+        try {
+            weekdayFmt = weekdayFmt || new Intl.DateTimeFormat('ar-IQ', { weekday: 'long' });
+            return weekdayFmt.format(new Date(t));
+        } catch (e) { return ''; }
     }
 
     /* ================== حركة محتوى النوافذ ==================
@@ -3653,8 +3672,8 @@ html.is-mobile .modal-footer-sticky {
             }
         };
         run();
-        setTimeout(run, 140);
-        setTimeout(run, 460);
+        setTimeout(run, 220);
+        setTimeout(run, 700);
     }
 
     /* تفكيك الإغلاق: آخر بطاقة تنسحب أولاً بينما الورقة تتراجع */
@@ -3744,30 +3763,45 @@ html.is-mobile .modal-footer-sticky {
                 '<span class="m-exp-count">' + items.length + ' حركة</span>' +
             '</div>';
 
-        const cards = items.map((exp) => {
-            const ts = Number(exp.timestamp) || 0;
-            const note = String(exp.detail || '').trim();
-            const tier = note.length > 150 ? ' m-note-3' : note.length > 80 ? ' m-note-2' : '';
-            const day = weekdayOf(ts) || exp.day || '';
-            const clock = clockOf(ts);
-            const sub = (day ? '<span>' + escHTML(day) + '</span>' : '') +
-                (clock ? (day ? '<i></i>' : '') + '<span dir="ltr">' + clock + '</span>' : '');
-            return '<article class="m-exp-card">' +
-                '<div class="m-exp-amt"><span>' + money(Number(exp.amount) || 0) + '</span><em>د.ع</em></div>' +
-                '<div class="m-exp-when">' +
-                    '<span class="m-exp-date">' + escHTML(prettyDate(exp.date)) + '</span>' +
-                    (sub ? '<span class="m-exp-sub">' + sub + '</span>' : '') +
-                '</div>' +
-                (note ? '<div class="m-exp-note">' +
-                    '<span class="m-exp-note-t">ملاحظة</span>' +
-                    '<p class="m-exp-note-x' + tier + '">' + escHTML(note) + '</p>' +
-                '</div>' : '') +
-            '</article>';
-        }).join('');
+        /* البطاقات تُركّب بعد إطارين: أول رسمة للورقة (رأس + رقاقة) تبقى خفيفة
+           فتنطلق حركة الانزلاق على compositor، ثم يُبنى المتن وهو يتحرك. البناء
+           المتزامن كان يخطف أول إطار من حركة الفتح فيظهر لاقاً على الجوال.
+           armSheetRise يلتقطها في محاولته 220م.س، أو 700م.س إن تأخر الجهاز. */
+        const mount = () => {
+            const cards = items.map((exp) => {
+                const ts = Number(exp.timestamp) || 0;
+                const note = String(exp.detail || '').trim();
+                const tier = note.length > 150 ? ' m-note-3' : note.length > 80 ? ' m-note-2' : '';
+                const day = weekdayOf(ts) || exp.day || '';
+                const clock = clockOf(ts);
+                const sub = (day ? '<span>' + escHTML(day) + '</span>' : '') +
+                    (clock ? (day ? '<i></i>' : '') + '<span dir="ltr">' + clock + '</span>' : '');
+                return '<article class="m-exp-card">' +
+                    '<div class="m-exp-amt"><span>' + money(Number(exp.amount) || 0) + '</span><em>د.ع</em></div>' +
+                    '<div class="m-exp-when">' +
+                        '<span class="m-exp-date">' + escHTML(prettyDate(exp.date)) + '</span>' +
+                        (sub ? '<span class="m-exp-sub">' + sub + '</span>' : '') +
+                    '</div>' +
+                    (note ? '<div class="m-exp-note">' +
+                        '<span class="m-exp-note-t">ملاحظة</span>' +
+                        '<p class="m-exp-note-x' + tier + '">' + escHTML(note) + '</p>' +
+                    '</div>' : '') +
+                '</article>';
+            }).join('');
 
-        body.innerHTML = '<div class="m-exp-list">' + cards + '</div>' +
-            '<div class="m-exp-empty"><i class="fa-solid fa-inbox"></i><span>لا صرفيات في هذه الفترة</span></div>';
-        body.querySelector('.m-exp-empty').style.display = items.length ? 'none' : 'flex';
+            body.innerHTML = '<div class="m-exp-list">' + cards + '</div>' +
+                '<div class="m-exp-empty"><i class="fa-solid fa-inbox"></i><span>لا صرفيات في هذه الفترة</span></div>';
+            body.querySelector('.m-exp-empty').style.display = items.length ? 'none' : 'flex';
+            /* البطاقات وُلدت بعد أن مرّت armSheetRise الأولى: نلبسها حركة البناء
+               الآن كي لا تظهر جاهزة لحظة ثم تعود للصفر عند المحاولة التالية */
+            const fresh = qsa('.m-exp-sum, .m-exp-card', content).slice(0, 10);
+            for (let i = 0; i < fresh.length; i++) {
+                if (fresh[i].classList.contains('m-rise')) continue;
+                fresh[i].style.setProperty('--i', String(i));
+                fresh[i].classList.add('m-rise');
+            }
+        };
+        requestAnimationFrame(() => requestAnimationFrame(mount));
         el.dataset.mExpTotal = String(total);
         el.dataset.mExpCount = String(items.length);
     }
@@ -3868,7 +3902,7 @@ html.is-mobile .modal-footer-sticky {
             el.style.removeProperty('padding-bottom');
             content.style.removeProperty('height');
             content.style.removeProperty('max-height');
-        }, 560);
+        }, 720);
     }
 
     function closeSheet(el, skipHistory, instant) {
@@ -3893,7 +3927,7 @@ html.is-mobile .modal-footer-sticky {
                 /* نبقي m-sheet علامةً على النافذة المفتوحة، فإزالتها هنا تجعل إعادة الفتح تعمل */
                 el.classList.remove('m-closing', 'm-sheet', 'm-in');
                 stripSheetMotion(content);
-            }, 520);
+            }, 700);
         }
         const i = sheetStack.lastIndexOf(el);
         if (i > -1) sheetStack.splice(i, 1);
