@@ -1091,6 +1091,208 @@ html.is-mobile .m-po { animation: mPoIn .42s var(--m-ease-out) both; animation-d
     html.is-mobile .m-po { animation: none !important; }
 }
 
+/* ------------------------- المحفظة: إجراءات وكشف الأرصدة -------------------------
+   التبويب كان بطاقتين ثم جدول فارغ يُقرأ كفراغ طويل. الآن: شريط إجراءات زجاجي،
+   وحالة فارغة مصممة تحل مكان الجدول الفارغ، وورقة «كشف الأرصدة» تشرح كيف
+   تكوّن الرقم من المبيعات والمصروفات والتكاليف وحركات الشريكين. قراءة فقط. */
+html.is-mobile .m-wb-bar {
+    display: flex; gap: 9px;
+    margin: 0 0 18px;
+    animation: mWbRise .5s var(--m-ease-out) both;
+}
+html.is-mobile .m-wb-act {
+    flex: 1 1 0; min-width: 0;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    min-height: 46px; padding: 0 12px;
+    border-radius: 15px;
+    border: 1px solid var(--m-edge);
+    background:
+        linear-gradient(155deg, rgba(255,255,255,.10), rgba(255,255,255,.015) 48%, rgba(255,255,255,.06)),
+        rgba(var(--rg-glass-rgb), .74);
+    box-shadow: var(--m-lift);
+    color: var(--m-text);
+    font-family: inherit; font-size: 12.5px; font-weight: 900; letter-spacing: .1px;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform .16s var(--m-ease), background .22s var(--m-ease);
+}
+html.is-mobile .m-wb-act i { font-size: 13px; color: var(--m-accent2); }
+html.is-mobile .m-wb-act.prime {
+    border-color: rgba(var(--rg-accent-rgb), .40);
+    background:
+        linear-gradient(150deg, rgba(var(--rg-accent-rgb), .30), rgba(var(--rg-accent-rgb), .05) 72%),
+        rgba(var(--rg-glass-rgb), .82);
+}
+html.is-mobile .m-wb-act:active { transform: scale(.965); }
+html.is-mobile body.rg-light .m-wb-act {
+    background: linear-gradient(155deg, rgba(255,255,255,.92), rgba(255,255,255,.58)), rgba(234,242,252,.86);
+    border-color: rgba(47,127,208,.22);
+    color: #1d3557;
+}
+html.is-mobile body.rg-light .m-wb-act i { color: #2f7fd0; }
+
+html.is-mobile .m-wb-empty {
+    display: flex; flex-direction: column; align-items: center; text-align: center;
+    gap: 7px;
+    padding: 30px 22px 26px;
+    margin: 4px 0 8px;
+    border-radius: var(--m-radius-card);
+    border: 1px dashed rgba(162,212,255,.30);
+    background:
+        linear-gradient(160deg, rgba(255,255,255,.06), rgba(255,255,255,.012) 55%, rgba(255,255,255,.035)),
+        rgba(var(--rg-glass-rgb), .52);
+    animation: mWbEmpty .5s var(--m-ease-out) both;
+}
+html.is-mobile .m-wb-empty-orb {
+    width: 54px; height: 54px; border-radius: 17px;
+    display: inline-flex; align-items: center; justify-content: center;
+    margin-bottom: 4px;
+    background: linear-gradient(150deg, rgba(var(--rg-accent-rgb), .30), rgba(var(--rg-accent-rgb), .06));
+    border: 1px solid rgba(var(--rg-accent-rgb), .30);
+    box-shadow: 0 10px 24px rgba(1,8,22,.35), inset 0 1px 0 rgba(220,240,255,.30);
+}
+html.is-mobile .m-wb-empty-orb i { font-size: 20px; color: var(--m-accent2); }
+html.is-mobile .m-wb-empty b { font-size: 14px; font-weight: 900; color: var(--m-text); }
+html.is-mobile .m-wb-empty p {
+    margin: 0; max-width: 250px;
+    font-size: 11.5px; font-weight: 700; line-height: 1.8;
+    color: var(--m-muted);
+}
+html.is-mobile .m-wb-empty small {
+    margin-top: 2px;
+    font-size: 10px; font-weight: 800; letter-spacing: .2px;
+    color: var(--m-faint);
+}
+@keyframes mWbRise { from { opacity: 0; transform: translate3d(0, 10px, 0); } to { opacity: 1; transform: none; } }
+@keyframes mWbEmpty { from { opacity: 0; transform: translate3d(0, 12px, 0) scale(.985); } to { opacity: 1; transform: none; } }
+html.is-mobile body.rg-light .m-wb-empty {
+    border-color: rgba(47,127,208,.26);
+    background: linear-gradient(160deg, rgba(255,255,255,.92), rgba(255,255,255,.55)), rgba(234,242,252,.6);
+}
+html.is-mobile body.rg-light .m-wb-empty b { color: #16324f; }
+html.is-mobile body.rg-light .m-wb-empty p { color: #4a6a8d; }
+html.is-mobile body.rg-light .m-wb-empty small { color: #6f8bab; }
+
+/* ورقة كشف الأرصدة */
+html.is-mobile .m-wb-sheet { position: fixed; inset: 0; z-index: 9660; display: flex; align-items: flex-end; }
+html.is-mobile .m-wb-scrim {
+    position: absolute; inset: 0;
+    background: radial-gradient(90% 60% at 50% 100%, rgba(6,14,28,.52), rgba(2,6,14,.78));
+    opacity: 0; transition: opacity .3s var(--m-ease);
+}
+html.is-mobile .m-wb-sheet.on .m-wb-scrim { opacity: 1; }
+html.is-mobile .m-wb-card {
+    position: relative;
+    width: 100%; max-height: 78vh;
+    display: flex; flex-direction: column;
+    border-radius: var(--m-radius-sheet) var(--m-radius-sheet) 0 0;
+    border: 1px solid var(--m-edge);
+    border-bottom: none;
+    background:
+        linear-gradient(160deg, rgba(255,255,255,.16), rgba(255,255,255,.02) 46%, rgba(255,255,255,.08)),
+        rgba(var(--rg-glass-rgb), .992);
+    box-shadow: 0 -24px 60px rgba(0,4,14,.55), inset 0 1px 0 rgba(255,255,255,.35);
+    padding: 8px 14px calc(14px + env(safe-area-inset-bottom, 0px));
+    transform: translate3d(0, 104%, 0);
+    transition: transform .42s var(--m-ease-out);
+    color: var(--m-text);
+}
+html.is-mobile body.rg-light .m-wb-card { background: linear-gradient(160deg, rgba(255,255,255,.985), rgba(255,255,255,.92)); }
+html.is-mobile .m-wb-sheet.on .m-wb-card { transform: none; }
+html.is-mobile .m-wb-sheet.out .m-wb-card { transform: translate3d(0, 104%, 0); }
+html.is-mobile .m-wb-sheet.out .m-wb-scrim { opacity: 0; }
+html.is-mobile .m-wb-grip { width: 42px; height: 5px; border-radius: 99px; background: rgba(255,255,255,.25); margin: 2px auto 10px; }
+html.is-mobile body.rg-light .m-wb-grip { background: rgba(20,60,110,.18); }
+html.is-mobile .m-wb-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 0 2px 11px;
+    border-bottom: 1px solid var(--m-hair);
+}
+html.is-mobile .m-wb-head h3 { margin: 0; font-size: 15px; font-weight: 900; display: flex; align-items: center; gap: 7px; }
+html.is-mobile .m-wb-head h3 i { color: var(--m-accent2); font-size: 12px; }
+html.is-mobile .m-wb-head small { display: block; margin-top: 3px; font-size: 10px; font-weight: 700; color: var(--m-muted); }
+html.is-mobile .m-wb-x {
+    flex: none; width: 32px; height: 32px;
+    border-radius: 10px;
+    border: 1px solid var(--m-edge);
+    background: rgba(255,255,255,.08);
+    color: var(--m-muted); font-size: 13px;
+}
+html.is-mobile body.rg-light .m-wb-x { background: rgba(20,60,110,.06); color: #33507a; }
+html.is-mobile .m-wb-body {
+    overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+    padding: 12px 2px 6px;
+    display: flex; flex-direction: column; gap: 7px;
+}
+html.is-mobile .m-wb-sec {
+    margin: 7px 5px 1px;
+    font-size: 10px; font-weight: 900; letter-spacing: .3px;
+    color: var(--m-faint);
+}
+html.is-mobile .m-wb-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 9px 11px;
+    border-radius: 12px;
+    border: 1px solid transparent;
+    background: rgba(255,255,255,.035);
+    font-size: 12px; font-weight: 800;
+    color: var(--m-text);
+}
+html.is-mobile .m-wb-row > span { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; }
+html.is-mobile .m-wb-row > span i { width: 16px; text-align: center; font-size: 11px; color: var(--m-muted); }
+html.is-mobile .m-wb-row > b { direction: ltr; font-size: 12.5px; font-weight: 900; font-variant-numeric: tabular-nums; text-align: end; white-space: nowrap; }
+html.is-mobile .m-wb-row > b.pos { color: var(--m-green); }
+html.is-mobile .m-wb-row > b.neg { color: var(--m-red); }
+html.is-mobile .m-wb-row.total {
+    background: rgba(var(--rg-accent-rgb), .12);
+    border-color: rgba(var(--rg-accent-rgb), .22);
+}
+html.is-mobile .m-wb-row.total > b { font-size: 13.5px; }
+html.is-mobile .m-wb-acc {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    margin: 7px 0 0;
+    padding: 11px 12px;
+    border-radius: 14px;
+    border: 1px solid var(--m-edge);
+    background: linear-gradient(155deg, rgba(255,255,255,.07), rgba(255,255,255,.015));
+}
+html.is-mobile .m-wb-acc-l { display: flex; align-items: center; gap: 9px; min-width: 0; }
+html.is-mobile .m-wb-acc-av {
+    width: 32px; height: 32px; flex: none;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 10px;
+    background: linear-gradient(150deg, rgba(var(--rg-accent-rgb), .32), rgba(var(--rg-accent-rgb), .08));
+    border: 1px solid rgba(var(--rg-accent-rgb), .26);
+    font-size: 12px; color: var(--m-accent2);
+}
+html.is-mobile .m-wb-acc-t { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+html.is-mobile .m-wb-acc-t b { font-size: 12px; font-weight: 900; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html.is-mobile .m-wb-acc-t small { font-size: 9.5px; font-weight: 700; color: var(--m-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html.is-mobile .m-wb-acc-v { direction: ltr; flex: none; font-size: 13px; font-weight: 900; font-variant-numeric: tabular-nums; }
+html.is-mobile .m-wb-acc-v.neg { color: var(--m-red); }
+html.is-mobile .m-wb-acc-v.pos { color: var(--m-green); }
+html.is-mobile .m-wb-note {
+    margin: 7px 5px 2px;
+    font-size: 9.5px; font-weight: 700; line-height: 1.9;
+    color: var(--m-faint);
+}
+html.is-mobile body.rg-light .m-wb-row { background: rgba(30,70,120,.05); }
+html.is-mobile body.rg-light .m-wb-row > span i { color: #5a7899; }
+html.is-mobile body.rg-light .m-wb-row.total { background: rgba(47,127,208,.09); border-color: rgba(47,127,208,.18); }
+html.is-mobile body.rg-light .m-wb-acc {
+    background: linear-gradient(155deg, rgba(255,255,255,.9), rgba(255,255,255,.5));
+    border-color: rgba(47,127,208,.2);
+}
+html.is-mobile .m-wb-empty-go {
+    flex: none; width: auto;
+    min-height: 40px; padding: 0 18px;
+    margin-top: 8px;
+    font-size: 12px;
+}
+@media (prefers-reduced-motion: reduce) {
+    html.is-mobile .m-wb-bar, html.is-mobile .m-wb-empty { animation: none !important; }
+    html.is-mobile .m-wb-card, html.is-mobile .m-wb-scrim { transition: none; }
+}
+
 /* ------------------------- صفحة المزيد -------------------------
    البطاقات تملأ ارتفاع اللوحة: لا تصعد الأيقونات تحت الترويسة ولا فراغ أسفلها. */
 html.is-mobile #admin-more-menu { padding-top: 8px !important; display: none; flex-direction: column; }
@@ -6595,6 +6797,7 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
         } catch (err) { console.warn('mobile repaint:', err); }
         markSyncTime();
         paintToday();
+        syncWallet();
         syncProgress();
         if (page && Math.abs(page.scrollTop - top) > 2) page.scrollTop = top;
         openSheets.forEach((c, i) => { if (Math.abs(c.scrollTop - sheetTops[i]) > 2) c.scrollTop = sheetTops[i]; });
@@ -7424,6 +7627,168 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
         if (x) setTimeout(() => { try { x.focus({ preventScroll: true }); } catch (e) {} }, 60);
         const listEl = sheet.querySelector('.m-pulse-list');
         if (listEl) listEl.scrollTop = 0;
+    }
+
+    /* ==================== المحفظة: إجراءات وكشف وحالة فارغة ====================
+       كل ما هنا قراءة من جسر royalDataRead نفسه الذي ترسم منه بطاقتا الشريكين،
+       وبالمعادلة نفسها حرفياً في app.js — لا حساب موازٍ يخالف الأرقام المعروضة. */
+    const WB_ACCOUNTS = ['أحمد رزاق العامري', 'أحمد شاكر شبع'];
+    let wbEscBound = null;
+
+    function walletFigures() {
+        const data = (typeof window.royalDataRead === 'function' && window.royalDataRead()) || {};
+        const num = (v) => { const n = Number(v); return isFinite(n) ? n : 0; };
+        let sales = 0, expenses = 0, costs = 0;
+        (data.invoices || []).forEach((inv) => {
+            if (!inv) return;
+            if (inv.type === 'active' || inv.type === 'archived') sales += num(inv.customer && inv.customer.paid);
+            else if (inv.type === 'cash' || inv.type === 'electronic') sales += num(inv.total);
+        });
+        (data.payments || []).forEach((p) => {
+            if (!p) return;
+            if (p.type === 'إلغاء اشتراك VIP') sales -= num(p.amount);
+            else sales += num(p.amount);
+        });
+        (data.expenses || []).forEach((e) => { if (e) expenses += num(e.amount); });
+        (data.operatingCosts || []).forEach((c) => { if (c) costs += num(c.amount); });
+        const net = sales - expenses - costs;
+        const share = net / 2;
+        const acc = {};
+        WB_ACCOUNTS.forEach((name) => { acc[name] = { dep: 0, wd: 0, n: 0 }; });
+        (data.partnerTx || []).forEach((t) => {
+            const a = t && acc[t.account];
+            if (!a) return;
+            if (t.type === 'إيداع') a.dep += num(t.amount); else a.wd += num(t.amount);
+            a.n += 1;
+        });
+        return { sales, expenses, costs, net, share, acc };
+    }
+
+    function wbMoney(v) {
+        return v < 0 ? '− ' + money(Math.abs(v)) : money(v);
+    }
+    function wbSign(v) { return v < 0 ? 'neg' : 'pos'; }
+
+    function wbRow(icon, label, value, cls, total) {
+        return '<div class="m-wb-row' + (total ? ' total' : '') + '">' +
+            '<span><i class="fa-solid ' + icon + '"></i>' + esc(label) + '</span>' +
+            '<b class="' + (cls || '') + '">' + value + '</b></div>';
+    }
+
+    function wbAccRow(name, f) {
+        const a = f.acc[name];
+        const bal = f.share + a.dep - a.wd;
+        const hint = a.n === 0
+            ? 'لا حركات مسجّلة · يبدأ من نصف الربح'
+            : 'إيداع ' + money(a.dep) + ' · سحب ' + money(a.wd) + ' · ' + a.n + (a.n === 1 ? ' حركة' : ' حركات');
+        return '<div class="m-wb-acc">' +
+            '<div class="m-wb-acc-l">' +
+                '<span class="m-wb-acc-av"><i class="fa-solid fa-user-tie"></i></span>' +
+                '<div class="m-wb-acc-t"><b>' + esc(name) + '</b><small>' + esc(hint) + '</small></div>' +
+            '</div>' +
+            '<b class="m-wb-acc-v ' + wbSign(bal) + '">' + wbMoney(bal) + ' د.ع</b>' +
+        '</div>';
+    }
+
+    function closeWalletSheet() {
+        const sheet = document.querySelector('.m-wb-sheet');
+        if (!sheet) return;
+        sheet.classList.add('out');
+        if (wbEscBound) { document.removeEventListener('keydown', wbEscBound, true); wbEscBound = null; }
+        setTimeout(() => { if (sheet.parentNode) sheet.parentNode.removeChild(sheet); }, 360);
+    }
+
+    function openWalletSheet() {
+        closeWalletSheet();
+        const f = walletFigures();
+        try { if (typeof haptic === 'function') haptic(8); } catch (e) {}
+        const sheet = document.createElement('div');
+        sheet.className = 'm-wb-sheet';
+        sheet.innerHTML =
+            '<div class="m-wb-scrim"></div>' +
+            '<div class="m-wb-card" role="dialog" aria-modal="true" aria-label="كشف الأرصدة">' +
+                '<div class="m-wb-grip"></div>' +
+                '<div class="m-wb-head">' +
+                    '<div><h3><i class="fa-solid fa-scale-balanced"></i> كشف الأرصدة</h3>' +
+                    '<small>كيف تكوّن رقم كل شريك</small></div>' +
+                    '<button type="button" class="m-wb-x" aria-label="إغلاق"><i class="fa-solid fa-xmark"></i></button>' +
+                '</div>' +
+                '<div class="m-wb-body">' +
+                    '<div class="m-wb-sec">من أين يأتي الرصيد</div>' +
+                    wbRow('fa-arrow-trend-up', 'صافي المبيعات التراكمي', money(f.sales), '') +
+                    wbRow('fa-arrow-trend-down', 'المصروفات التراكمية', '− ' + money(f.expenses), 'neg') +
+                    wbRow('fa-gears', 'التكاليف التشغيلية', '− ' + money(f.costs), 'neg') +
+                    wbRow('fa-scale-balanced', 'صافي الربح التراكمي', wbMoney(f.net), wbSign(f.net), true) +
+                    wbRow('fa-divide', 'حصّة كل شريك من الربح', wbMoney(f.share), wbSign(f.share)) +
+                    '<div class="m-wb-sec">أرصدة الشريكين</div>' +
+                    wbAccRow(WB_ACCOUNTS[0], f) +
+                    wbAccRow(WB_ACCOUNTS[1], f) +
+                    '<div class="m-wb-note">الرصيد الفعلي = نصف صافي الربح التراكمي + الإيداعات − السحوبات. ' +
+                    'الأرقام تُقرأ من نفس بيانات السحابة التي ترسم منها البطاقات أعلاه، بلا أي كتابة.</div>' +
+                '</div>' +
+            '</div>';
+        document.body.appendChild(sheet);
+        requestAnimationFrame(() => sheet.classList.add('on'));
+        sheet.addEventListener('click', (e) => {
+            if (e.target.closest('.m-wb-x') || e.target.classList.contains('m-wb-scrim')) closeWalletSheet();
+        });
+        wbEscBound = (e) => {
+            if (e.key === 'Escape') { e.preventDefault(); closeWalletSheet(); }
+        };
+        document.addEventListener('keydown', wbEscBound, true);
+        const x = sheet.querySelector('.m-wb-x');
+        if (x) setTimeout(() => { try { x.focus({ preventScroll: true }); } catch (e) {} }, 60);
+    }
+
+    function openVault() {
+        if (typeof window.openPartnerTxModal === 'function') window.openPartnerTxModal();
+    }
+
+    /* الشريط والحالة الفارغة يُبنيان مرة واحدة ثم يُصحَّح ظهورهما مع كل رسم:
+       عند وصول أول حركة يختفي نصّ الفراغ، وعند مسحها يعود. */
+    function syncWallet() {
+        const sec = document.getElementById('admin-wallet');
+        if (!sec) return;
+        const h2 = sec.querySelector('h2');
+        const tbody = document.getElementById('wallet-transactions-body');
+        const table = tbody ? tbody.closest('table') : null;
+        if (!h2 || !table) return;
+        if (!sec.querySelector('.m-wb-bar')) {
+            const bar = document.createElement('div');
+            bar.className = 'm-wb-bar';
+            bar.innerHTML =
+                '<button type="button" class="m-wb-act prime" data-wb="tx"><i class="fa-solid fa-vault"></i><span>سحب / إيداع</span></button>' +
+                '<button type="button" class="m-wb-act" data-wb="calc"><i class="fa-solid fa-scale-balanced"></i><span>كشف الأرصدة</span></button>';
+            h2.insertAdjacentElement('afterend', bar);
+            bar.addEventListener('click', (e) => {
+                const b = e.target.closest('[data-wb]');
+                if (!b) return;
+                if (b.getAttribute('data-wb') === 'tx') openVault(); else openWalletSheet();
+            });
+        }
+        const hasRows = !!(tbody && tbody.children.length);
+        let loaded = false;
+        try {
+            const d = typeof window.royalDataRead === 'function' ? window.royalDataRead() : null;
+            loaded = !!(d && typeof d === 'object');
+        } catch (e) { loaded = false; }
+        const empty = sec.querySelector('.m-wb-empty');
+        if (loaded && !hasRows && !empty) {
+            const card = document.createElement('div');
+            card.className = 'm-wb-empty';
+            card.setAttribute('role', 'note');
+            card.innerHTML =
+                '<span class="m-wb-empty-orb"><i class="fa-solid fa-vault"></i></span>' +
+                '<b>لا توجد حركات سحب أو إيداع</b>' +
+                '<p>كل حركة بين الشريكين تُسجَّل هنا مع رصيد الحساب بعدها، ويظهر أثرها فوراً في بطاقتي الرصيد أعلاه.</p>' +
+                '<small>الأرصدة الحالية محسوبة من صافي الربح التراكمي فقط</small>' +
+                '<button type="button" class="m-wb-act prime m-wb-empty-go"><i class="fa-solid fa-plus"></i><span>سجّل أول حركة</span></button>';
+            const title = table.previousElementSibling;
+            (title || table).insertAdjacentElement('afterend', card);
+            card.querySelector('.m-wb-empty-go').addEventListener('click', openVault);
+        } else if (hasRows && empty) {
+            empty.parentNode.removeChild(empty);
+        }
     }
 
     function paintToday() {
@@ -9148,6 +9513,7 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
         observeSheets();
         bindKeyboard();
         bindTodayPanel();
+        syncWallet();
         mirrorConnection();
         state.started = true;
         flushRepaint();
@@ -9286,6 +9652,11 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
             if (o && o.__mOriginal) window.switchAdminTab = o.__mOriginal;
             const st = document.getElementById('royal-mobile-style');
             if (st) st.remove();
+            const wbBar = document.querySelector('#admin-wallet .m-wb-bar');
+            if (wbBar) wbBar.remove();
+            const wbEmpty = document.querySelector('#admin-wallet .m-wb-empty');
+            if (wbEmpty) wbEmpty.remove();
+            closeWalletSheet();
             document.body.classList.remove('m-admin', 'm-sheet-open', 'm-lock', 'm-dragging');
         }
     };
