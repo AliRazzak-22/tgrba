@@ -151,10 +151,11 @@
             if (!name) return;
             const t = tsOf(inv);
             if (!firstSeen[name] || t < firstSeen[name]) firstSeen[name] = t;
-            const lc = life[name] || (life[name] = { name, visits: 0, spent: 0, lastTs: 0 });
+            const lc = life[name] || (life[name] = { name, visits: 0, spent: 0, lastTs: 0, times: [] });
             lc.visits += 1;
             lc.spent += num(inv.total);
             if (t > lc.lastTs) lc.lastTs = t;
+            if (t > 0) lc.times.push(t);
         });
 
         const inPeriod = all.filter((i) => !start || tsOf(i) >= start);
@@ -411,6 +412,34 @@
         const absentWarn = absent.filter((c) => c.days < 30).length;
         const absentSpend = absent.reduce((s, c) => s + c.spent, 0);
 
+        /* فجوة العودة: كم يوماً بين زيارة وأخرى لنفس الزبون، للزيارات التي
+           وقعت داخل الفترة فقط. الزيارة الأولى لا فجوة لها، والوسيط أصدق
+           من المتوسط حين توجد غيبة واحدة طويلة تجرّ الرقم. */
+        const gapVals = [];
+        const gapPeople = {};
+        Object.keys(life).forEach((n) => {
+            const ts = life[n].times.slice().sort((a, b) => a - b);
+            for (let i = 1; i < ts.length; i++) {
+                if (start && ts[i] < start) continue;
+                gapVals.push((ts[i] - ts[i - 1]) / 86400000);
+                gapPeople[n] = 1;
+            }
+        });
+        gapVals.sort((a, b) => a - b);
+        const gapN = gapVals.length;
+        const gapMedian = gapN
+            ? (gapN % 2 ? gapVals[(gapN - 1) / 2] : (gapVals[gapN / 2 - 1] + gapVals[gapN / 2]) / 2)
+            : 0;
+        const gapMean = gapN ? gapVals.reduce((s, v) => s + v, 0) / gapN : 0;
+        const gapBuckets = [0, 0, 0, 0];
+        gapVals.forEach((v) => {
+            if (v < 1) gapBuckets[0] += 1;
+            else if (v <= 7) gapBuckets[1] += 1;
+            else if (v <= 30) gapBuckets[2] += 1;
+            else gapBuckets[3] += 1;
+        });
+        const gap = { n: gapN, median: gapMedian, mean: gapMean, buckets: gapBuckets, people: Object.keys(gapPeople).length };
+
         /* جدد مقابل عائدين شهرياً: آخر ستة أشهر من كل الفواتير لا من الفترة،
            والزبون يُحسب في الشهر مرة واحدة؛ «جديد» إذا كانت أول فاتورة له في
            ذلك الشهر نفسه. قراءة فقط. */
@@ -481,6 +510,7 @@
             absent,
             absentWarn,
             absentSpend,
+            gap,
             days,
             months,
             billed,
@@ -602,6 +632,48 @@
                 '<small>' + (cc.billed - cc.total > 0.5
                     ? 'فواتير الزبائن المسجّلين وحدها: <b>' + money(cc.total) + '</b> من أصل <b>' + money(cc.billed) + '</b> في هذه الفترة.'
                     : 'كل فواتير الفترة مسجّلة باسم زبون — الأساس إيراد الفترة كاملاً.') + '</small>' +
+            '</div>';
+    }
+
+    function gapCard(g) {
+        if (!g || !g.n) return emptyMini('لا زيارات عائدة في هذه الفترة بعد — كل الزبائن جدد أو بزيارة واحدة');
+        const GAP_BUCKETS = [
+            { l: 'نفس اليوم', c: '#3ddc97' },
+            { l: '<span dir="ltr">1 – 7</span> أيام', c: '#8b9dff' },
+            { l: '<span dir="ltr">8 – 30</span> يوم', c: '#ffd166' },
+            { l: 'أكثر من <span dir="ltr">30</span> يوم', c: '#ff7a7a' }
+        ];
+        const med = g.median;
+        const main = med < 1 ? Math.max(1, Math.round(med * 24)) : Math.round(med);
+        const unit = med < 1 ? 'ساعة' : 'يوم';
+        const spanWord = med < 1 ? '' : (main === 1 ? 'يوم واحد' : main === 2 ? 'يومين' : main + ' أيام');
+        const say = med < 1
+            ? 'نصف الزيارات العائدة جاءت في نفس اليوم من زيارة الزبون السابقة.'
+            : 'نصف الزيارات العائدة جاءت خلال ' + spanWord + ' أو أقل من زيارة الزبون السابقة.';
+        const meanWord = g.mean < 1
+            ? Math.max(1, Math.round(g.mean * 24)) + ' ساعة'
+            : Math.round(g.mean) === 1 ? 'يوم واحد'
+                : Math.round(g.mean) === 2 ? 'يومين'
+                    : Math.round(g.mean) + ' أيام';
+        const rows = g.buckets.map((n, i) => {
+            const p = Math.round((n / g.n) * 100);
+            return '<div class="ri-gap-row">' +
+                '<span class="ri-gap-l">' + GAP_BUCKETS[i].l + '<small>' + fmt(n) + ' فجوة</small></span>' +
+                '<span class="ri-gap-track"><i style="--w:' + ((n / g.n) * 100).toFixed(2) + '%;--c:' + GAP_BUCKETS[i].c + ';--i:' + i + '"></i></span>' +
+                '<b class="ri-gap-p" dir="ltr">' + p + '%</b>' +
+            '</div>';
+        }).join('');
+        return '<div class="ri-gap-hero">' +
+                '<strong>' + fmt(main) + '</strong>' +
+                '<span>' + unit + '<small>وسيط الفجوة بين الزيارات</small></span>' +
+                '<em>المتوسط ' + meanWord + '</em>' +
+            '</div>' +
+            '<div class="ri-gap-say">' + say + '</div>' +
+            rows +
+            '<div class="ri-gap-foot">' +
+                '<span><i class="fa-solid fa-arrows-left-right"></i> قِيست <b>' + fmt(g.n) + '</b> فجوة عبر <b>' + fmt(g.people) + '</b> ' +
+                    (g.people === 1 ? 'زبون' : g.people === 2 ? 'زبونان' : 'زبوناً') + ' عائد.</span>' +
+                '<small>الفجوة هي المدة بين كل زيارة والزيارة السابقة لها — الزيارة الأولى لا تُحسب.</small>' +
             '</div>';
     }
 
@@ -807,7 +879,7 @@
             return b.spent - a.spent;
         });
         list = filterCustomers(list, filter, query);
-        if (!list.length) return emptyMini(q ? 'لا نتائج لهذا البحث' : 'لا يوجد زبائن في هذه الفئة');
+        if (!list.length) return emptyMini(String(query || '').trim() ? 'لا نتائج لهذا البحث' : 'لا يوجد زبائن في هذه الفئة');
         const cap = Math.max(40, Number(limit) || 40);
         const shown = list.slice(0, cap);
         const scope = allTime ? ' data-alltime="1"' : '';
@@ -965,6 +1037,13 @@
                 '<div class="ri-card-head"><h3><i class="fa-solid fa-chart-column"></i> جدد مقابل عائدين</h3><span>آخر ' + monthsLabel(vm.months.length) + '</span></div>' +
                 monthlyChart(vm.months) +
             '</div>' +
+
+            (period.days !== 1
+                ? '<div class="ri-card">' +
+                    '<div class="ri-card-head"><h3><i class="fa-solid fa-arrows-rotate"></i> فجوة العودة</h3><span>بين زيارة وأخرى</span></div>' +
+                    gapCard(vm.gap) +
+                  '</div>'
+                : '') +
 
             '<div class="ri-card">' +
                 '<div class="ri-card-head ri-card-head-seg"><h3><i class="fa-solid fa-layer-group"></i> أعلى الخدمات</h3>' +
@@ -2019,6 +2098,48 @@ html.is-mobile body.rg-light .ri-cc-foot b { color: #0e2138; }
 html.is-mobile body.rg-light .ri-cc-foot i { color: #1b5aa8; }
 html.is-mobile body.rg-light .ri-cc-foot small { color: #5b7191; }
 
+html.is-mobile .ri-gap-hero {
+    display: flex; align-items: flex-end; gap: 9px;
+    padding: 11px 12px; border-radius: 13px;
+    background: rgba(255,255,255,.045);
+    border: 1px solid var(--ri-line);
+}
+html.is-mobile .ri-gap-hero strong { font-size: 30px; line-height: .9; font-weight: 900; color: var(--m-text); font-variant-numeric: tabular-nums; }
+html.is-mobile .ri-gap-hero > span { display: flex; flex-direction: column; gap: 2px; padding-bottom: 2px; font-size: 10.5px; font-weight: 900; color: var(--m-accent2); }
+html.is-mobile .ri-gap-hero > span small { font-size: 9px; font-weight: 700; color: var(--m-faint); }
+html.is-mobile .ri-gap-hero em { margin-inline-start: auto; padding-bottom: 2px; font-style: normal; font-size: 9.5px; font-weight: 800; color: var(--m-muted); }
+html.is-mobile .ri-gap-say { margin-top: 10px; font-size: 10.5px; font-weight: 700; line-height: 1.6; color: var(--m-muted); }
+html.is-mobile .ri-gap-row { display: grid; grid-template-columns: 92px 1fr 34px; align-items: center; gap: 9px; margin-top: 9px; }
+html.is-mobile .ri-gap-l { display: block; font-size: 9.5px; font-weight: 800; color: var(--m-muted); white-space: nowrap; }
+html.is-mobile .ri-gap-l small { display: block; margin-top: 1px; font-size: 8.5px; font-weight: 700; color: var(--m-faint); }
+html.is-mobile .ri-gap-track { height: 7px; border-radius: 99px; background: rgba(255,255,255,.06); overflow: hidden; }
+html.is-mobile .ri-gap-track i {
+    display: block; height: 100%; width: var(--w); border-radius: 99px;
+    background: linear-gradient(90deg, color-mix(in srgb, var(--c) 45%, transparent), var(--c));
+    transform: scaleX(0); transform-origin: right center;
+    animation: riSegGrow .7s var(--m-ease-out) forwards;
+    animation-delay: calc(120ms + var(--i, 0) * 80ms);
+}
+html.is-mobile .ri-gap-p { font-size: 10px; font-weight: 900; color: var(--m-text); text-align: end; font-variant-numeric: tabular-nums; }
+html.is-mobile .ri-gap-foot { display: flex; flex-direction: column; gap: 4px; margin-top: 12px; padding-top: 9px; border-top: 1px solid var(--ri-line); font-size: 10px; font-weight: 700; line-height: 1.55; color: var(--m-muted); }
+html.is-mobile .ri-gap-foot b { color: var(--m-text); font-weight: 900; }
+html.is-mobile .ri-gap-foot i { color: var(--m-accent2); margin-inline-end: 3px; }
+html.is-mobile .ri-gap-foot small { font-size: 9px; font-weight: 700; color: var(--m-faint); }
+html.is-mobile body.rg-light .ri-gap-hero { background: rgba(30,70,120,.045); border-color: rgba(30,70,120,.10); }
+html.is-mobile body.rg-light .ri-gap-hero strong { color: #0e2138; }
+html.is-mobile body.rg-light .ri-gap-hero > span { color: #1b5aa8; }
+html.is-mobile body.rg-light .ri-gap-hero > span small { color: #5b7191; }
+html.is-mobile body.rg-light .ri-gap-hero em { color: #4c5d75; }
+html.is-mobile body.rg-light .ri-gap-say { color: #4c5d75; }
+html.is-mobile body.rg-light .ri-gap-l { color: #4c5d75; }
+html.is-mobile body.rg-light .ri-gap-l small { color: #5b7191; }
+html.is-mobile body.rg-light .ri-gap-track { background: rgba(30,70,120,.09); }
+html.is-mobile body.rg-light .ri-gap-p { color: #0e2138; }
+html.is-mobile body.rg-light .ri-gap-foot { color: #4c5d75; border-top-color: rgba(30,70,120,.10); }
+html.is-mobile body.rg-light .ri-gap-foot b { color: #0e2138; }
+html.is-mobile body.rg-light .ri-gap-foot i { color: #1b5aa8; }
+html.is-mobile body.rg-light .ri-gap-foot small { color: #5b7191; }
+
 html.is-mobile .ri-ladder { display: flex; flex-direction: column; gap: 9px; }
 html.is-mobile .ri-lad-row { display: grid; grid-template-columns: 64px 1fr 28px; align-items: center; gap: 8px; }
 html.is-mobile .ri-lad-l { font-size: 10px; font-weight: 800; color: var(--m-muted); }
@@ -2212,6 +2333,7 @@ html.is-mobile .ri-root.ri-no-motion .ri-svc-pop { animation: none; }
 /* أشرطة تكبر من صفر: إيقاف حركتها بلا إعادة التحويل يتركها غير مرئية */
 html.is-mobile .ri-root.ri-no-motion .ri-ov-bar i,
 html.is-mobile .ri-root.ri-no-motion .ri-wd-col i,
+html.is-mobile .ri-root.ri-no-motion .ri-gap-track i,
 html.is-mobile .ri-root.ri-no-motion .ri-cc-track i { animation: none; transform: none; }
 @keyframes riRise { from { opacity: 0; transform: translate3d(0, 16px, 0); } to { opacity: 1; transform: none; } }
 
