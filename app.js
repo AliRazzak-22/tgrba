@@ -452,13 +452,10 @@ window.recalculateDailySales = () => {
                 pay.type === 'دفع كاش (متبقي طلب)' ||
                 pay.type === 'دفع إلكتروني (متبقي طلب)'
             ) {
-                // التدخل الجراحي: نضمن عدم الجمع المزدوج للدفع المختلط
-                if(pay.type !== 'دفع مختلط (VIP + كاش)') {
-                    if(pay.type !== 'دفع إلكتروني (متبقي طلب)') {
-                        realCash += pay.amount;
-                    } else {
-                        realElectronic += pay.amount; // الدفع الإلكتروني
-                    }
+                if(pay.type === 'دفع إلكتروني (متبقي طلب)') {
+                    realElectronic += pay.amount; // الدفع الإلكتروني
+                } else {
+                    realCash += pay.amount;
                 }
             }
             // المبالغ السالبة (كاش خارج من الصندوق)
@@ -471,6 +468,15 @@ window.recalculateDailySales = () => {
     // تحديث الأرقام النهائية المعصومة من الخطأ
     localData.dailySalesCash = realCash;
     localData.dailySalesElectronic = realElectronic;
+};
+
+// مطابقة دفعة برقم الفاتورة اليومي بحدود رقمية آمنة (رقم 1 لا يطابق 10 أو 100)
+const paymentMatchesInvoice = (p, inv) => {
+    if (!p || !p.details || !inv) return false;
+    if (inv.id && p.details.includes(String(inv.id))) return true;
+    if (inv.dailyNumber === undefined || inv.dailyNumber === null || inv.dailyNumber === '') return false;
+    const num = String(inv.dailyNumber).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp('(^|[^0-9])' + num + '([^0-9]|$)').test(p.details);
 };
 
 function saveDataToCloud() {
@@ -1607,8 +1613,31 @@ window.saveEditedInvoice = () => {
                 // تحديث السحابة باشتراك الـ VIP
                 update(ref(database, 'royal_data/subscriptions/' + sub.id), sub);
                 
-                // تحديث الدفعات المستقلة (Payments) إذا كان هناك كاش جديد
-                // للتبسيط، نعتبر تعديل الفاتورة المختلطة يتطلب فقط تحديث الصندوق اليومي إذا كانت بنفس اليوم
+                // مزامنة دفعة الكاش المستقلة مع المبلغ الجديد حتى لا يبقى مبلغ قديم في سجل الدفعات
+                const mixedPayIndex = (localData.payments || []).findIndex(p =>
+                    p.type === 'دفع مختلط (VIP + كاش)' && paymentMatchesInvoice(p, oldInvoice)
+                );
+                if (newCashAmount > 0) {
+                    if (mixedPayIndex > -1) {
+                        localData.payments[mixedPayIndex].amount = newCashAmount;
+                        update(ref(database, 'royal_data/payments/' + localData.payments[mixedPayIndex].id), { amount: newCashAmount });
+                    } else {
+                        const syncT = getRealTime();
+                        const syncPayId = 'PAY-' + syncT.timestamp;
+                        const syncPayment = {
+                            id: syncPayId, timestamp: syncT.timestamp, date: syncT.date,
+                            type: 'دفع مختلط (VIP + كاش)', amount: newCashAmount,
+                            details: `متبقي فاتورة ${oldInvoice.dailyNumber || oldInvoice.id} للزبون ${sub.customerName}`
+                        };
+                        if(!localData.payments) localData.payments = [];
+                        localData.payments.push(syncPayment);
+                        set(ref(database, 'royal_data/payments/' + syncPayId), syncPayment);
+                    }
+                } else if (mixedPayIndex > -1) {
+                    const stalePayId = localData.payments[mixedPayIndex].id;
+                    localData.payments.splice(mixedPayIndex, 1);
+                    remove(ref(database, 'royal_data/payments/' + stalePayId));
+                }
             }
         }
     }
@@ -1629,6 +1658,18 @@ window.saveEditedInvoice = () => {
     // تحديث الملاحظات العادية إذا لم تكن فاتورة VIP
     if (!(oldInvoice.paymentType === 'subscription' || oldInvoice.paymentType === 'mixed' || (oldInvoice.notes && oldInvoice.notes.includes('VIP')))) {
          localData.invoices[oldIndex].notes = document.getElementById('cart-notes').value;
+    }
+
+    // مزامنة الذمة المرتبطة: تعديل مبلغ فاتورة آجلة مسلّمة يجب أن يعكس على الدين المتبقي
+    if (localData.invoices[oldIndex].paymentType === 'credit') {
+        const debtIndex = (localData.debts || []).findIndex(d => d.invoiceId === oldInvoice.id);
+        if (debtIndex > -1) {
+            const debt = localData.debts[debtIndex];
+            debt.total = newTotal;
+            debt.remaining = Math.max(0, newTotal - (debt.paid || 0));
+            update(ref(database, 'royal_data/debts/' + debt.id), { total: debt.total, remaining: debt.remaining });
+            if (localData.invoices[oldIndex].customer) localData.invoices[oldIndex].customer.remaining = debt.remaining;
+        }
     }
 
     window.logAction('تعديل فاتورة', 'تعديل فاتورة رقم: ' + editingInvoiceId, newTotal, { oldInvoice: oldInvoice, newCart: currentCart });
@@ -1671,8 +1712,7 @@ window.deleteInvoice = (id) => {
         }
 
         // 2. حذف أي دفعات مستقلة (Payments) مرتبطة برقم هذه الفاتورة (لضمان رجوع المبيعات)
-        let dailyNumStr = String(inv.dailyNumber || inv.id);
-        let paymentsToDelete = (localData.payments || []).filter(p => p.details && (p.details.includes(inv.id) || p.details.includes(dailyNumStr)));
+        let paymentsToDelete = (localData.payments || []).filter(p => paymentMatchesInvoice(p, inv));
         
         paymentsToDelete.forEach(pDel => {
             const pIdx = localData.payments.findIndex(p => p.id === pDel.id);
@@ -1913,7 +1953,18 @@ window.confirmPickupCredit = () => {
         type: 'archived', paymentType: 'credit', customer: inv.customer
     });
 
-    if(paidNow > 0) localData.dailySalesCash += paidNow; 
+    if(paidNow > 0) {
+        // تسجيل الكاش المقبوض الآن كدفعة مستقلة حتى تبقى في مبيعات اليوم بعد إعادة الحساب
+        const creditPayId = 'PAY-' + realT.timestamp;
+        const creditPayment = {
+            id: creditPayId, timestamp: realT.timestamp, date: realT.date,
+            type: 'دفع كاش (متبقي طلب)', amount: paidNow,
+            details: `استلام متبقي طلب (ذمة) ${inv.dailyNumber || inv.id}`
+        };
+        if(!localData.payments) localData.payments = [];
+        localData.payments.push(creditPayment);
+        set(ref(database, 'royal_data/payments/' + creditPayId), creditPayment);
+    }
     window.logAction('تسليم طلب (ذمة)', `للزبون ${name} - سدد: ${paidNow} ومتبقي: ${finalRemaining}`, paidNow, inv);
     
     window.recalculateDailySales(); updateUI();
@@ -3368,7 +3419,7 @@ window.printShiftReport = () => {
         if(pay.date === todayDate && isTimeInRange(pay.timestamp)) {
             if (pay.type === 'دفع إلكتروني (متبقي طلب)') tElec += pay.amount;
             else if (pay.type === 'إلغاء اشتراك VIP') tCash -= pay.amount;
-            else if (pay.type !== 'دفع مختلط (VIP + كاش)') tCash += pay.amount; 
+            else tCash += pay.amount; 
         }
     });
 
