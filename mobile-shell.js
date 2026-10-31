@@ -1796,6 +1796,57 @@ html.is-mobile .m-lk-card::after { z-index: 0; border-radius: inherit; }
 @keyframes mLkSpin { to { transform: rotate(360deg); } }
 @keyframes mCaret { 0%, 100% { opacity: 1; } 50% { opacity: .12; } }
 
+/* تحيّة الوقت: سطر واحد هادئ فوق العنوان */
+html.is-mobile .m-lk-hello {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    margin: 0 0 7px;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: .1px;
+    color: rgba(186,220,250,.55);
+    animation: mLkHelloIn .75s cubic-bezier(.2,.8,.3,1) .5s both;
+}
+html.is-mobile .m-lk-hello i {
+    width: 3px; height: 3px;
+    border-radius: 50%;
+    background: rgba(238,194,106,.9);
+    box-shadow: 0 0 8px rgba(238,194,106,.55);
+}
+@keyframes mLkHelloIn { from { opacity: 0; transform: translate3d(0,7px,0); } to { opacity: 1; transform: none; } }
+
+/* ذرّات ضوء صاعدة ببطء خلف البطاقة: عناصر 3px بلا blur، حركة transform وحدها */
+html.is-mobile .m-lk-motes { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+html.is-mobile .m-lk-motes b {
+    position: absolute;
+    width: 3px; height: 3px;
+    border-radius: 50%;
+    background: rgba(186,230,255,.55);
+    box-shadow: 0 0 9px rgba(125,211,252,.35);
+    opacity: 0;
+    animation: mLkMote 16s linear infinite;
+}
+html.is-mobile .m-lk-motes b:nth-child(1) { left: 9%;  top: 78%; animation-delay: -1s;  animation-duration: 17s; }
+html.is-mobile .m-lk-motes b:nth-child(2) { left: 22%; top: 64%; animation-delay: -6s;  animation-duration: 19s; width: 2px; height: 2px; }
+html.is-mobile .m-lk-motes b:nth-child(3) { left: 78%; top: 72%; animation-delay: -3s;  animation-duration: 16s; }
+html.is-mobile .m-lk-motes b:nth-child(4) { left: 88%; top: 56%; animation-delay: -9s;  animation-duration: 21s; width: 2px; height: 2px; }
+html.is-mobile .m-lk-motes b:nth-child(5) { left: 66%; top: 84%; animation-delay: -12s; animation-duration: 18s; }
+html.is-mobile .m-lk-motes b:nth-child(6) { left: 34%; top: 88%; animation-delay: -5s;  animation-duration: 20s; width: 4px; height: 4px; }
+html.is-mobile .m-lk-motes b:nth-child(7) { left: 52%; top: 92%; animation-delay: -14s; animation-duration: 22s; width: 2px; height: 2px; }
+@keyframes mLkMote {
+    0%   { transform: translate3d(0, 24px, 0) scale(.65); opacity: 0; }
+    10%  { opacity: .5; }
+    55%  { opacity: .7; transform: translate3d(9px, -46vh, 0) scale(1); }
+    90%  { opacity: 0; }
+    100% { transform: translate3d(-8px, -92vh, 0) scale(.8); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+    html.is-mobile .m-lk-hello { animation: none; }
+    html.is-mobile .m-lk-motes { display: none; }
+}
+
 html.is-mobile .m-lk-shell {
     position: relative;
     z-index: 2;
@@ -2511,6 +2562,165 @@ html.is-mobile .m-lk-pill svg path { fill: none; stroke: #4ade80; stroke-width: 
     html.is-mobile .m-otp-caret { animation: none; }
     html.is-mobile .m-lk-card .modal-actions .btn-confirm::before { opacity: 0; }
 }
+
+/* ====== شاشة القفل في الوضع النهاري: لؤلؤة فوق زرقة فاتحة ======
+   كل سطر هنا تحت body.rg-light وحده: المشهد الليلي لا يُمَس بحرف. */
+html.is-mobile body.rg-light #modal-admin-login.m-lock-screen { background: #e9f1fa; }
+html.is-mobile body.rg-light .m-lk-scene {
+    background:
+        radial-gradient(90% 55% at 50% 110%, rgba(var(--rg-accent-rgb), .20), transparent 68%),
+        linear-gradient(160deg, #f8fbff, #e7f0fa 58%, #f3f8fd);
+}
+html.is-mobile body.rg-light .m-lk-scene::after { opacity: .05; }
+html.is-mobile body.rg-light .m-lk-scene i:nth-child(1) {
+    background: radial-gradient(ellipse, rgba(255,255,255,.96), rgba(255,255,255,.34) 48%, transparent 72%);
+}
+html.is-mobile body.rg-light .m-lk-scene i:nth-child(2) {
+    background: radial-gradient(ellipse, rgba(var(--rg-accent-rgb), .17), rgba(var(--rg-accent-rgb), .05) 50%, transparent 72%);
+}
+html.is-mobile body.rg-light .m-lk-scene i:nth-child(3) {
+    background: radial-gradient(ellipse, rgba(var(--rg-accent-rgb), .13), rgba(255,255,255,.30) 52%, transparent 74%);
+}
+html.is-mobile body.rg-light .m-lk-scene i:nth-child(4) {
+    background:
+        radial-gradient(70% 24% at 18% 42%, rgba(var(--rg-accent-rgb), .10), transparent 68%),
+        radial-gradient(58% 20% at 82% 68%, rgba(255,255,255,.60), transparent 70%);
+}
+html.is-mobile body.rg-light .m-lk-scene i:nth-child(5) {
+    background:
+        linear-gradient(112deg, transparent 26%, rgba(255,255,255,.55) 34%, rgba(var(--rg-accent-rgb), .18) 35%, rgba(255,255,255,.9) 35.3%, rgba(var(--rg-accent-rgb), .07) 36%, transparent 44%),
+        linear-gradient(112deg, transparent 48%, rgba(255,255,255,.55) 55%, rgba(var(--rg-accent-rgb), .14) 56%, rgba(255,255,255,.85) 56.3%, transparent 64%),
+        linear-gradient(112deg, transparent 66%, rgba(255,255,255,.45) 72%, rgba(var(--rg-accent-rgb), .10) 73%, transparent 82%);
+}
+html.is-mobile body.rg-light .m-lk-scene i:nth-child(6) {
+    background:
+        repeating-linear-gradient(118deg, transparent 0 72px, rgba(30,70,120,.05) 73px, transparent 74px 116px),
+        repeating-linear-gradient(62deg, transparent 0 148px, rgba(var(--rg-accent-rgb), .08) 149px, transparent 150px 240px);
+}
+/* غبار ضوء أزرق أعمق: الذرّات الفاتحة تختفي على اللؤلؤ */
+html.is-mobile body.rg-light .m-lk-motes b {
+    background: rgba(47,127,208,.32);
+    box-shadow: 0 0 8px rgba(47,127,208,.22);
+}
+html.is-mobile body.rg-light .m-lk-shell {
+    box-shadow: 0 30px 70px rgba(28,62,110,.20), 0 4px 18px rgba(28,62,110,.10);
+}
+html.is-mobile body.rg-light .m-lk-card {
+    border-color: rgba(255,255,255,.94);
+    background:
+        linear-gradient(135deg, rgba(255,255,255,.80), rgba(255,255,255,.42) 48%, rgba(255,255,255,.64)),
+        rgba(255,255,255,.36);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.98), inset 0 0 0 1px rgba(255,255,255,.50), 0 0 0 1px rgba(30,70,120,.05);
+}
+html.is-mobile body.rg-light .m-lk-card::after { opacity: .025; }
+html.is-mobile body.rg-light .m-lk-card::before {
+    opacity: .62;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.85), transparent);
+}
+html.is-mobile body.rg-light .m-lk-hello { color: rgba(38,78,128,.62); }
+html.is-mobile body.rg-light .m-lk-card .modal-title { color: #0e2138; text-shadow: none; }
+html.is-mobile body.rg-light .m-lk-key {
+    background-image: linear-gradient(112deg, #1f5fae, #2f7fd0 24%, #1f8fb5 44%, #3a86c8 62%, #1f5fae 82%, #2f7fd0);
+}
+html.is-mobile body.rg-light .m-lk-sub { color: #47688c; }
+html.is-mobile body.rg-light .m-lk-chip {
+    border-color: rgba(30,70,120,.14);
+    background: linear-gradient(160deg, rgba(255,255,255,.95), rgba(255,255,255,.62));
+    box-shadow: inset 0 1px 0 #fff, 0 6px 16px rgba(28,62,110,.10);
+}
+html.is-mobile body.rg-light .m-lk-chip svg path,
+html.is-mobile body.rg-light .m-lk-chip svg circle { stroke: #24466f; }
+html.is-mobile body.rg-light .m-otp b {
+    color: #13345e;
+    background: rgba(255,255,255,.66);
+    border-color: rgba(30,70,120,.16);
+    box-shadow: inset 0 1px 0 #fff, inset 0 -10px 22px rgba(30,70,120,.05);
+}
+html.is-mobile body.rg-light .m-otp b u { text-shadow: none; }
+html.is-mobile body.rg-light .m-otp b.filled { background: rgba(255,255,255,.92); border-color: rgba(30,90,160,.30); }
+html.is-mobile body.rg-light .m-otp b.bad { color: #b91c3c; border-color: rgba(225,29,72,.60); }
+html.is-mobile body.rg-light .m-otp-caret { background: #1a5fae; box-shadow: 0 0 9px rgba(56,189,248,.45); }
+html.is-mobile body.rg-light .m-pad button {
+    color: #16355c;
+    border-color: rgba(30,70,120,.13);
+    background: rgba(255,255,255,.58);
+    box-shadow: inset 0 1px 0 #fff, inset 0 -10px 20px rgba(30,70,120,.05);
+}
+html.is-mobile body.rg-light .m-pad button.on {
+    color: #0f5132;
+    border-color: rgba(34,197,94,.85);
+    text-shadow: none;
+    box-shadow: inset 0 1px 0 #fff, 0 0 18px rgba(34,197,94,.18);
+}
+html.is-mobile body.rg-light .m-pad button.on::before {
+    background: radial-gradient(90% 90% at 50% 20%, rgba(74,222,128,.24), rgba(34,197,94,.07) 62%, transparent);
+}
+html.is-mobile body.rg-light .m-pad button.fn { color: #5b7591; }
+html.is-mobile body.rg-light .m-pad button.fn.on { color: #0b4a73; border-color: rgba(56,189,248,.85); text-shadow: none; }
+html.is-mobile body.rg-light .m-pad button.fn::before {
+    background: radial-gradient(90% 90% at 50% 20%, rgba(56,189,248,.20), rgba(77,163,255,.06) 62%, transparent);
+}
+html.is-mobile body.rg-light .m-pad button.bulb { color: rgba(60,95,135,.38); border-color: rgba(30,70,120,.09); }
+html.is-mobile body.rg-light .m-pad button.bulb.lit { color: rgba(146,86,7,.9); border-color: rgba(245,158,11,.40); }
+html.is-mobile body.rg-light .m-pad button.bulb.on {
+    color: #7c4a03;
+    border-color: rgba(245,158,11,.80);
+    text-shadow: none;
+    box-shadow: inset 0 1px 0 #fff, 0 0 18px rgba(245,158,11,.18);
+}
+html.is-mobile body.rg-light .m-lk-err { color: #cf3352; }
+html.is-mobile body.rg-light .m-lk-err.cool { color: #a16207; text-shadow: none; }
+html.is-mobile body.rg-light .m-lk-hint { color: rgba(58,92,132,.55); }
+html.is-mobile body.rg-light .m-lk-hint i { color: rgba(30,110,180,.70); }
+html.is-mobile body.rg-light .m-lk-card .modal-actions .btn-confirm {
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.30), 0 12px 26px rgba(28,62,110,.28), 0 0 20px rgba(56,189,248,.12) !important;
+}
+html.is-mobile body.rg-light .m-lk-tip {
+    border-color: rgba(217,152,20,.45);
+    background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(255,249,235,.94));
+    box-shadow: 0 12px 26px rgba(146,96,7,.18), inset 0 1px 0 #fff;
+    color: #8a5a06;
+}
+html.is-mobile body.rg-light .m-lk-tip strong { color: #6b4400; }
+html.is-mobile body.rg-light .m-lk-tip .m-lk-tip-tag {
+    background: rgba(251,191,36,.22);
+    border-color: rgba(217,152,20,.35);
+    color: #8a5a06;
+}
+html.is-mobile body.rg-light .m-lk-tip::after {
+    background: linear-gradient(100deg, transparent 38%, rgba(255,255,255,.90) 50%, transparent 62%);
+}
+/* مسرح النجاح والخطأ يستنسخ البطاقة نفسها: خلفيته الفاتحة تكفي ليبقى الانتقال
+   بلا وميض ليلي، ونصوصه ترث قواعد الوضع النهاري أعلاه */
+html.is-mobile body.rg-light .m-lk-fx {
+    background:
+        radial-gradient(90% 55% at 50% 110%, rgba(var(--rg-accent-rgb), .16), transparent 68%),
+        linear-gradient(160deg, #f8fbff, #e7f0fa 58%, #f3f8fd);
+}
+html.is-mobile body.rg-light .m-lk-fx .m-lk-card {
+    border-color: rgba(255,255,255,.95) !important;
+    background: linear-gradient(135deg, rgba(255,255,255,.90), rgba(255,255,255,.60) 48%, rgba(255,255,255,.80)) !important;
+    box-shadow: 0 26px 60px rgba(28,62,110,.22) !important;
+}
+html.is-mobile body.rg-light .m-lk-core {
+    background: rgba(255,255,255,.75);
+    border-color: rgba(30,70,120,.18);
+    box-shadow: inset 0 1px 0 #fff, 0 10px 28px rgba(28,62,110,.16);
+}
+html.is-mobile body.rg-light .m-lk-core.ok { background: rgba(34,197,94,.14); border-color: rgba(34,197,94,.50); }
+html.is-mobile body.rg-light .m-lk-core.bad { background: rgba(244,63,94,.12); border-color: rgba(244,63,94,.50); }
+html.is-mobile body.rg-light .m-lk-core .m-spin { stroke: #2f7fd0; }
+html.is-mobile body.rg-light .m-lk-core .m-tick { stroke: #0f5132; }
+html.is-mobile body.rg-light .m-lk-net path { stroke: rgba(40,130,200,.72); }
+html.is-mobile body.rg-light .m-lk-net circle { fill: #2f7fd0; }
+html.is-mobile body.rg-light .m-lk-ring { border-color: rgba(34,197,94,.85); }
+html.is-mobile body.rg-light .m-lk-pill {
+    color: #15803d;
+    border-color: rgba(34,197,94,.38);
+    background: rgba(255,255,255,.72);
+    box-shadow: inset 0 1px 0 #fff, 0 8px 20px rgba(28,62,110,.12);
+}
+html.is-mobile body.rg-light .m-lk-pill svg path { stroke: #16a34a; }
 
 /* ------------------------- التنبيهات والعناصر الصغيرة ------------------------- */
 html.is-mobile #toast-container {
@@ -5170,7 +5380,8 @@ html.is-mobile .modal-footer-sticky {
 
         const scene = document.createElement('div');
         scene.className = 'm-lk-scene';
-        scene.innerHTML = '<i></i><i></i><i></i><i></i><i></i><i></i>';
+        scene.innerHTML = '<i></i><i></i><i></i><i></i><i></i><i></i>' +
+            '<span class="m-lk-motes" aria-hidden="true"><b></b><b></b><b></b><b></b><b></b><b></b><b></b></span>';
         content.insertBefore(scene, content.firstChild);
 
         const shell = document.createElement('div');
@@ -5201,6 +5412,24 @@ html.is-mobile .modal-footer-sticky {
             if (crown && hint) hint.appendChild(crown);
             if (hint) hint.insertAdjacentHTML('beforeend', '<span>مكوى رويال — دخول الإدارة</span>');
         }
+        /* تحيّة بحسب الساعة ويوم عربي كامل: لمسة شخصية بلا أي طلب بيانات */
+        const hello = document.createElement('p');
+        hello.className = 'm-lk-hello';
+        (function fillHello() {
+            const now = new Date();
+            const h = now.getHours();
+            const greet = h < 5 ? 'سهرة مباركة' : (h < 12 ? 'صباح الخير' : (h < 17 ? 'طاب يومك' : (h < 21 ? 'مساء الخير' : 'ليلة هادئة')));
+            let day = '';
+            try {
+                day = new Intl.DateTimeFormat('ar-IQ', { weekday: 'long', day: 'numeric', month: 'long' }).format(now);
+            } catch (e) {
+                const months = ['كانون الثاني', 'شباط', 'آذار', 'نيسان', 'أيار', 'حزيران', 'تموز', 'آب', 'أيلول', 'تشرين الأول', 'تشرين الثاني', 'كانون الأول'];
+                day = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'][now.getDay()] + ' ' + now.getDate() + ' ' + months[now.getMonth()];
+            }
+            hello.innerHTML = '<span>' + escHTML(greet) + '</span><i></i><span>' + escHTML(day) + '</span>';
+        })();
+        if (oldTitle) card.insertBefore(hello, oldTitle); else card.insertBefore(hello, anchor);
+
         const sub = document.createElement('p');
         sub.className = 'm-lk-sub';
         sub.textContent = 'أدخل الرمز المكوّن من أربعة أرقام للمتابعة.\nيتحقّق تلقائياً بمجرد اكتماله.';

@@ -76,7 +76,7 @@
     if (document.documentElement.classList.contains('is-mobile')) {
         var royalMobileLayer = document.createElement('script');
         royalMobileLayer.type = 'module';
-        royalMobileLayer.src = 'mobile-shell.js?v=20261031f';
+        royalMobileLayer.src = 'mobile-shell.js?v=20261031i';
         document.head.appendChild(royalMobileLayer);
         var royalGlassLayer = document.createElement('script');
         royalGlassLayer.type = 'module';
@@ -316,6 +316,17 @@
     }
     html.is-mobile .m-sp-ready .m-sp-fill { background: linear-gradient(90deg, #7dd3fc, #e0f2fe); }
     html.is-mobile .m-sp-ready .m-sp-meta { color: rgba(223,245,255,.82); }
+    /* الاكتمال: نقطة الرأس تتفجّر نبضةً واحدة ثم تستقرّ، والمسار يتوهّج */
+    html.is-mobile .m-sp-ready .m-sp-spark { animation: mSpReadyPop .92s cubic-bezier(.2,.8,.3,1) both; }
+    html.is-mobile .m-sp-ready .m-sp-track {
+        box-shadow: inset 0 1px 2px rgba(2,8,18,.6), 0 0 18px rgba(125,211,252,.22);
+    }
+    @keyframes mSpReadyPop {
+        0%   { transform: translate3d(0,-50%,0) scale(1); opacity: 1; }
+        44%  { transform: translate3d(0,-50%,0) scale(3.4); opacity: 1;
+               box-shadow: 0 0 16px rgba(224,242,254,1), 0 0 42px rgba(56,189,248,.85); }
+        100% { transform: translate3d(0,-50%,0) scale(1.55); opacity: .9; }
+    }
     html.is-mobile .m-sp-help {
         position: absolute;
         z-index: 4;
@@ -405,6 +416,7 @@
         html.is-mobile .m-sp-track,
         html.is-mobile .m-sp-spark,
         html.is-mobile .m-sp-meta { animation-duration: .01s; }
+        html.is-mobile .m-sp-ready .m-sp-spark { animation: none; }
         html.is-mobile #loading-screen.m-sp-out .m-sp-card { animation-duration: .01s; }
     }
     @media (max-height: 430px) {
