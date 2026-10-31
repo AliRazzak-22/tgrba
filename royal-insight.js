@@ -1348,6 +1348,15 @@
     }
 
     /* ---------------- التصدير ---------------- */
+    /* إكسل يعامل الخلية التي تبدأ بـ = أو + أو - أو @ كصيغة حتى داخل
+       علامات التنصيص، فقد تُنفَّذ عند فتح الملف. البادئة بفاصلة عليا
+       تجعلها نصاً كما يوصي OWASP، والأرقام السالبة غير موجودة هنا. */
+    function csvCell(v) {
+        let s = String(v == null ? '' : v);
+        if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+        return '"' + s.replace(/"/g, '""') + '"';
+    }
+
     function exportCSV() {
         const vm = build(periodDays());
         if (!vm) return;
@@ -1356,7 +1365,7 @@
             c.name, c.phone || '', c.visits, c.pieces, Math.round(c.spent), Math.round(c.avg),
             dateOfMs(c.firstTs), c.lastTs ? dateOfMs(c.lastTs) : '', Math.round(c.debt)
         ]);
-        const csv = '\ufeff' + [head].concat(rows).map((r) => r.map((v) => '"' + String(v).replace(/"/g, '""') + '"').join(',')).join('\r\n');
+        const csv = '\ufeff' + [head].concat(rows).map((r) => r.map(csvCell).join(',')).join('\r\n');
         try {
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
             const a = document.createElement('a');
