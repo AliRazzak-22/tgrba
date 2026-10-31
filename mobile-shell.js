@@ -2722,6 +2722,103 @@ html.is-mobile body.rg-light .m-lk-pill {
 }
 html.is-mobile body.rg-light .m-lk-pill svg path { stroke: #16a34a; }
 
+/* ------------------------- سحب للتحديث -------------------------
+   حارس المطّ يمنع التمرير الأصلي عند الحدّ الأعلوي، فالشدّة كلها لنا:
+   قرص زجاجي يهبط مع الإصبع وحلقة تقدّم، ثم يدور عند الإفلات. */
+html.is-mobile .m-ptr {
+    position: fixed;
+    top: calc(env(safe-area-inset-top, 0px) + 64px);
+    left: 50%;
+    z-index: 9400;
+    width: 46px;
+    height: 46px;
+    margin-left: -23px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,.16);
+    background:
+        linear-gradient(165deg, rgba(255,255,255,.18), rgba(255,255,255,.03) 52%),
+        rgba(9,22,45,.58);
+    -webkit-backdrop-filter: blur(14px) saturate(170%);
+    backdrop-filter: blur(14px) saturate(170%);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.30), 0 12px 30px rgba(0,6,16,.38);
+    pointer-events: none;
+    opacity: 0;
+    transform: translate3d(0, -16px, 0) scale(.7);
+    transition: opacity .2s ease, transform .36s var(--m-ease-out);
+}
+/* طبقة تركيب تُطلب عند الظهور فقط: قرص ثابت مخفي لا يستحق طبقة دائمة */
+html.is-mobile .m-ptr.on { opacity: 1; will-change: transform, opacity; }
+html.is-mobile .m-ptr.drag { transition: none; }
+html.is-mobile .m-ptr svg { width: 22px; height: 22px; overflow: visible; }
+html.is-mobile .m-ptr-ring {
+    fill: none;
+    stroke: rgba(125,211,252,.9);
+    stroke-width: 2;
+    stroke-linecap: round;
+    transform: rotate(-90deg);
+    transform-origin: 50% 50%;
+}
+html.is-mobile .m-ptr-arrow {
+    fill: none;
+    stroke: #e8f6ff;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+html.is-mobile .m-ptr-ok {
+    display: none;
+    fill: none;
+    stroke: #86efac;
+    stroke-width: 2.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+html.is-mobile .m-ptr.busy .m-ptr-ring { animation: mPtrSpin .8s linear infinite; }
+html.is-mobile .m-ptr.busy .m-ptr-arrow { opacity: .25; }
+html.is-mobile .m-ptr.ok { border-color: rgba(74,222,128,.5); }
+html.is-mobile .m-ptr.ok .m-ptr-ring { stroke: rgba(74,222,128,.95); }
+html.is-mobile .m-ptr.ok .m-ptr-arrow { display: none; }
+html.is-mobile .m-ptr.ok .m-ptr-ok { display: block; }
+html.is-mobile .m-ptr-label {
+    position: absolute;
+    top: 52px;
+    left: 50%;
+    transform: translate3d(-50%, -4px, 0);
+    padding: 3px 9px 4px;
+    border-radius: 99px;
+    font-size: 9.5px;
+    font-weight: 800;
+    letter-spacing: .2px;
+    white-space: nowrap;
+    color: rgba(226,241,255,.82);
+    background: rgba(8,20,40,.55);
+    border: 1px solid rgba(255,255,255,.10);
+    opacity: 0;
+    transition: opacity .18s ease, transform .3s var(--m-ease-out);
+}
+html.is-mobile .m-ptr.on .m-ptr-label { opacity: 1; transform: translate3d(-50%, 0, 0); }
+@keyframes mPtrSpin { from { transform: rotate(-90deg); } to { transform: rotate(270deg); } }
+html.is-mobile body.rg-light .m-ptr {
+    border-color: rgba(255,255,255,.92);
+    background: linear-gradient(165deg, rgba(255,255,255,.94), rgba(255,255,255,.64));
+    box-shadow: inset 0 1px 0 #fff, 0 12px 28px rgba(28,62,110,.20);
+}
+html.is-mobile body.rg-light .m-ptr-arrow { stroke: #1c4a7a; }
+html.is-mobile body.rg-light .m-ptr-ring { stroke: rgba(30,110,180,.8); }
+html.is-mobile body.rg-light .m-ptr-label {
+    color: #33526f;
+    background: rgba(255,255,255,.92);
+    border-color: rgba(30,70,120,.12);
+    box-shadow: 0 6px 14px rgba(28,62,110,.10);
+}
+@media (prefers-reduced-motion: reduce) {
+    html.is-mobile .m-ptr { transition: none; }
+    html.is-mobile .m-ptr.busy .m-ptr-ring { animation: none; }
+}
+
 /* ------------------------- التنبيهات والعناصر الصغيرة ------------------------- */
 html.is-mobile #toast-container {
     top: auto !important; left: 12px !important; right: 12px !important;
@@ -3576,6 +3673,123 @@ html.is-mobile .modal-footer-sticky {
                 close();
             }
             S.row = null;
+        };
+        document.addEventListener('touchend', end, { passive: true });
+        document.addEventListener('touchcancel', end, { passive: true });
+    }
+
+    /* ================== سحب للتحديث ==================
+       واجهة الشدّ عديمة الأثر على المنطق: عند الإفلات يُعاد رسم اللوحة النشطة
+       من الحالة الحية نفسها التي تُحدّثها onValue، فلا كتابة ولا طلب زائد. */
+    function bindPullRefresh() {
+        const admin = document.getElementById(ADMIN_ID);
+        const content = admin && admin.querySelector('.admin-content');
+        if (!admin || !content || document.querySelector('.m-ptr')) return;
+        const el = document.createElement('div');
+        el.className = 'm-ptr';
+        el.setAttribute('aria-hidden', 'true');
+        el.innerHTML = '<svg viewBox="0 0 24 24">'
+            + '<circle class="m-ptr-ring" cx="12" cy="12" r="10.5" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100"></circle>'
+            + '<path class="m-ptr-arrow" d="M12 5.5v10.5M8.4 12.4 12 16l3.6-3.6"></path>'
+            + '<path class="m-ptr-ok" d="m7.6 12.4 3 3 5.8-6.2"></path>'
+            + '</svg><span class="m-ptr-label">اسحب للتحديث</span>';
+        document.body.appendChild(el);
+        const ring = el.querySelector('.m-ptr-ring');
+        const arrow = el.querySelector('.m-ptr-arrow');
+        const label = el.querySelector('.m-ptr-label');
+        const TH = 62;
+        const S = { x: 0, y: 0, sec: null, on: false, armed: false, busy: false, hold: 0 };
+        const cancel = () => {
+            clearTimeout(S.hold);
+            el.classList.remove('on', 'drag', 'busy', 'ok');
+            el.style.transform = '';
+            ring.setAttribute('stroke-dasharray', '100');
+            ring.setAttribute('stroke-dashoffset', '100');
+            arrow.style.transform = '';
+            label.textContent = 'اسحب للتحديث';
+            S.on = false;
+            S.armed = false;
+            S.sec = null;
+        };
+        const finish = () => {
+            S.busy = false;
+            el.classList.remove('busy');
+            el.classList.add('ok');
+            label.textContent = 'تم التحديث';
+            ring.setAttribute('stroke-dasharray', '100');
+            ring.setAttribute('stroke-dashoffset', '0');
+            S.hold = setTimeout(() => {
+                el.classList.remove('ok', 'on');
+                el.style.transform = '';
+                ring.setAttribute('stroke-dashoffset', '100');
+                label.textContent = 'اسحب للتحديث';
+            }, 950);
+        };
+        const refresh = () => {
+            S.busy = true;
+            clearTimeout(S.hold);
+            el.classList.remove('ok', 'drag');
+            el.classList.add('on', 'busy');
+            el.style.transform = 'translate3d(0, 4px, 0) scale(1)';
+            label.textContent = 'جارٍ التحديث…';
+            ring.setAttribute('stroke-dasharray', '22 100');
+            ring.setAttribute('stroke-dashoffset', '0');
+            if (typeof haptic === 'function') haptic(10);
+            S.hold = setTimeout(() => {
+                try {
+                    if (typeof window.updateAdminDashboard === 'function') window.updateAdminDashboard();
+                    const sec = admin.querySelector('.admin-section.active');
+                    const id = sec ? sec.id : '';
+                    if (id === 'admin-logs' && typeof window.renderLogs === 'function') window.renderLogs();
+                    else if (id === 'admin-subscriptions' && typeof window.renderAdminSubs === 'function') window.renderAdminSubs();
+                } catch (e) {}
+                setTimeout(finish, 420);
+            }, 200);
+        };
+        document.addEventListener('touchstart', (e) => {
+            if (S.busy || !e.touches || e.touches.length !== 1) return;
+            if (!admin.classList.contains('active-screen') || !document.body.classList.contains('m-admin')) return;
+            if (document.body.classList.contains('m-sheet-open') || document.querySelector('.m-lk-fx')) return;
+            const t = e.target;
+            const sec = t && t.closest ? t.closest('#admin-screen .admin-section') : null;
+            if (!sec || !sec.classList.contains('active') || sec.scrollTop > 0) return;
+            S.x = e.touches[0].clientX;
+            S.y = e.touches[0].clientY;
+            S.sec = sec;
+            S.on = false;
+            S.armed = false;
+        }, { passive: true });
+        document.addEventListener('touchmove', (e) => {
+            if (!S.sec || S.busy || !e.touches || e.touches.length !== 1) return;
+            const dy = e.touches[0].clientY - S.y;
+            const dx = e.touches[0].clientX - S.x;
+            if (dy <= 0 || Math.abs(dx) > Math.abs(dy) || S.sec.scrollTop > 0) {
+                if (S.on) cancel();
+                S.sec = null;
+                return;
+            }
+            if (dy < 6) return;
+            const d = 104 * (1 - Math.exp(-dy / 150));
+            const p = Math.min(1, d / TH);
+            S.on = true;
+            el.classList.add('on', 'drag');
+            el.style.transform = 'translate3d(0, ' + (d - 16) + 'px, 0) scale(' + (0.7 + 0.3 * p) + ')';
+            ring.setAttribute('stroke-dashoffset', String(Math.round(100 - 100 * p)));
+            arrow.style.transform = 'rotate(' + Math.round(p * 180) + 'deg)';
+            const nowArmed = p >= 1;
+            if (nowArmed !== S.armed) {
+                S.armed = nowArmed;
+                if (nowArmed && typeof haptic === 'function') haptic(6);
+                label.textContent = nowArmed ? 'أفلت للتحديث' : 'اسحب للتحديث';
+            }
+        }, { passive: true });
+        const end = () => {
+            if (!S.sec) return;
+            const go = S.on && S.armed && !S.busy;
+            S.sec = null;
+            if (go) refresh(); else if (S.on) { el.classList.remove('drag'); cancel(); }
+            S.on = false;
+            S.armed = false;
         };
         document.addEventListener('touchend', end, { passive: true });
         document.addEventListener('touchcancel', end, { passive: true });
@@ -6028,6 +6242,7 @@ html.is-mobile .modal-footer-sticky {
         bindGestures();
         bindBounceGuard();
         bindQuickPeek();
+        bindPullRefresh();
         observeSheets();
         bindKeyboard();
         bindTodayPanel();
