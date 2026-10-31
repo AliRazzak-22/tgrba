@@ -1512,6 +1512,50 @@ html.is-mobile body.rg-light :focus-visible {
     outline-color: rgba(150,100,20,.9);
 }
 
+/* زر عائم للعودة إلى أعلى القسم الطويل */
+html.is-mobile .m-fab {
+    position: fixed;
+    z-index: 9450;
+    inset-inline-end: 14px;
+    bottom: calc(9px + env(safe-area-inset-bottom) * .45 + var(--m-bar-h) + 12px);
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    border-radius: 15px;
+    border: 1px solid rgba(214,190,120,.30);
+    background:
+        linear-gradient(160deg, rgba(255,231,170,.14), rgba(255,196,64,.03)),
+        rgba(9,19,37,.62);
+    -webkit-backdrop-filter: blur(16px) saturate(150%);
+    backdrop-filter: blur(16px) saturate(150%);
+    color: var(--gold, #e6c46a);
+    font-size: 15px;
+    box-shadow: inset 0 1px 0 rgba(255,244,210,.16), 0 10px 24px rgba(0,4,14,.30);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(8px) scale(.94);
+    pointer-events: none;
+    transition: opacity .22s var(--m-ease), transform .28s var(--m-ease-out), visibility .22s;
+}
+html.is-mobile .m-fab.on {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    pointer-events: auto;
+}
+html.is-mobile .m-fab:active { transform: scale(.93); }
+html.is-mobile body:not(.m-admin) .m-fab { display: none; }
+html.is-mobile body.rg-light .m-fab {
+    border-color: rgba(190,150,60,.30);
+    background: linear-gradient(160deg, rgba(255,255,255,.94), rgba(255,250,238,.82));
+    color: #8a6418;
+    box-shadow: 0 10px 24px rgba(60,44,10,.16), inset 0 1px 0 #fff;
+}
+@media (prefers-reduced-motion: reduce) {
+    html.is-mobile .m-fab { transition: none; }
+}
+
 /* ------------------------- اللوحاتControl والفلاتر ------------------------- */
 html.is-mobile .admin-control-panel { display: flex !important; flex-direction: column !important; align-items: stretch !important; gap: 10px !important; margin-bottom: 14px !important; }
 html.is-mobile .admin-control-panel h2 { margin: 0 2px !important; }
@@ -4352,12 +4396,34 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
             });
         }
 
+        const fab = document.createElement('button');
+        fab.type = 'button';
+        fab.className = 'm-fab';
+        fab.setAttribute('aria-label', 'العودة إلى أعلى القسم');
+        fab.innerHTML = '<i class="fa-solid fa-chevron-up"></i>';
+        document.body.appendChild(fab);
+        fabRef = fab;
+        fab.addEventListener('click', () => {
+            const page = state.pages[state.index];
+            if (!page) return;
+            const noMotion = REDUCED || document.body.classList.contains('rm-motion-off');
+            try { page.scrollTo({ top: 0, behavior: noMotion ? 'auto' : 'smooth' }); }
+            catch (e) { page.scrollTop = 0; }
+        });
+
         const indicator = document.createElement('div');
         indicator.className = 'm-ind';
         const bar = document.querySelector(BAR_SELECTOR);
         if (bar) bar.appendChild(indicator);
     }
     let headRef = null;
+    let fabRef = null;
+
+    function syncFab() {
+        if (!fabRef) return;
+        const page = state.pages[state.index];
+        fabRef.classList.toggle('on', !!page && page.scrollTop > 480);
+    }
 
     function brandName() {
         const t = (document.title || '').split('-')[0].trim();
@@ -5207,6 +5273,7 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
             const p = max > 1 ? clamp(page.scrollTop / max, 0, 1) : 0;
             headRef.style.setProperty('--m-prog', p.toFixed(4));
             headRef.classList.toggle('m-scrolled', page.scrollTop > 6);
+            syncFab();
         };
         syncProgress = update;
         const schedule = () => {
