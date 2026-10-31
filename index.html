@@ -427,7 +427,27 @@
     </style>
 </head>
 <body>
-    
+    <!-- الوضع المحفوظ قبل أول رسم: بدونها يرى مستخدم النهاري وميضاً داكناً
+         كل تحميل إلى أن تُنفَّذ طبقة الزجاج. تقرأ نفس مفتاح التفضيل. -->
+    <script>
+    (function () {
+        try {
+            if (!document.documentElement.classList.contains('is-mobile')) return;
+            var p = JSON.parse(localStorage.getItem('royal_glass_v1') || '{}') || {};
+            var mode = p.mode === 'light' || p.mode === 'dark' || p.mode === 'auto' ? p.mode : 'dark';
+            if (mode === 'auto') {
+                var h = new Date().getHours();
+                mode = (h >= 7 && h < 19) ? 'light' : 'dark';
+            }
+            document.body.classList.add(mode === 'light' ? 'rg-light' : 'rg-dark');
+            if (p.motion === 'soft') document.body.classList.add('rm-motion-soft');
+            if (p.motion === 'off') document.body.classList.add('rm-motion-off');
+            var meta = document.querySelector('meta[name="theme-color"]');
+            if (meta) meta.setAttribute('content', mode === 'light' ? '#eaf2fb' : '#05080f');
+        } catch (e) {}
+    })();
+    </script>
+
     <!-- شاشة التحميل (أثناء جلب البيانات من فايربيس) -->
     <div id="loading-screen">
         <i class="fa-solid fa-crown loading-icon"></i>
