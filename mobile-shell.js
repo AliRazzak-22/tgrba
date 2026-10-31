@@ -4862,6 +4862,139 @@ html.is-mobile body.rg-light #admin-subscriptions .cart-table tr > td:nth-child(
 html.is-mobile body.rg-light #admin-subscriptions .cart-table tr > td:nth-child(6) { color: #8a6a1f !important; }
 html.is-mobile #admin-debts .m-led-empty,
 html.is-mobile #admin-subscriptions .m-led-empty { margin-top: 4px; }
+
+/* استوديو المطبوعات desktop-first: شريط أدوات 260px بجانب ورقة A5 عرضها 559px،
+   فلا يبقى للورقة مكان على شاشة 390. على الجوال تُرتَّب الورقة أولاً ثم الأدوات،
+   وتُقاس الورقة لتناسب العرض مع شريط تكبير/ملاءمة بدل الاعتماد على عجلة الفأرة. */
+html.is-mobile #admin-invoice-designer > h2 {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+    margin-bottom: 12px !important;
+    line-height: 1.35;
+}
+html.is-mobile #admin-invoice-designer > h2 > div {
+    display: flex !important;
+    flex-wrap: wrap;
+    align-items: center !important;
+    gap: 8px !important;
+}
+html.is-mobile #admin-invoice-designer > h2 > div > div { flex-wrap: wrap; }
+html.is-mobile #admin-invoice-designer > h2 > button.btn {
+    width: 100% !important;
+    justify-content: center !important;
+}
+html.is-mobile #admin-invoice-designer > div[style*="height: 75vh"] {
+    flex-direction: column !important;
+    height: auto !important;
+    gap: 10px !important;
+}
+html.is-mobile #admin-invoice-designer > div[style*="height: 75vh"] > div:first-child {
+    width: 100% !important;
+    order: 2;
+    max-height: 46vh;
+    padding: 12px !important;
+}
+html.is-mobile #admin-invoice-designer > div[style*="height: 75vh"] > div:last-child {
+    width: 100% !important;
+    order: 1;
+    min-width: 0;
+}
+html.is-mobile #admin-invoice-designer #fabric-props-panel {
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 8px !important;
+    padding: 8px !important;
+    scrollbar-width: none;
+}
+html.is-mobile #admin-invoice-designer #fabric-props-panel::-webkit-scrollbar { display: none; }
+html.is-mobile #admin-invoice-designer #workspace-container {
+    flex: none !important;
+    padding: 12px 8px !important;
+    overflow: auto;
+}
+html.is-mobile #admin-invoice-designer #paper-wrapper { margin: 0 auto; }
+html.is-mobile #admin-invoice-designer .m-studio-stage { position: relative; }
+/* صندوق الورقة قبل التصغير 559px يوسّع التمرير الأفقي داخل RTL فيقفز المسرح
+   يساراً؛ إخراجها من التخطيط يُبقي المسرح هو الحجم المرئي وحده. */
+html.is-mobile #admin-invoice-designer .m-studio-stage > #paper-wrapper {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+html.is-mobile #admin-invoice-designer .m-studio-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: var(--m-radius-pill);
+    border: 1px solid var(--m-edge);
+    background: rgba(var(--rg-glass-rgb), .52);
+}
+html.is-mobile #admin-invoice-designer .m-studio-tip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10.5px;
+    font-weight: 800;
+    color: var(--m-muted);
+    white-space: nowrap;
+}
+html.is-mobile #admin-invoice-designer .m-studio-tip i { color: var(--m-accent); }
+html.is-mobile #admin-invoice-designer .m-studio-zoom {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex: none;
+}
+html.is-mobile #admin-invoice-designer .m-studio-zoom button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    min-width: 0;
+    padding: 0;
+    border-radius: 50%;
+    border: 1px solid var(--m-edge);
+    background: rgba(var(--rg-glass-rgb), .72);
+    color: var(--m-text);
+    font-size: 16px;
+    font-weight: 900;
+    line-height: 1;
+}
+html.is-mobile #admin-invoice-designer .m-studio-zoom button:active { transform: scale(.92); }
+html.is-mobile #admin-invoice-designer .m-studio-zoom .m-studio-fit {
+    width: auto;
+    padding: 0 10px;
+    border-radius: var(--m-radius-pill);
+    font-size: 11px;
+    font-weight: 800;
+}
+html.is-mobile #admin-invoice-designer .m-studio-pct {
+    min-width: 38px;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 900;
+    color: var(--m-muted);
+    font-variant-numeric: tabular-nums;
+}
+html.is-mobile #admin-invoice-designer .m-studio-zoom .on { border-color: rgba(var(--rg-accent-rgb), .5); color: var(--m-accent); }
+html.is-mobile #admin-invoice-designer > div[style*="height: 75vh"] > div:first-child > div[style*="margin-top:auto"] { display: none !important; }
+html.is-mobile body.rg-light #admin-invoice-designer .m-studio-bar {
+    background: rgba(255,255,255,.72);
+    border-color: rgba(47,127,208,.22);
+}
+html.is-mobile body.rg-light #admin-invoice-designer .m-studio-tip { color: #4a6a8d; }
+html.is-mobile body.rg-light #admin-invoice-designer .m-studio-zoom button {
+    background: rgba(255,255,255,.86);
+    border-color: rgba(47,127,208,.24);
+    color: #1d3557;
+}
+html.is-mobile body.rg-light #admin-invoice-designer .m-studio-zoom .m-studio-fit { color: #24466f; }
 /* بطاقة إدخال التكلفة: حافة وظل خفيفان يفصلانها عن الخلفية الفاتحة */
 html.is-mobile body.rg-light #admin-costs > div {
     background: rgba(255,255,255,.74) !important;
@@ -6993,6 +7126,7 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
         paintToday();
         syncWallet();
         paintLedgerEmpties();
+        syncStudio();
         syncProgress();
         if (page && Math.abs(page.scrollTop - top) > 2) page.scrollTop = top;
         openSheets.forEach((c, i) => { if (Math.abs(c.scrollTop - sheetTops[i]) > 2) c.scrollTop = sheetTops[i]; });
@@ -8019,6 +8153,97 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
                 '<b>' + item[3] + '</b><p>' + item[4] + '</p><small>' + item[5] + '</small>';
             table.insertAdjacentElement('afterend', card);
         });
+    }
+
+    /* ==================== استوديو المطبوعات على الجوال ====================
+       الورقة A5 ثابتة 559×793 ولا يمكن تصغير الحبر نفسه، فتُقاس الورقة ككتلة
+       واحدة بـtransform وتُوضع في مسرح بحجمها المصغّر، فيبقى التمرير والتحديد
+       يعملان (fabric يترجم إحداثيات اللمس بنسبة المستطيل المرئي). */
+    let studioObserver = null;
+    let studioWidth = 0;
+
+    function studioParts() {
+        const ws = document.getElementById('workspace-container');
+        const paper = document.getElementById('paper-wrapper');
+        if (!ws || !paper) return null;
+        let stage = ws.querySelector('.m-studio-stage');
+        if (!stage) {
+            stage = document.createElement('div');
+            stage.className = 'm-studio-stage';
+            ws.insertBefore(stage, paper);
+            stage.appendChild(paper);
+        }
+        return { ws: ws, paper: paper, stage: stage };
+    }
+
+    function studioFit() {
+        const ws = document.getElementById('workspace-container');
+        if (!ws || !ws.clientWidth) return 1;
+        const cs = getComputedStyle(ws);
+        const avail = ws.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0);
+        return Math.max(0.35, Math.min(1, (avail - 2) / 559));
+    }
+
+    function applyStudioScale() {
+        const parts = studioParts();
+        const sec = document.getElementById('admin-invoice-designer');
+        if (!parts || !sec || !sec.classList.contains('active')) return;
+        const fit = studioFit();
+        const sc = Math.max(0.35, Math.min(1.6, state.studioScale || fit));
+        state.studioScale = sc;
+        parts.paper.style.transformOrigin = 'top left';
+        parts.paper.style.transform = 'scale(' + sc + ')';
+        parts.paper.style.margin = '0';
+        parts.stage.style.width = Math.round(559 * sc) + 'px';
+        parts.stage.style.height = Math.round(793 * sc) + 'px';
+        parts.stage.style.margin = '0 auto';
+        parts.ws.style.height = Math.round(793 * fit + 26) + 'px';
+        const pct = sec.querySelector('.m-studio-pct');
+        if (pct) pct.textContent = Math.round(sc * 100) + '%';
+        const btn = sec.querySelector('.m-studio-zoom .m-studio-fit');
+        if (btn) btn.classList.toggle('on', Math.abs(sc - fit) < 0.01);
+    }
+
+    function syncStudio() {
+        const sec = document.getElementById('admin-invoice-designer');
+        const ws = document.getElementById('workspace-container');
+        if (!sec || !ws) return;
+        if (!sec.querySelector('.m-studio-bar')) {
+            const bar = document.createElement('div');
+            bar.className = 'm-studio-bar';
+            bar.innerHTML =
+                '<span class="m-studio-tip"><i class="fa-solid fa-hand-pointer"></i> المس عنصراً لتحديده</span>' +
+                '<div class="m-studio-zoom">' +
+                '<button type="button" data-z="out" aria-label="تصغير الورقة">−</button>' +
+                '<b class="m-studio-pct">100%</b>' +
+                '<button type="button" data-z="in" aria-label="تكبير الورقة">+</button>' +
+                '<button type="button" class="m-studio-fit" data-z="fit">ملاءمة</button>' +
+                '</div>';
+            ws.parentElement.insertBefore(bar, ws);
+            bar.addEventListener('click', (e) => {
+                const b = e.target.closest('[data-z]');
+                if (!b) return;
+                const z = b.getAttribute('data-z');
+                if (z === 'fit') state.studioScale = studioFit();
+                else state.studioScale = (state.studioScale || studioFit()) + (z === 'in' ? 0.1 : -0.1);
+                state.studioScale = Math.max(0.35, Math.min(1.6, state.studioScale));
+                try { if (typeof haptic === 'function') haptic(5); } catch (err) {}
+                applyStudioScale();
+            });
+        }
+        if (!studioObserver) {
+            studioObserver = new ResizeObserver(() => {
+                if (!ws.clientWidth || ws.clientWidth === studioWidth) return;
+                studioWidth = ws.clientWidth;
+                state.studioScale = studioFit();
+                applyStudioScale();
+            });
+            studioObserver.observe(ws);
+        }
+        if (sec.classList.contains('active')) {
+            studioWidth = ws.clientWidth;
+            applyStudioScale();
+        }
     }
 
     /* ==================== سجل الحركات: نطاقات وعرض متدرّج ====================
@@ -9990,12 +10215,14 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
            وعند فتح الأدمن تكون دوال النظام معرّفة بالكامل. */
         wrapRepainters();
         wrapRouter();
-        /* «المزيد» مكتوب خارج .admin-content في index.html، فخانته تبدأ من أعلى
-           الشاشة ويختفي عنوانه تحت الرأس بينما بقية اللوحات تبدأ تحته. نعيده
-           جاراً لبقية اللوحات على الجوال وحده؛ الكمبيوتر لا يعرضه أصلاً. */
+        /* «المزيد» و«الاستوديو» مكتوبان خارج .admin-content في index.html، فخانتهما
+           تبدأ من أعلى الشاشة ويختفي عنوانهما تحت الرأس بينما بقية اللوحات تبدأ
+           تحته. نعيدهما جارين لبقية اللوحات على الجوال وحده؛ الكمبيوتر كما هو. */
         const more = document.getElementById('admin-more-menu');
         const content = document.querySelector('#admin-screen .admin-content');
         if (more && content && more.parentElement !== content) content.appendChild(more);
+        const designer = document.getElementById('admin-invoice-designer');
+        if (designer && content && designer.parentElement !== content) content.appendChild(designer);
         injectActivityBar();
         unstyleBento();
         const order = readTabsOrder();
@@ -10185,6 +10412,21 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
             if (invHint) invHint.remove();
             const invFilters = document.querySelector('#modal-invoices .admin-filters');
             if (invFilters) { invFilters.classList.remove('m-search-on'); delete invFilters.dataset.mInvHint; }
+            if (studioObserver) { try { studioObserver.disconnect(); } catch (e) {} studioObserver = null; }
+            const studioStage = document.querySelector('#admin-invoice-designer .m-studio-stage');
+            const studioPaper = document.getElementById('paper-wrapper');
+            if (studioStage && studioPaper && studioStage.parentElement) {
+                studioPaper.style.transform = '';
+                studioPaper.style.transformOrigin = '';
+                studioPaper.style.margin = '';
+                studioStage.parentElement.insertBefore(studioPaper, studioStage);
+                studioStage.remove();
+            }
+            const studioBar = document.querySelector('#admin-invoice-designer .m-studio-bar');
+            if (studioBar) studioBar.remove();
+            const studioWs = document.getElementById('workspace-container');
+            if (studioWs) studioWs.style.height = '';
+            state.studioScale = null;
             ['#admin-logs .m-logs-ranges', '#admin-logs .m-logs-foot', '#admin-logs .m-logs-empty', '#admin-debts .m-led-empty', '#admin-subscriptions .m-led-empty'].forEach((sel) => {
                 const el = document.querySelector(sel);
                 if (el) el.remove();
