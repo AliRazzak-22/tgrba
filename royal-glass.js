@@ -527,7 +527,12 @@ html.is-mobile body.rg-light .m-exp-sum,
 html.is-mobile body.rg-light .monthly-strip { color: #16324f; }
 html.is-mobile body.rg-light .monthly-strip-item { color: #4d6a8a !important; }
 html.is-mobile body.rg-light .monthly-strip strong { color: #0e2138 !important; }
-html.is-mobile body.rg-light .m-splash { background: rgba(255,255,255,.72); }
+html.is-mobile body.rg-light .m-splash {
+    background:
+        radial-gradient(58% 42% at 50% 38%, rgba(var(--rg-accent-rgb), .16), transparent 70%),
+        radial-gradient(80% 60% at 50% 115%, rgba(90,168,255,.14), transparent 66%),
+        linear-gradient(180deg, #f4f8fd, #e7eff8);
+}
 html.is-mobile body.rg-light .m-offline {
     background: rgba(255,255,255,.9) !important;
     color: #7a4a00 !important;

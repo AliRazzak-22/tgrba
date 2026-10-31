@@ -4042,6 +4042,9 @@ html.is-mobile .m-offline {
     box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
 }
 
+/* شاشة فتح تتعامل كطبقة زجاجية: قرص رمزي يلمع مرة، حلقات تتنفس، اسم
+   المكوى يصعد، ثم خيط تقدم يكتمل لحظة الجهوزية ويُخرج الشاشة بتلاشٍ
+   قصير مع بناء الصفحة في اللحظة نفسها. */
 html.is-mobile .m-splash {
     position: fixed;
     inset: 0;
@@ -4049,13 +4052,171 @@ html.is-mobile .m-splash {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: radial-gradient(60% 46% at 50% 40%, rgba(46,124,224,.22), transparent 68%), #04060a;
+    overflow: hidden;
+    background:
+        radial-gradient(58% 42% at 50% 38%, rgba(var(--rg-accent-rgb), .20), transparent 70%),
+        radial-gradient(80% 60% at 50% 115%, rgba(90,168,255,.10), transparent 66%),
+        linear-gradient(180deg, #050a13, #03060b);
     opacity: 1;
-    transition: opacity .6s var(--m-ease);
+    transition: opacity .5s var(--m-ease-out, ease);
 }
-html.is-mobile .m-splash.m-off2 { opacity: 0; }
-html.is-mobile .m-splash i { font-size: 34px; color: var(--m-accent2); animation: mSpin 1s linear infinite; filter: none; }
-@keyframes mSpin { to { transform: rotate(360deg); } }
+html.is-mobile .m-splash.m-off2 { opacity: 0; pointer-events: none; }
+html.is-mobile .m-splash-orb {
+    position: absolute;
+    width: 270px; height: 270px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(var(--rg-accent-rgb), .30), transparent 68%);
+    filter: blur(18px);
+    animation: mSplOrb 3.4s ease-in-out infinite alternate;
+}
+@keyframes mSplOrb { from { transform: scale(.86); opacity: .45; } to { transform: scale(1.12); opacity: .82; } }
+html.is-mobile .m-splash-core {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 28px;
+    text-align: center;
+    transition: transform .5s var(--m-ease-out, ease), opacity .42s ease;
+}
+html.is-mobile .m-splash.m-off2 .m-splash-core { transform: translate3d(0, -12px, 0) scale(1.04); opacity: 0; }
+html.is-mobile .m-splash-mark { position: relative; width: 96px; height: 96px; display: flex; align-items: center; justify-content: center; }
+html.is-mobile .m-splash-plate {
+    position: relative;
+    width: 96px; height: 96px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 30px;
+    background:
+        linear-gradient(152deg, rgba(255,255,255,.20), rgba(255,255,255,.02) 58%, rgba(var(--rg-accent-rgb), .14)),
+        rgba(14,26,46,.72);
+    border: 1px solid rgba(255,255,255,.16);
+    box-shadow:
+        0 24px 60px rgba(0,0,0,.5),
+        0 10px 30px rgba(var(--rg-accent-rgb), .22),
+        inset 0 1px 0 rgba(255,255,255,.30);
+    overflow: hidden;
+    transform: scale(.84);
+    opacity: 0;
+}
+html.is-mobile .m-splash.on .m-splash-plate { animation: mSplPlate .72s cubic-bezier(.16,1.12,.3,1) .06s forwards; }
+@keyframes mSplPlate { to { transform: scale(1); opacity: 1; } }
+html.is-mobile .m-splash-plate i {
+    font-size: 38px;
+    color: var(--m-accent2, #9cc6ff);
+    filter: drop-shadow(0 6px 16px rgba(var(--rg-accent-rgb), .45));
+}
+html.is-mobile .m-splash-sheen {
+    position: absolute;
+    inset: -40% -60%;
+    background: linear-gradient(115deg, transparent 42%, rgba(255,255,255,.5) 50%, transparent 58%);
+    opacity: 0;
+    pointer-events: none;
+}
+html.is-mobile .m-splash.on .m-splash-sheen { animation: mSplSheen 1.1s ease .45s; }
+@keyframes mSplSheen {
+    0% { transform: translateX(-72%); opacity: 0; }
+    16% { opacity: .9; }
+    100% { transform: translateX(72%); opacity: 0; }
+}
+html.is-mobile .m-splash-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 1px solid rgba(var(--rg-accent-rgb), .5);
+    opacity: 0;
+    pointer-events: none;
+}
+html.is-mobile .m-splash.on .m-splash-ring { animation: mSplRing 2.2s cubic-bezier(.16,.8,.3,1) .2s infinite; }
+html.is-mobile .m-splash.on .m-splash-ring.r2 { animation-delay: .9s; }
+@keyframes mSplRing {
+    0% { transform: scale(.86); opacity: 0; }
+    22% { opacity: .5; }
+    100% { transform: scale(2.15); opacity: 0; }
+}
+html.is-mobile .m-splash-brand {
+    margin-top: 22px;
+    font-size: 21px;
+    font-weight: 900;
+    letter-spacing: .2px;
+    color: #eef5ff;
+    text-shadow: 0 8px 26px rgba(var(--rg-accent-rgb), .35);
+    opacity: 0;
+    transform: translateY(7px);
+}
+html.is-mobile .m-splash.on .m-splash-brand { animation: mSplText .6s var(--m-ease-out, ease) .24s forwards; }
+html.is-mobile .m-splash-sub {
+    margin-top: 7px;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: rgba(238,245,255,.58);
+    opacity: 0;
+    transform: translateY(6px);
+}
+html.is-mobile .m-splash.on .m-splash-sub { animation: mSplText .6s var(--m-ease-out, ease) .36s forwards; }
+@keyframes mSplText { to { opacity: 1; transform: none; } }
+html.is-mobile .m-splash-track {
+    margin-top: 20px;
+    width: 144px;
+    height: 3px;
+    border-radius: 99px;
+    background: rgba(255,255,255,.09);
+    box-shadow: inset 0 1px 2px rgba(0,0,0,.4);
+    overflow: hidden;
+    opacity: 0;
+}
+html.is-mobile .m-splash.on .m-splash-track { opacity: 1; transition: opacity .3s ease .4s; }
+html.is-mobile .m-splash-track i {
+    display: block;
+    width: 8%;
+    height: 100%;
+    border-radius: 99px;
+    background: linear-gradient(90deg, rgba(var(--rg-accent-rgb), .55), rgb(var(--rg-accent-rgb)));
+    box-shadow: 0 0 12px rgba(var(--rg-accent-rgb), .65);
+}
+html.is-mobile .m-splash.on .m-splash-track i { width: 82%; transition: width .62s cubic-bezier(.2,.75,.25,1) .3s; }
+html.is-mobile .m-splash.m-done .m-splash-track i { width: 100%; transition: width .2s ease; }
+html.is-mobile .m-splash-grain {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: .5;
+    background-image: radial-gradient(rgba(255,255,255,.05) 1px, transparent 1px);
+    background-size: 3px 3px;
+    -webkit-mask-image: radial-gradient(70% 60% at 50% 45%, #000, transparent 78%);
+    mask-image: radial-gradient(70% 60% at 50% 45%, #000, transparent 78%);
+}
+html.is-mobile .m-splash.is-light {
+    background:
+        radial-gradient(58% 42% at 50% 38%, rgba(var(--rg-accent-rgb), .16), transparent 70%),
+        radial-gradient(80% 60% at 50% 115%, rgba(90,168,255,.14), transparent 66%),
+        linear-gradient(180deg, #f4f8fd, #e7eff8);
+}
+html.is-mobile .m-splash.is-light .m-splash-orb { opacity: .5; }
+html.is-mobile .m-splash.is-light .m-splash-plate {
+    background:
+        linear-gradient(152deg, rgba(255,255,255,.96), rgba(255,255,255,.55) 58%, rgba(var(--rg-accent-rgb), .10)),
+        rgba(255,255,255,.7);
+    border-color: rgba(255,255,255,.9);
+    box-shadow:
+        0 24px 56px rgba(30,80,140,.18),
+        0 10px 26px rgba(var(--rg-accent-rgb), .16),
+        inset 0 1px 0 #fff;
+}
+html.is-mobile .m-splash.is-light .m-splash-plate i { color: var(--rg-accent, #2a6fc9); filter: none; }
+html.is-mobile .m-splash.is-light .m-splash-ring { border-color: rgba(var(--rg-accent-rgb), .38); }
+html.is-mobile .m-splash.is-light .m-splash-brand { color: #102a45; text-shadow: none; }
+html.is-mobile .m-splash.is-light .m-splash-sub { color: #4d6a8a; }
+html.is-mobile .m-splash.is-light .m-splash-track { background: rgba(30,80,140,.12); box-shadow: none; }
+html.is-mobile .m-splash.is-light .m-splash-grain { background-image: radial-gradient(rgba(30,80,140,.06) 1px, transparent 1px); }
+html.is-mobile body.rm-motion-off .m-splash *,
+html.is-mobile body.rm-motion-off .m-splash *::before,
+html.is-mobile body.rm-motion-off .m-splash *::after {
+    animation: none !important;
+    animation-delay: 0ms !important;
+    transition-duration: .001ms !important;
+    transition-delay: 0ms !important;
+}
 
 html.is-mobile .m-viewbtn {
     width: 100%; margin-top: 16px;
@@ -8975,21 +9136,71 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
     /* شاشة تحميل تختفي بتلاشٍ .6s عند جهوزية الهيكل */
     function splash() {
         if (REDUCED || document.querySelector('.m-splash')) return;
+        let light = false;
+        try {
+            const saved = JSON.parse(localStorage.getItem('royal_glass_v1') || '{}');
+            let mode = saved && saved.mode ? saved.mode : 'dark';
+            if (mode === 'auto') {
+                const h = new Date().getHours();
+                mode = (h >= 7 && h < 19) ? 'light' : 'dark';
+            }
+            light = mode === 'light';
+        } catch (e) {}
         const el = document.createElement('div');
-        el.className = 'm-splash';
-        el.innerHTML = '<i class="fa-solid fa-circle-notch"></i>';
+        el.className = 'm-splash' + (light ? ' is-light' : '');
+        el.setAttribute('role', 'status');
+        el.setAttribute('aria-label', 'جارٍ فتح لوحة مكوى رويال');
+        el.innerHTML =
+            '<div class="m-splash-orb" aria-hidden="true"></div>' +
+            '<div class="m-splash-core">' +
+                '<div class="m-splash-mark" aria-hidden="true">' +
+                    '<span class="m-splash-ring"></span>' +
+                    '<span class="m-splash-ring r2"></span>' +
+                    '<div class="m-splash-plate"><i class="fa-solid fa-shirt"></i><span class="m-splash-sheen"></span></div>' +
+                '</div>' +
+                '<div class="m-splash-brand">مكوى رويال</div>' +
+                '<div class="m-splash-sub">جارٍ تجهيز لوحة اليوم</div>' +
+                '<div class="m-splash-track" aria-hidden="true"><i></i></div>' +
+            '</div>' +
+            '<div class="m-splash-grain" aria-hidden="true"></div>';
         document.body.appendChild(el);
-        /* أصفار الحركة تُبقي الشاشة الافتتاحية فوق التطبيق إلى الأبد إذا لم تَطلب
-           الصفحة إطاراً (تáb مخفي أو تدوير بطيء)، فالتوقيت هو ضمان الرفع. */
+
+        const born = performance.now();
         let lifted = false;
+        let shown = false;
         const lift = () => {
             if (lifted) return;
             lifted = true;
-            el.classList.add('m-off2');
-            setTimeout(() => el.remove(), 650);
+            el.classList.add('m-done');
+            try {
+                if (state.started && document.getElementById(ADMIN_ID) &&
+                    document.getElementById(ADMIN_ID).classList.contains('active-screen')) {
+                    enterAnimate(state.pages[state.index]);
+                }
+            } catch (e) {}
+            setTimeout(() => el.classList.add('m-off2'), 150);
+            setTimeout(() => { if (el.parentNode) el.parentNode.removeChild(el); }, 760);
         };
-        requestAnimationFrame(lift);
-        setTimeout(lift, 1400);
+        const show = () => {
+            if (shown) return;
+            shown = true;
+            el.classList.add('on');
+            setTimeout(lift, 640);
+        };
+        /* مسرح النجاح يعيش فوق شاشة التحميل؛ ننتظر بدء تلاشيه (gone) ثم
+           نعرض. سقف 4.5s حارس إن لم يظهر مسرح أصلاً أو بقي معلّقاً. */
+        const tick = () => {
+            const stage = document.querySelector('.m-lk-fx');
+            const deadline = performance.now() - born > 4500;
+            if (stage && !stage.classList.contains('gone') && !deadline) {
+                setTimeout(tick, 110);
+                return;
+            }
+            show();
+        };
+        tick();
+        /* حارس نهائي ضد أصفار الحركة أو تبويب مخفي: لا تبقى الشاشة للأبد */
+        setTimeout(lift, 6500);
     }
 
     function onResize() {
