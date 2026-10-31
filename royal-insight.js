@@ -72,6 +72,14 @@
         if (same) return 'اليوم';
         return d.getDate() + ' ' + ['كانون الثاني', 'شباط', 'آذار', 'نيسان', 'أيار', 'حزيران', 'تموز', 'آب', 'أيلول', 'تشرين الأول', 'تشرين الثاني', 'كانون الأول'][d.getMonth()];
     }
+    function shortMonth(m) {
+        return ['ك2', 'شباط', 'آذار', 'نيسان', 'أيار', 'حزيران', 'تموز', 'آب', 'أيلول', 'ت1', 'ت2', 'ك1'][m];
+    }
+    function monthsLabel(n) {
+        if (n === 1) return 'شهر واحد';
+        if (n === 2) return 'شهرين';
+        return n + ' أشهر';
+    }
     function weekdayIdx(ms) {
         const d = new Date(ms);
         return d.getDay();
@@ -281,6 +289,38 @@
         });
         const heatMax = Math.max(1, ...heat.reduce((a, r) => a.concat(r), []));
 
+        /* جدد مقابل عائدين شهرياً: آخر ستة أشهر من كل الفواتير لا من الفترة،
+           والزبون يُحسب في الشهر مرة واحدة؛ «جديد» إذا كانت أول فاتورة له في
+           ذلك الشهر نفسه. قراءة فقط. */
+        const months = [];
+        const monthMap = {};
+        for (let i = 5; i >= 0; i--) {
+            const d = new Date(todayMs);
+            const first = new Date(d.getFullYear(), d.getMonth() - i, 1, 0, 0, 0);
+            const key = first.getFullYear() + '-' + String(first.getMonth() + 1).padStart(2, '0');
+            const mo = { key, label: shortMonth(first.getMonth()), start: first.getTime(), fresh: 0, back: 0, total: 0, seen: {} };
+            months.push(mo);
+            monthMap[key] = mo;
+        }
+        all.forEach((inv) => {
+            if (!isNamed(inv)) return;
+            const t = tsOf(inv);
+            if (!t) return;
+            const mo = monthMap[dateOfMs(t).slice(0, 7)];
+            if (!mo) return;
+            const name = String(inv.customer.name).trim();
+            if (mo.seen[name]) return;
+            mo.seen[name] = 1;
+            if ((firstSeen[name] || t) >= mo.start) mo.fresh += 1;
+            else mo.back += 1;
+        });
+        months.forEach((m) => { delete m.seen; m.total = m.fresh + m.back; });
+        /* لا نعرض أشهراً فارغة قبل بداية السجل: نبدأ من أول شهر فيه بيانات،
+           ونُبقي شهرين على الأقل كي يبقى للعمود سياق زمني. */
+        let firstData = months.findIndex((m) => m.total > 0);
+        if (firstData === -1) firstData = months.length - 2;
+        months.splice(0, Math.min(firstData, months.length - 2));
+
         /* مدرّج الولاء */
         const ladder = [
             { label: 'زيارة واحدة', n: 0, cls: 'l1' },
@@ -313,6 +353,7 @@
             heatMax,
             ladder,
             days,
+            months,
             billed,
             collected,
             cash,
@@ -445,6 +486,35 @@
         }).join('') + '</div>';
     }
 
+    /* أعمدة شهرية مزدوجة: الأخضر لجدد والأزرق لعائدين، الأقدم يميناً كبقية
+       المخططات، والارتفاع نسبي إلى أعلى عمود في الأشهر الستة. */
+    function monthlyChart(months) {
+        if (!months || !months.length) return emptyMini('لا بيانات شهرية بعد');
+        const max = Math.max(1, ...months.map((m) => Math.max(m.fresh, m.back)));
+        const latest = months[months.length - 1];
+        const cols = months.map((m, i) => {
+            const hF = m.fresh ? clamp((m.fresh / max) * 100, 6, 100) : 0;
+            const hB = m.back ? clamp((m.back / max) * 100, 6, 100) : 0;
+            const tip = m.label + ': ' + m.fresh + ' جديد · ' + m.back + ' عائد';
+            return '<div class="ri-mo" style="--i:' + i + '" title="' + esc(tip) + '">' +
+                '<span class="ri-mo-total">' + m.total + '</span>' +
+                '<div class="ri-mo-col">' +
+                    '<i class="ri-mo-b fresh" style="--h:' + hF.toFixed(1) + '%"></i>' +
+                    '<i class="ri-mo-b back" style="--h:' + hB.toFixed(1) + '%"></i>' +
+                '</div>' +
+                '<span class="ri-mo-l">' + m.label + '</span>' +
+            '</div>';
+        }).join('');
+        return '<div class="ri-months" role="img" aria-label="زبائن جدد مقابل عائدين خلال آخر ستة أشهر">' +
+                '<div class="ri-mo-plot">' + cols + '</div>' +
+            '</div>' +
+            '<div class="ri-mo-foot">' +
+                '<span class="ri-mo-key"><i class="fresh"></i> جدد ' + latest.fresh + '</span>' +
+                '<span class="ri-mo-key"><i class="back"></i> عائدون ' + latest.back + '</span>' +
+                '<small>هذا الشهر</small>' +
+            '</div>';
+    }
+
     function emptyMini(text) {
         return '<div class="ri-empty-mini"><i class="fa-solid fa-chart-simple"></i><span>' + esc(text) + '</span></div>';
     }
@@ -552,6 +622,11 @@
             '<div class="ri-card">' +
                 '<div class="ri-card-head"><h3><i class="fa-solid fa-chart-pie"></i> شرائح الزبائن</h3><span>حسب السلوك</span></div>' +
                 donut(vm.tiers) +
+            '</div>' +
+
+            '<div class="ri-card">' +
+                '<div class="ri-card-head"><h3><i class="fa-solid fa-chart-column"></i> جدد مقابل عائدين</h3><span>آخر ' + monthsLabel(vm.months.length) + '</span></div>' +
+                monthlyChart(vm.months) +
             '</div>' +
 
             '<div class="ri-card">' +
@@ -1074,6 +1149,58 @@ html.is-mobile .ri-bar-track i {
 }
 html.is-mobile .ri-bar-sub { font-size: 9px; font-weight: 700; color: var(--m-faint); }
 
+html.is-mobile .ri-mo-plot { display: flex; justify-content: center; align-items: stretch; gap: 10px; height: 112px; }
+html.is-mobile .ri-mo { flex: 0 1 96px; min-width: 0; display: flex; flex-direction: column; align-items: center; }
+html.is-mobile .ri-mo-total {
+    min-height: 12px; line-height: 1;
+    font-size: 10px; font-weight: 900; color: var(--m-muted);
+    font-variant-numeric: tabular-nums;
+}
+html.is-mobile .ri-mo-col {
+    flex: 1; width: 100%;
+    display: flex; align-items: flex-end; justify-content: center; gap: 3px;
+    padding-bottom: 1px;
+    border-bottom: 1px solid var(--ri-line);
+}
+html.is-mobile .ri-mo-b {
+    display: block;
+    width: 34%;
+    min-width: 7px;
+    max-width: 30px;
+    height: var(--h, 0%);
+    border-radius: 4px 4px 2px 2px;
+    transform: scaleY(0);
+    transform-origin: bottom center;
+    animation: riGrow .72s var(--m-ease-out) forwards;
+    animation-delay: calc(180ms + var(--i, 0) * 55ms);
+}
+html.is-mobile .ri-mo-b.fresh {
+    background: linear-gradient(180deg, #55e8ab, #24b97c);
+    box-shadow: 0 0 10px rgba(61,220,151,.22);
+}
+html.is-mobile .ri-mo-b.back {
+    background: linear-gradient(180deg, color-mix(in srgb, var(--rg-accent) 76%, #fff), var(--rg-accent));
+    box-shadow: 0 0 10px rgba(var(--rg-accent-rgb), .26);
+}
+html.is-mobile .ri-mo-l { margin-top: 5px; font-size: 9px; font-weight: 800; color: var(--m-faint); white-space: nowrap; }
+html.is-mobile .ri-mo-foot {
+    display: flex; align-items: center; gap: 12px;
+    margin-top: 10px; padding-top: 9px;
+    border-top: 1px solid var(--ri-line);
+    font-size: 10px; font-weight: 800; color: var(--m-muted);
+}
+html.is-mobile .ri-mo-key { display: inline-flex; align-items: center; gap: 5px; font-variant-numeric: tabular-nums; }
+html.is-mobile .ri-mo-key i { width: 8px; height: 8px; border-radius: 3px; }
+html.is-mobile .ri-mo-key i.fresh { background: #3ddc97; box-shadow: 0 0 7px rgba(61,220,151,.5); }
+html.is-mobile .ri-mo-key i.back { background: var(--rg-accent); box-shadow: 0 0 7px rgba(var(--rg-accent-rgb), .5); }
+html.is-mobile .ri-mo-foot small { margin-inline-start: auto; font-size: 9px; font-weight: 700; color: var(--m-faint); }
+html.is-mobile body.rg-light .ri-mo-total { color: #33507a; }
+html.is-mobile body.rg-light .ri-mo-l { color: #5b7191; }
+html.is-mobile body.rg-light .ri-mo-col { border-bottom-color: rgba(30,70,120,.12); }
+html.is-mobile body.rg-light .ri-mo-foot { color: #33507a; border-top-color: rgba(30,70,120,.10); }
+html.is-mobile body.rg-light .ri-mo-foot small { color: #5b7191; }
+@keyframes riGrow { to { transform: scaleY(1); } }
+
 html.is-mobile .ri-heat { display: flex; flex-direction: column; gap: 4px; }
 html.is-mobile .ri-heat-row { display: grid; grid-template-columns: 54px repeat(4, 1fr); gap: 4px; align-items: center; }
 html.is-mobile .ri-heat-head span { font-size: 8.5px; font-weight: 800; color: var(--m-faint); text-align: center; }
@@ -1297,6 +1424,7 @@ body.ri-sheet-open #mobile-bottom-nav { opacity: .35; pointer-events: none; tran
 @media (prefers-reduced-motion: reduce) {
     html.is-mobile .ri-in { animation: none !important; }
     html.is-mobile .ri-area-line { animation: none !important; stroke-dashoffset: 0 !important; }
+    html.is-mobile .ri-mo-b { animation: none !important; transform: none !important; }
     html.is-mobile .ri-sheet-card { transition: none !important; }
 }
 `;
