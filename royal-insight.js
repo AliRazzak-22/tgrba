@@ -926,6 +926,51 @@
         const list = c.invoices.slice().sort((a, b) => tsOf(b) - tsOf(a)).slice(0, 12);
         const favs = Object.keys(c.items).sort((a, b) => c.items[b].qty - c.items[a].qty).slice(0, 4)
             .map((k) => '<span class="ri-chip">' + esc(k) + ' · ' + c.items[k].qty + '</span>').join('');
+
+        /* ملف الزبون يحكي قصته كاملة: إجمالي مدى الحياة وحركة آخر ستة أشهر
+           محسوبان من كل فواتيره لا من فترة التبويب، لأن الفتح من قائمة
+           «النخبة» أو «الغائبين» لا يعني أن هذه هي كل زياراته. */
+        const allInv = (readData() || { invoices: [] }).invoices;
+        const mine = allInv.filter((i) => isNamed(i) && String(i.customer.name).trim() === name);
+        let lifeSpent = 0, lifePieces = 0;
+        mine.forEach((inv) => {
+            lifeSpent += num(inv.total);
+            (Array.isArray(inv.items) ? inv.items : []).forEach((it) => { lifePieces += num(it.qty) || 1; });
+        });
+        const tk = typeof window.royalTodayKey === 'function' ? window.royalTodayKey() : dateOfMs(Date.now());
+        const tp = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(tk));
+        const baseDay = tp ? new Date(+tp[1], +tp[2] - 1, +tp[3], 12) : new Date();
+        const cm = [];
+        for (let i = 5; i >= 0; i--) {
+            const f = new Date(baseDay.getFullYear(), baseDay.getMonth() - i, 1, 0, 0, 0);
+            cm.push({ key: f.getFullYear() + '-' + String(f.getMonth() + 1).padStart(2, '0'), label: shortMonth(f.getMonth()), spent: 0, visits: 0 });
+        }
+        const cmMap = {};
+        cm.forEach((m) => { cmMap[m.key] = m; });
+        mine.forEach((inv) => {
+            const t = tsOf(inv);
+            if (!t) return;
+            const m = cmMap[dateOfMs(t).slice(0, 7)];
+            if (!m) return;
+            m.spent += num(inv.total);
+            m.visits += 1;
+        });
+        /* نعرض الأشهر الستة كاملة حتى لو غاب الزبون: الفراغ نفسه معلومة. */
+        const cMonths = cm;
+        const cmMax = Math.max(1, ...cMonths.map((m) => m.spent));
+        const cmNow = dateOfMs(baseDay.getTime()).slice(0, 7);
+        const cmVisits = cMonths.reduce((s, m) => s + m.visits, 0);
+        const cmSpent = cMonths.reduce((s, m) => s + m.spent, 0);
+        const monthsHTML = cmVisits
+            ? '<div class="ri-cm-bars">' + cMonths.map((m, k) =>
+                '<span class="ri-cm' + (m.key === cmNow ? ' on' : '') + '">' +
+                    '<span class="ri-cm-track"><i style="--h:' + Math.round((m.spent / cmMax) * 100) + '%;--d:' + (k * 0.04).toFixed(2) + 's"></i></span>' +
+                    '<small>' + m.label + '</small>' +
+                '</span>').join('') + '</div>' +
+                '<p class="ri-cm-sum">مجموع ٦ أشهر: <b>' + money(cmSpent) + '</b> · ' + fmt(cmVisits) + ' زيارة</p>'
+            : '<div class="ri-cm-empty">لا فواتير خلال الأشهر الستة الأخيرة</div>';
+        const lifeStrip = allTime ? '' :
+            '<div class="ri-cust-life"><i class="fa-solid fa-infinity"></i><span>مدى الحياة: <b>' + fmt(mine.length) + '</b> زيارة · <b>' + fmt(lifePieces) + '</b> قطعة · <b>' + money(lifeSpent) + '</b></span></div>';
         const rows = list.length ? list.map((inv) => {
             const st = inv.type === 'active' ? 'قيد العمل' : (inv.paymentType === 'credit' ? 'آجل' : 'مكتمل');
             return '<div class="ri-inv">' +
@@ -958,6 +1003,11 @@
                     '<div><strong>' + money(c.avg) + '</strong><span>متوسط الفاتورة</span></div>' +
                 '</div>' +
                 (c.debt > 0 ? '<div class="ri-cust-debt"><i class="fa-solid fa-triangle-exclamation"></i> دين قائم: <b>' + money(c.debt) + '</b></div>' : '') +
+                lifeStrip +
+                '<div class="ri-cust-trend">' +
+                    '<h4><span>حركة الشراء</span><small>آخر ٦ أشهر</small></h4>' +
+                    monthsHTML +
+                '</div>' +
                 '<div class="ri-cust-meta">' +
                     '<span><i class="fa-solid fa-calendar-plus"></i> أول زيارة: ' + esc(prettyDay(c.firstTs)) + '</span>' +
                     '<span><i class="fa-solid fa-clock-rotate-left"></i> آخر زيارة: ' + (c.lastTs ? esc(prettyDay(c.lastTs)) : '—') + '</span>' +
@@ -1700,6 +1750,58 @@ html.is-mobile .ri-cust-debt {
     color: #ff8f99; font-size: 11px; font-weight: 700;
 }
 html.is-mobile body.rg-light .ri-cust-debt { color: #b32b3a; }
+html.is-mobile .ri-cust-life {
+    display: flex; align-items: center; gap: 8px;
+    padding: 9px 12px; border-radius: 13px; margin-bottom: 12px;
+    background: rgba(255,255,255,.05);
+    border: 1px solid var(--ri-line);
+    font-size: 9.5px; font-weight: 700; color: var(--m-muted); line-height: 1.6;
+}
+html.is-mobile .ri-cust-life i { color: var(--rg-accent); font-size: 10px; }
+html.is-mobile .ri-cust-life b { color: var(--m-text); font-weight: 900; font-variant-numeric: tabular-nums; }
+html.is-mobile .ri-cust-trend { margin-bottom: 13px; }
+html.is-mobile .ri-cust-trend h4 {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 8px;
+    margin: 0 0 8px; font-size: 12px; font-weight: 900; color: var(--m-text);
+}
+html.is-mobile .ri-cust-trend h4 small { font-size: 8.5px; font-weight: 800; color: var(--m-faint); }
+html.is-mobile .ri-cm-bars {
+    display: flex; align-items: stretch; gap: 8px;
+    height: 98px; padding: 10px 9px 7px;
+    border-radius: 13px;
+    background: rgba(255,255,255,.04);
+    border: 1px solid var(--ri-line);
+}
+html.is-mobile .ri-cm { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; height: 100%; }
+html.is-mobile .ri-cm-track { flex: 1; display: flex; align-items: flex-end; width: 100%; }
+html.is-mobile .ri-cm-track i {
+    display: block; width: 100%; height: var(--h, 0%); min-height: 2px;
+    border-radius: 6px 6px 2px 2px;
+    background: linear-gradient(180deg, color-mix(in srgb, var(--rg-accent) 65%, #fff), var(--rg-accent));
+    opacity: .5;
+}
+html.is-mobile .ri-cm.on .ri-cm-track i { opacity: 1; box-shadow: 0 0 12px rgba(var(--rg-accent-rgb), .35); }
+html.is-mobile .ri-cm small { text-align: center; font-size: 8.5px; font-weight: 800; color: var(--m-faint); white-space: nowrap; }
+html.is-mobile .ri-cm.on small { color: var(--m-text); }
+html.is-mobile .ri-sheet.on .ri-cm-track i { animation: riCmGrow .65s var(--m-ease-out) both; animation-delay: calc(var(--d, 0s) + 140ms); }
+html.is-mobile body.rm-motion-off .ri-sheet.on .ri-cm-track i { animation: none; }
+@keyframes riCmGrow { from { height: 0; } to { height: var(--h, 0%); } }
+html.is-mobile .ri-cm-sum { margin: 7px 2px 0; font-size: 8.5px; font-weight: 700; color: var(--m-faint); text-align: center; }
+html.is-mobile .ri-cm-sum b { color: var(--m-muted); font-weight: 900; font-variant-numeric: tabular-nums; }
+html.is-mobile .ri-cm-empty {
+    padding: 16px 10px; text-align: center;
+    font-size: 10px; font-weight: 700; color: var(--m-faint);
+    background: rgba(255,255,255,.04);
+    border: 1px dashed var(--ri-line); border-radius: 13px;
+}
+html.is-mobile body.rg-light .ri-cust-life { background: rgba(30,70,120,.05); border-color: rgba(30,70,120,.12); color: #4c5d75; }
+html.is-mobile body.rg-light .ri-cust-life b { color: #0e2138; }
+html.is-mobile body.rg-light .ri-cm-bars { background: rgba(30,70,120,.04); }
+html.is-mobile body.rg-light .ri-cm small { color: #5b7191; }
+html.is-mobile body.rg-light .ri-cm.on small { color: #0e2138; }
+html.is-mobile body.rg-light .ri-cm-sum { color: #5b7191; }
+html.is-mobile body.rg-light .ri-cm-sum b { color: #33507a; }
+html.is-mobile body.rg-light .ri-cm-empty { background: rgba(30,70,120,.04); color: #5b7191; }
 html.is-mobile .ri-cust-meta { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
 html.is-mobile .ri-cust-meta span { display: flex; align-items: center; gap: 8px; font-size: 10.5px; font-weight: 700; color: var(--m-muted); }
 html.is-mobile .ri-cust-meta i { color: var(--m-accent2); font-size: 10px; width: 14px; text-align: center; }
@@ -1724,6 +1826,7 @@ body.ri-sheet-open #mobile-bottom-nav { opacity: .35; pointer-events: none; tran
     html.is-mobile .ri-area-line { animation: none !important; stroke-dashoffset: 0 !important; }
     html.is-mobile .ri-mo-b { animation: none !important; transform: none !important; }
     html.is-mobile .ri-sheet-card { transition: none !important; }
+    html.is-mobile .ri-cm-track i { animation: none !important; }
 }
 `;
 
