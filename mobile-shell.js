@@ -1026,6 +1026,7 @@ html.is-mobile .modal-overlay.m-sheet {
     display: flex;
     position: fixed;
     inset: 0;
+    z-index: 9560 !important;
     align-items: flex-end !important;
     justify-content: center !important;
     padding: 0 !important;
@@ -1055,6 +1056,7 @@ html.is-mobile .modal-overlay.m-sheet.m-closing {
 }
 html.is-mobile .modal-overlay.m-sheet.m-closing .modal-content { animation: mSheetOut .34s var(--m-ease) both; }
 html.is-mobile .modal-overlay.m-sheet .modal-content {
+    position: relative;
     width: 100% !important;
     max-width: 720px !important;
     height: auto !important;
@@ -1090,16 +1092,9 @@ html.is-mobile .modal-content.mobile-sticky-modal .modal-body-scrollable {
     overscroll-behavior: contain;
     padding: 0 14px 10px !important;
 }
-html.is-mobile .modal-overlay .modal-content.mobile-sticky-modal .m-grab { margin: 10px 14px 0; }
 html.is-mobile .modal-overlay .modal-content.mobile-sticky-modal .m-sheet-x { top: 12px; }
 html.is-mobile .modal-overlay .modal-content.mobile-sticky-modal .modal-actions { margin: 0 14px calc(12px + env(safe-area-inset-bottom)); }
 html.is-mobile .modal-overlay.m-sheet.m-on .modal-content { transform: translateY(0); }
-html.is-mobile .modal-overlay.m-sheet.m-live .modal-content { animation: none !important; transition: transform .1s linear; }
-html.is-mobile .m-grab {
-    width: 46px; height: 4px; border-radius: 0;
-    background: linear-gradient(90deg, rgba(146,200,255,.16), rgba(196,232,255,.58) 50%, rgba(146,200,255,.16));
-    margin: 10px auto 10px;
-}
 html.is-mobile .modal-overlay.m-sheet .modal-title {
     position: sticky; top: -6px; z-index: 3;
     margin: 0 -14px 10px;
@@ -1118,13 +1113,22 @@ html.is-mobile .modal-overlay.m-sheet .modal-actions {
     position: sticky; bottom: 0; padding-top: 10px;
     background: linear-gradient(to top, rgba(15,32,62,.96) 38%, rgba(15,32,62,0));
 }
+/* لا تحديد نص ولا قائمة ضغط مطوّل داخل النوافذ: لمسة التمرير كانت تظلّل النص أزرق */
+html.is-mobile .modal-overlay.m-sheet .modal-content {
+    -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+}
+html.is-mobile .modal-overlay.m-sheet input,
+html.is-mobile .modal-overlay.m-sheet textarea,
+html.is-mobile .modal-overlay.m-sheet [contenteditable="true"] {
+    -webkit-user-select: text; user-select: text;
+}
 html.is-mobile .modal-overlay:not(#modal-admin-login) .input-group label { color: #bad5f1 !important; }
 html.is-mobile .modal-overlay:not(#modal-admin-login) input::placeholder,
 html.is-mobile .modal-overlay:not(#modal-admin-login) textarea::placeholder {
     color: rgba(178,206,238,.55) !important;
 }
 html.is-mobile .m-sheet-x {
-    position: absolute; top: 11px; inset-inline-end: 12px; z-index: 4;
+    position: absolute; top: 11px; inset-inline-end: 12px; z-index: 12;
     width: 40px; height: 40px;
     display: flex; align-items: center; justify-content: center;
     clip-path: var(--m-plate);
@@ -1140,74 +1144,462 @@ html.is-mobile .m-sheet-x {
 html.is-mobile .m-sheet-x:active { background: linear-gradient(160deg, rgba(214,236,255,.34), rgba(20,34,54,.92)); }
 
 /* ------------------------- نافذة تفاصيل الصرفيات ------------------------- */
-html.is-mobile .m-exp-modal .modal-title { position: static; padding-inline-end: 60px; }
+/* الورقة ثابتة: لا تُسحب ولا تُغلق إلا بالزر أو ×. الرقم هو الأساس، والملاحظة
+   داخل صندوق حاجز لا تخرج منه: تُقصّ بأسطر ويتصغّر خطّها كلما طال النص. */
+html.is-mobile .modal-overlay .modal-content.m-exp-modal {
+    height: 92% !important;
+    max-height: 92% !important;
+}
+html.is-mobile .m-exp-modal .modal-title {
+    position: static;
+    margin: 0;
+    padding: 14px 56px 12px 16px;
+    background:
+        linear-gradient(180deg, rgba(160,206,255,.14), rgba(146,200,255,.02) 78%),
+        rgba(18,38,72,.72);
+    border-bottom: 1px solid rgba(160,210,255,.18);
+    border-radius: var(--m-radius-sheet) var(--m-radius-sheet) 0 0;
+    font-size: 15.5px;
+    font-weight: 900;
+    color: #eef6ff;
+}
 html.is-mobile .m-exp-sum {
-    display: flex; align-items: center; justify-content: space-between; gap: 10px;
-    clip-path: var(--m-facet-sm);
-    border-radius: 0 !important;
-    border: none !important;
-    box-shadow: inset 0 1px 0 rgba(170,214,255,.22), inset 0 0 0 1px rgba(138,190,255,.08) !important;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    margin: 10px 14px 12px;
     padding: 11px 13px;
-    margin: 0 0 12px;
-    font-size: 12px; font-weight: 800; color: var(--m-muted);
+    clip-path: var(--m-facet-sm);
+    background:
+        linear-gradient(150deg, rgba(255,150,165,.12), rgba(160,206,255,.04) 46%, rgba(120,170,255,.10)),
+        rgba(14,30,58,.74);
+    box-shadow: inset 0 1px 0 rgba(196,232,255,.20), inset 0 0 0 1px rgba(140,190,255,.10);
 }
-html.is-mobile .m-exp-sum b { font-size: 15px; color: #ffd7dc; font-weight: 900; text-shadow: 0 1px 2px rgba(0,0,0,.55); }
-html.is-mobile .m-exp-sum b em { font-style: normal; font-size: 10.5px; color: var(--m-muted); }
-html.is-mobile .m-exp-sum i { color: var(--m-red); margin-inline-end: 5px; }
-html.is-mobile .m-exp-modal table { margin-top: 0 !important; }
-html.is-mobile .m-exp-modal tr {
-    grid-template-columns: minmax(0,1fr) auto !important;
-    padding: 10px 12px !important;
-    margin-bottom: 8px !important;
-    border-radius: 16px !important;
-    gap: 2px 10px;
+html.is-mobile .m-exp-sum-main { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+html.is-mobile .m-exp-sum-main > span { font-size: 10px; font-weight: 800; color: var(--m-faint); letter-spacing: .2px; }
+html.is-mobile .m-exp-sum b {
+    font-size: 19px; font-weight: 900; color: #ffd2d9;
+    font-variant-numeric: tabular-nums; line-height: 1.1;
+    text-shadow: 0 1px 2px rgba(0,0,0,.5);
 }
-html.is-mobile .m-exp-modal tr > td:first-child {
-    grid-column: 1 !important;
-    grid-row: 1 !important;
-    font-size: 11px !important;
-    margin-bottom: 2px !important;
-    color: var(--m-faint) !important;
+html.is-mobile .m-exp-sum b em { font-style: normal; font-size: 10.5px; color: var(--m-muted); margin-inline-start: 3px; }
+html.is-mobile .m-exp-sum-meta {
+    display: flex; flex-direction: column; align-items: flex-end; gap: 4px;
+    font-size: 10.5px; font-weight: 800; color: var(--m-muted);
+}
+html.is-mobile .m-exp-sum-meta i { color: #8fc6ff; margin-inline-end: 4px; }
+html.is-mobile .m-exp-count { font-size: 10px; color: var(--m-faint); }
+
+html.is-mobile .m-exp-modal .m-exp-body {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    padding: 0 14px 12px !important;
+    background: transparent !important;
+}
+html.is-mobile .m-exp-list { display: flex; flex-direction: column; gap: 9px; }
+html.is-mobile .m-exp-card {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0,1fr) auto;
+    gap: 8px 12px;
+    padding: 12px 14px 13px;
+    border-radius: 16px;
+    border: 1px solid rgba(158,206,255,.16);
+    background:
+        radial-gradient(120% 140% at 96% -18%, rgba(255,126,146,.10), transparent 62%),
+        linear-gradient(158deg, rgba(196,226,255,.11), rgba(122,172,240,.02) 46%, rgba(150,200,255,.06)),
+        rgba(17,36,68,.66);
+    box-shadow: inset 0 1px 0 rgba(196,232,255,.16), 0 8px 20px rgba(0,6,18,.18);
+    overflow: hidden;
+}
+html.is-mobile .m-exp-card::before {
+    content: "";
+    position: absolute;
+    inset-inline-start: 0; top: 14px; bottom: 14px; width: 2px;
+    border-radius: 2px;
+    background: linear-gradient(180deg, rgba(255,140,158,0), rgba(255,140,158,.55) 40%, rgba(255,140,158,0));
+}
+html.is-mobile .m-exp-amt {
+    grid-column: 1; grid-row: 1;
+    justify-self: start;
+    display: flex; align-items: baseline; gap: 4px;
+}
+html.is-mobile .m-exp-amt span {
+    font-size: 22px; font-weight: 900; color: #ffd2d9;
+    font-variant-numeric: tabular-nums; line-height: 1;
+    text-shadow: 0 1px 2px rgba(0,0,0,.5);
+}
+html.is-mobile .m-exp-amt em { font-style: normal; font-size: 10.5px; font-weight: 800; color: var(--m-faint); }
+html.is-mobile .m-exp-when {
+    grid-column: 2; grid-row: 1;
+    display: flex; flex-direction: column; align-items: flex-end; gap: 4px;
+    min-width: 0;
+}
+html.is-mobile .m-exp-date {
+    font-size: 11px; font-weight: 800; color: #d7e7fb;
+    white-space: nowrap;
     font-variant-numeric: tabular-nums;
 }
-/* يوم الأسبوع يسبق التاريخ في سطر واحد بدل أن يشغل خلية كاملة */
-html.is-mobile .m-exp-modal tr > td:nth-child(2) {
-    grid-column: 1 !important;
-    grid-row: 1 !important;
-    justify-self: start;
-    margin-inline-start: 6px;
-    font-size: 11px !important;
-    font-weight: 700 !important;
-    color: var(--m-faint) !important;
-}
-html.is-mobile .m-exp-modal tr > td:nth-child(2) { display: inline-block !important; }
-html.is-mobile .m-exp-modal tr > td:nth-child(2)::before { content: "·"; margin-inline-end: 5px; opacity: .5; }
-html.is-mobile .m-exp-modal tr > td:nth-child(3) {
-    grid-column: 1 !important;
-    grid-row: 2 !important;
-    font-size: 14.5px !important;
-    font-weight: 800 !important;
-    color: #eaf3ff !important;
-    white-space: normal !important;
-    word-break: break-word;
-}
-html.is-mobile .m-exp-modal tr > td:last-child {
-    grid-column: 2 !important;
-    grid-row: 1 / span 2 !important;
-    display: flex !important;
-    align-items: center !important;
-    font-size: 15px !important;
-    font-weight: 900 !important;
-    color: #ffc9d0 !important;
+html.is-mobile .m-exp-sub {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 10.5px; font-weight: 700; color: var(--m-muted);
     white-space: nowrap;
 }
+html.is-mobile .m-exp-sub i { width: 3px; height: 3px; border-radius: 50%; background: rgba(180,214,255,.5); }
+html.is-mobile .m-exp-note {
+    grid-column: 1 / 3; grid-row: 2;
+    margin-top: 2px;
+    padding: 7px 10px 8px;
+    height: 58px;
+    border-radius: 11px;
+    background: rgba(5,15,32,.34);
+    border: 1px solid rgba(150,200,255,.10);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.035);
+    overflow: hidden;
+    display: flex; flex-direction: column; gap: 2px;
+}
+html.is-mobile .m-exp-note-t { font-size: 9px; font-weight: 900; letter-spacing: .3px; color: rgba(170,205,245,.6); }
+html.is-mobile .m-exp-note-x {
+    margin: 0;
+    font-size: 12.5px; line-height: 1.42; font-weight: 650; color: #dceafc;
+    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+    overflow: hidden; word-break: break-word; overflow-wrap: anywhere;
+}
+html.is-mobile .m-exp-note-x.m-note-2 { font-size: 11.5px; }
+html.is-mobile .m-exp-note-x.m-note-3 { font-size: 10.5px; line-height: 1.32; -webkit-line-clamp: 3; }
 html.is-mobile .m-exp-empty {
     display: none;
     flex-direction: column; align-items: center; gap: 10px;
-    padding: 34px 0 30px;
+    padding: 34px 0 26px;
     color: var(--m-faint); font-size: 13px; font-weight: 800;
 }
 html.is-mobile .m-exp-empty i { font-size: 30px; opacity: .5; }
+
+/* ------------------------- كشف اليوم: بطاقات بدل جدول مسحوب ------------------------- */
+html.is-mobile .modal-overlay .modal-content.m-day-modal {
+    height: 92% !important;
+    max-height: 92% !important;
+}
+html.is-mobile .m-day-modal .modal-header-sticky {
+    flex: none;
+    padding: 12px 14px 10px !important;
+    background:
+        linear-gradient(180deg, rgba(160,206,255,.13), rgba(16,34,64,.92)) !important;
+    border-bottom: 1px solid rgba(160,210,255,.16) !important;
+    border-radius: var(--m-radius-sheet) var(--m-radius-sheet) 0 0;
+}
+html.is-mobile .m-day-modal .modal-title {
+    position: static !important;
+    margin: 0 0 8px !important;
+    padding: 0 0 0 52px !important;
+    background: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    font-size: 15px !important;
+    font-weight: 900 !important;
+    color: #eef6ff !important;
+    text-align: center !important;
+}
+html.is-mobile .m-day-modal .modal-header-sticky > div {
+    margin-bottom: 0 !important;
+    gap: 8px !important;
+}
+html.is-mobile .m-day-modal .modal-header-sticky > div > span {
+    padding: 6px 10px !important;
+    border-radius: 10px !important;
+    background: rgba(8,22,44,.5) !important;
+    border-width: 1px !important;
+    font-size: 11px !important;
+    font-weight: 800 !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.07);
+}
+html.is-mobile .m-day-hint {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    margin-top: 8px;
+    font-size: 10.5px; font-weight: 800; color: rgba(170,205,245,.55);
+}
+html.is-mobile #modal-daily-transactions .modal-body-scrollable {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    padding: 10px 14px 12px !important;
+    background: transparent !important;
+}
+html.is-mobile #modal-daily-transactions .invoices-table {
+    display: block !important;
+    width: 100% !important;
+    border: none !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    white-space: normal !important;
+    background: transparent !important;
+}
+html.is-mobile #modal-daily-transactions .invoices-table thead { display: none !important; }
+html.is-mobile #modal-daily-transactions .invoices-table tbody { display: block !important; width: 100% !important; }
+html.is-mobile #modal-daily-transactions .invoices-table tbody tr {
+    display: grid !important;
+    grid-template-columns: minmax(0,1.25fr) minmax(0,1fr) !important;
+    grid-template-rows: auto auto auto auto !important;
+    gap: 7px 10px !important;
+    margin: 0 0 9px !important;
+    padding: 12px 13px !important;
+    border-radius: 15px !important;
+    border: 1px solid rgba(158,206,255,.16) !important;
+    background:
+        linear-gradient(158deg, rgba(196,226,255,.10), rgba(122,172,240,.02) 46%, rgba(150,200,255,.05)),
+        rgba(17,36,68,.64) !important;
+    box-shadow: inset 0 1px 0 rgba(196,232,255,.15), 0 8px 18px rgba(0,6,18,.16) !important;
+    white-space: normal !important;
+}
+html.is-mobile #modal-daily-transactions .invoices-table tbody td {
+    display: block !important;
+    min-width: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    text-align: right !important;
+    white-space: normal !important;
+    background: transparent !important;
+    font-size: 12px !important;
+    line-height: 1.35 !important;
+}
+html.is-mobile #modal-daily-transactions .invoices-table td:nth-child(1) {
+    grid-column: 1 !important; grid-row: 1 !important;
+    justify-self: start;
+    padding: 2px 8px !important;
+    border-radius: 8px !important;
+    background: rgba(255,255,255,.06) !important;
+    font-size: 11px !important;
+    font-weight: 800 !important;
+}
+html.is-mobile #modal-daily-transactions .invoices-table td:nth-child(2) {
+    grid-column: 2 !important; grid-row: 2 !important;
+    justify-self: start;
+    color: var(--m-faint) !important;
+    font-size: 10.5px !important;
+    font-weight: 800 !important;
+}
+html.is-mobile #modal-daily-transactions .invoices-table td:nth-child(2)::before {
+    content: "#"; opacity: .6; margin-inline-end: 1px;
+}
+html.is-mobile #modal-daily-transactions .invoices-table td:nth-child(3) {
+    grid-column: 1 !important; grid-row: 2 !important;
+    font-size: 13px !important;
+    font-weight: 800 !important;
+    color: #eaf3ff !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+}
+html.is-mobile #modal-daily-transactions .invoices-table td:nth-child(4) {
+    grid-column: 2 !important; grid-row: 1 !important;
+    justify-self: end;
+    color: var(--m-muted) !important;
+    font-size: 10.5px !important;
+    font-weight: 700 !important;
+}
+html.is-mobile #modal-daily-transactions .invoices-table td:nth-child(n+5) {
+    font-size: 12.5px !important;
+    font-weight: 900 !important;
+    font-variant-numeric: tabular-nums;
+}
+html.is-mobile #modal-daily-transactions .invoices-table td:nth-child(n+5)::before {
+    display: block;
+    margin-bottom: 2px;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: .2px;
+    color: rgba(170,205,245,.52);
+}
+html.is-mobile #modal-daily-transactions .invoices-table td:nth-child(5) { grid-column: 1 !important; grid-row: 3 !important; }
+html.is-mobile #modal-daily-transactions .invoices-table td:nth-child(6) { grid-column: 2 !important; grid-row: 4 !important; display: block !important; }
+html.is-mobile #modal-daily-transactions .invoices-table td:nth-child(7) { grid-column: 2 !important; grid-row: 3 !important; }
+html.is-mobile #modal-daily-transactions .invoices-table td:nth-child(8) { grid-column: 1 !important; grid-row: 4 !important; }
+html.is-mobile #modal-daily-transactions .invoices-table td:nth-child(5)::before { content: "المجموع"; }
+html.is-mobile #modal-daily-transactions .invoices-table td:nth-child(6)::before { content: "الخصم"; }
+html.is-mobile #modal-daily-transactions .invoices-table td:nth-child(7)::before { content: "المدفوع"; }
+html.is-mobile #modal-daily-transactions .invoices-table td:nth-child(8)::before { content: "الحالة"; }
+html.is-mobile .m-day-empty {
+    display: none;
+    flex-direction: column; align-items: center; gap: 10px;
+    padding: 40px 0 30px;
+    color: var(--m-faint); font-size: 13px; font-weight: 800;
+}
+html.is-mobile .m-day-empty i { font-size: 30px; opacity: .5; }
+
+/* ------------------------- تفاصيل القائمة: نافذة وسطية ثابتة ------------------------- */
+html.is-mobile .modal-overlay.m-sheet.m-center {
+    align-items: center !important;
+    justify-content: center !important;
+    padding: max(14px, env(safe-area-inset-top)) 12px max(14px, env(safe-area-inset-bottom)) !important;
+}
+html.is-mobile .modal-overlay.m-sheet.m-center .modal-content {
+    width: 100% !important;
+    max-width: 560px !important;
+    height: auto !important;
+    max-height: 86% !important;
+    margin: 0 auto !important;
+    border-radius: 22px !important;
+    border: 1px solid rgba(172,218,255,.28) !important;
+    padding: 0 !important;
+    animation: none !important;
+    transform: translateY(14px) scale(.97);
+    opacity: 0;
+    transition: transform .30s var(--m-ease-out), opacity .20s linear;
+}
+html.is-mobile .modal-overlay.m-sheet.m-center.m-on .modal-content { transform: none; opacity: 1; }
+html.is-mobile .modal-overlay.m-sheet.m-center.m-closing .modal-content {
+    transform: translateY(10px) scale(.985);
+    opacity: 0;
+    transition: transform .22s var(--m-ease), opacity .18s linear;
+}
+html.is-mobile .m-tx-modal .modal-header-sticky {
+    flex: none;
+    padding: 14px 54px 6px 16px !important;
+    background: none !important;
+    border: none !important;
+    border-radius: 22px 22px 0 0;
+}
+html.is-mobile .m-tx-modal .modal-title {
+    position: static !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    font-size: 15.5px !important;
+    font-weight: 900 !important;
+    color: #eaf3ff !important;
+    text-align: right !important;
+}
+html.is-mobile .m-tx-modal .modal-body-scrollable {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    padding: 2px 14px 10px !important;
+    background: transparent !important;
+}
+html.is-mobile #drill-cart-info {
+    background:
+        linear-gradient(158deg, rgba(196,226,255,.10), rgba(150,200,255,.02)),
+        rgba(17,36,68,.62) !important;
+    border: 1px solid rgba(158,206,255,.18) !important;
+    border-radius: 14px !important;
+    padding: 12px 13px !important;
+    margin-bottom: 12px !important;
+    font-size: 12.5px !important;
+    line-height: 1.55 !important;
+    color: #dbe9ff !important;
+}
+html.is-mobile #drill-cart-info > div { border-bottom-color: rgba(160,210,255,.22) !important; }
+html.is-mobile #drill-cart-info p { margin: 4px 0 !important; }
+html.is-mobile #modal-transaction-details .cart-table {
+    display: block !important;
+    width: 100% !important;
+    border: none !important;
+    border-collapse: separate !important;
+    white-space: normal !important;
+    margin: 0 !important;
+    background: transparent !important;
+}
+html.is-mobile #modal-transaction-details .cart-table thead { display: none !important; }
+html.is-mobile #modal-transaction-details .cart-table tbody { display: block !important; width: 100% !important; }
+html.is-mobile #modal-transaction-details .cart-table tbody tr {
+    display: grid !important;
+    grid-template-columns: minmax(0,1fr) auto !important;
+    grid-template-rows: auto auto !important;
+    gap: 4px 10px !important;
+    margin: 0 0 7px !important;
+    padding: 10px 12px !important;
+    border: 1px solid rgba(158,206,255,.14) !important;
+    border-radius: 12px !important;
+    background: linear-gradient(160deg, rgba(196,226,255,.08), rgba(150,200,255,.02)) !important;
+    box-shadow: inset 0 1px 0 rgba(196,232,255,.10) !important;
+}
+html.is-mobile #modal-transaction-details .cart-table tbody td {
+    display: block !important;
+    min-width: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    text-align: right !important;
+    background: transparent !important;
+    font-size: 12.5px !important;
+    line-height: 1.35 !important;
+}
+html.is-mobile #modal-transaction-details .cart-table td:nth-child(1) {
+    grid-column: 1 !important; grid-row: 1 !important;
+    font-weight: 800 !important;
+    color: #eef6ff !important;
+}
+html.is-mobile #modal-transaction-details .cart-table td:nth-child(2) {
+    grid-column: 1 !important; grid-row: 2 !important;
+    font-size: 10.5px !important;
+    color: var(--m-muted) !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+}
+html.is-mobile #modal-transaction-details .cart-table td:nth-child(3) {
+    grid-column: 2 !important; grid-row: 1 !important;
+    justify-self: end;
+    font-weight: 900 !important;
+}
+html.is-mobile #modal-transaction-details .cart-table td:nth-child(3)::before {
+    content: "×"; margin-inline-end: 2px; font-size: 10px; opacity: .7;
+}
+html.is-mobile #modal-transaction-details .cart-table td:nth-child(4) {
+    grid-column: 2 !important; grid-row: 2 !important;
+    justify-self: end;
+    font-weight: 900 !important;
+    color: #eaf3ff !important;
+    font-variant-numeric: tabular-nums;
+}
+html.is-mobile #modal-transaction-details .cart-table td:nth-child(4)::after {
+    content: " د.ع"; font-size: 10px; font-weight: 700; color: var(--m-muted);
+}
+html.is-mobile .m-tx-empty {
+    display: none;
+    flex-direction: column; align-items: center; gap: 10px;
+    padding: 26px 0 20px;
+    color: var(--m-faint); font-size: 12.5px; font-weight: 800;
+}
+html.is-mobile .m-tx-empty i { font-size: 26px; opacity: .5; }
+
+/* أزرار الإغلاق داخل هذه النوافذ: ثابتة في التذييل، ولا تُغطى بحافة الشاشة */
+html.is-mobile .modal-overlay .modal-content.m-exp-modal .modal-actions,
+html.is-mobile .modal-overlay .modal-content.m-day-modal .modal-actions,
+html.is-mobile .modal-overlay .modal-content.m-tx-modal .modal-actions {
+    flex: none;
+    margin: 0 !important;
+    padding: 10px 14px calc(12px + env(safe-area-inset-bottom)) !important;
+    border-top: 1px solid rgba(160,210,255,.14) !important;
+    background: linear-gradient(to top, rgba(15,32,62,.97) 42%, rgba(15,32,62,0)) !important;
+}
+html.is-mobile .m-tx-modal .modal-actions { padding-bottom: 14px !important; }
+/* شرائط التمرير الذهبية/الزرقاء القديمة تظهر كخط غريب على حافة الورقة */
+html.is-mobile .m-exp-body,
+html.is-mobile .m-exp-modal .modal-content,
+html.is-mobile #modal-daily-transactions .modal-body-scrollable,
+html.is-mobile .m-day-modal .modal-content,
+html.is-mobile .m-tx-modal .modal-body-scrollable,
+html.is-mobile .m-tx-modal .modal-content {
+    scrollbar-width: none;
+}
+html.is-mobile .m-exp-body::-webkit-scrollbar,
+html.is-mobile .m-exp-modal .modal-content::-webkit-scrollbar,
+html.is-mobile #modal-daily-transactions .modal-body-scrollable::-webkit-scrollbar,
+html.is-mobile .m-day-modal .modal-content::-webkit-scrollbar,
+html.is-mobile .m-tx-modal .modal-body-scrollable::-webkit-scrollbar,
+html.is-mobile .m-tx-modal .modal-content::-webkit-scrollbar {
+    width: 0; height: 0; display: none;
+}
 
 /* ------------------------- شاشة الدخول والقفل ------------------------- */
 html.is-mobile {
@@ -2934,9 +3326,6 @@ html.is-mobile .modal-footer-sticky {
             if (el.dataset.mSheetObs === '1') return;
             el.dataset.mSheetObs = '1';
             new MutationObserver(() => syncSheet(el)).observe(el, { attributes: true, attributeFilter: ['style'] });
-            el.addEventListener('touchstart', (e) => {
-                if (e.target === el && !sheetExempt(el)) requestSheetClose(el);
-            }, { passive: true });
             syncSheet(el);
         });
         window.addEventListener('popstate', onPop);
@@ -2954,6 +3343,8 @@ html.is-mobile .modal-footer-sticky {
         el.classList.remove('m-closing');
         el.classList.add('m-sheet');
         document.body.classList.add('m-sheet-open');
+        /* النافذة فوق شريط التبويبات دائماً، وكل ورقة تُفتح فوق ما قبلها */
+        el.style.setProperty('z-index', String(9560 + sheetStack.length), 'important');
         const content = el.querySelector('.modal-content');
         if (content) {
             el.style.removeProperty('padding-bottom');
@@ -2961,15 +3352,9 @@ html.is-mobile .modal-footer-sticky {
             content.style.removeProperty('max-height');
             content.style.removeProperty('transform');
         }
-        if (content && !content.querySelector('.m-grab')) {
-            const grab = document.createElement('div');
-            grab.className = 'm-grab';
-            content.insertBefore(grab, content.firstChild);
-        }
         addCloseButton(el, content);
         decorateSheet(el, content);
         lockBackground();
-        bindSheetDrag(el, content);
         if (content) meterSheets(content);
         sheetStack.push(el);
         if (!pushing) {
@@ -2995,43 +3380,215 @@ html.is-mobile .modal-footer-sticky {
     }
 
     /* ================== تفصيل نافذة بعينها بعد فتحها ==================
-       النوافذ كلها تُبنى من ملف النظام، والطبقة تُعيد ترتيب ما يُزعج في الجوال
-       منها فقط: رأس ثابت، ملخّص، وأزرار ظاهرة — دون المساس بمحتوى الجدول نفسه. */
+       النوافذ كلها تُبنى من ملف النظام، والطبقة تُعيد بناء عرضها في الجوال فقط:
+       بطاقات صرفيات، كشف يوم بالبطاقات، ونافذة تفاصيل وسطية ثابتة. */
     function decorateSheet(el, content) {
         if (!content) return;
         if (el.id === 'modal-admin-expenses') decorateExpenses(el, content);
+        else if (el.id === 'modal-daily-transactions') decorateDay(el, content);
+        else if (el.id === 'modal-transaction-details') decorateTx(el, content);
+    }
+
+    const AR_MONTHS = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
+        'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+
+    function escHTML(v) {
+        if (window.escapeHTML) return window.escapeHTML(String(v == null ? '' : v));
+        return String(v == null ? '' : v).replace(/[&<>"]/g,
+            (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    }
+
+    function dateParts(value) {
+        const s = String(value || '').trim();
+        let m = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(s);
+        if (m) return { y: +m[1], mo: +m[2], d: +m[3] };
+        m = /^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})/.exec(s);
+        if (m) return { y: +m[3], mo: +m[2], d: +m[1] };
+        return null;
+    }
+
+    function prettyDate(value) {
+        const p = dateParts(value);
+        if (!p) return String(value || '');
+        return p.d + ' ' + (AR_MONTHS[p.mo - 1] || '') + ' ' + p.y;
+    }
+
+    function monthTitle(value) {
+        const m = /^(\d{4})-(\d{1,2})$/.exec(String(value || ''));
+        if (!m) return 'كل الفترات';
+        return (AR_MONTHS[Number(m[2]) - 1] || '') + ' ' + m[1];
+    }
+
+    function monthOf(ts) {
+        const t = Number(ts);
+        if (!t) return '';
+        const d = new Date(t);
+        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+    }
+
+    function clockOf(ts) {
+        const t = Number(ts);
+        if (!t) return '';
+        try {
+            return new Intl.DateTimeFormat('en-GB', {
+                timeZone: 'Asia/Baghdad', hour: '2-digit', minute: '2-digit', hour12: false
+            }).format(new Date(t));
+        } catch (e) {
+            const d = new Date(t);
+            return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+        }
+    }
+
+    function weekdayOf(ts) {
+        const t = Number(ts);
+        if (!t) return '';
+        try { return new Intl.DateTimeFormat('ar-IQ', { weekday: 'long' }).format(new Date(t)); }
+        catch (e) { return ''; }
     }
 
     function decorateExpenses(el, content) {
         content.classList.add('mobile-sticky-modal', 'm-exp-modal');
+        const monthEl = document.getElementById('admin-month-filter');
+        const month = monthEl && monthEl.value ? monthEl.value : 'all';
+
+        /* البيانات الحيّة من جسر app.js تحمل الوقت، وإن غاب الجسر نقرأ ما رسمه النظام */
+        let items = [];
+        let live = false;
+        try {
+            if (typeof window.getExpensesForMobile === 'function') {
+                items = window.getExpensesForMobile() || [];
+                live = true;
+            }
+        } catch (e) { items = []; }
+
+        if (!live) {
+            items = qsa('#admin-expenses-detail-body tr').map((tr) => {
+                const td = qsa('td', tr);
+                if (td.length < 4) return null;
+                return {
+                    date: td[0].textContent.trim(),
+                    day: td[1].textContent.trim(),
+                    detail: td[2].textContent.trim(),
+                    amount: num(td[3].textContent),
+                    timestamp: 0
+                };
+            }).filter(Boolean);
+        }
+
+        if (live && month && month !== 'all') {
+            items = items.filter((x) => x.timestamp && monthOf(x.timestamp) === month);
+        }
+        items = items.slice().sort((a, b) => (Number(b.timestamp) || 0) - (Number(a.timestamp) || 0));
+        const total = items.reduce((s, x) => s + (Number(x.amount) || 0), 0);
+
         const table = content.querySelector('table');
-        if (!table) return;
-        let body = content.querySelector('.modal-body-scrollable');
+        if (table) table.style.setProperty('display', 'none', 'important');
+
+        const title = content.querySelector('.modal-title');
+        if (title) title.textContent = 'تفاصيل الصرفيات';
+
+        let body = content.querySelector('.m-exp-body');
         if (!body) {
             body = document.createElement('div');
-            body.className = 'modal-body-scrollable';
-            content.insertBefore(body, table);
+            body.className = 'modal-body-scrollable m-exp-body';
+            const actions = content.querySelector('.modal-actions');
+            content.insertBefore(body, actions || null);
         }
-        if (table.parentNode !== body) body.appendChild(table);
-        const empty = document.createElement('p');
-        empty.className = 'm-exp-empty';
-        empty.innerHTML = '<i class="fa-solid fa-inbox"></i><span>لا صرفيات في هذه الفترة</span>';
-        body.appendChild(empty);
-        const tbody = document.getElementById('admin-expenses-detail-body');
-        const rows = tbody ? qsa('tr', tbody) : [];
-        let sum = 0;
-        rows.forEach((tr) => { const td = qsa('td', tr); if (td.length > 3) sum += num(td[3].textContent); });
+
         let chip = content.querySelector('.m-exp-sum');
         if (!chip) {
             chip = document.createElement('div');
             chip.className = 'm-exp-sum';
-            const title = content.querySelector('.modal-title');
             if (title) title.insertAdjacentElement('afterend', chip);
-            else content.insertBefore(chip, content.firstChild);
+            else content.insertBefore(chip, body);
         }
-        chip.innerHTML = '<span><i class="fa-solid fa-receipt"></i> ' + rows.length + ' حركة</span>' +
-            '<b>' + money(sum) + ' <em>د.ع</em></b>';
-        empty.style.display = rows.length ? 'none' : 'flex';
+        chip.innerHTML =
+            '<div class="m-exp-sum-main">' +
+                '<span>إجمالي صرفيات هذه الفترة</span>' +
+                '<b>' + money(total) + ' <em>د.ع</em></b>' +
+            '</div>' +
+            '<div class="m-exp-sum-meta">' +
+                '<span><i class="fa-regular fa-calendar"></i>' + escHTML(month !== 'all' ? monthTitle(month) : 'كل الفترات') + '</span>' +
+                '<span class="m-exp-count">' + items.length + ' حركة</span>' +
+            '</div>';
+
+        const cards = items.map((exp) => {
+            const ts = Number(exp.timestamp) || 0;
+            const note = String(exp.detail || '').trim();
+            const tier = note.length > 150 ? ' m-note-3' : note.length > 80 ? ' m-note-2' : '';
+            const day = weekdayOf(ts) || exp.day || '';
+            const clock = clockOf(ts);
+            const sub = (day ? '<span>' + escHTML(day) + '</span>' : '') +
+                (clock ? (day ? '<i></i>' : '') + '<span dir="ltr">' + clock + '</span>' : '');
+            return '<article class="m-exp-card">' +
+                '<div class="m-exp-amt"><span>' + money(Number(exp.amount) || 0) + '</span><em>د.ع</em></div>' +
+                '<div class="m-exp-when">' +
+                    '<span class="m-exp-date">' + escHTML(prettyDate(exp.date)) + '</span>' +
+                    (sub ? '<span class="m-exp-sub">' + sub + '</span>' : '') +
+                '</div>' +
+                (note ? '<div class="m-exp-note">' +
+                    '<span class="m-exp-note-t">ملاحظة</span>' +
+                    '<p class="m-exp-note-x' + tier + '">' + escHTML(note) + '</p>' +
+                '</div>' : '') +
+            '</article>';
+        }).join('');
+
+        body.innerHTML = '<div class="m-exp-list">' + cards + '</div>' +
+            '<div class="m-exp-empty"><i class="fa-solid fa-inbox"></i><span>لا صرفيات في هذه الفترة</span></div>';
+        body.querySelector('.m-exp-empty').style.display = items.length ? 'none' : 'flex';
+        el.dataset.mExpTotal = String(total);
+        el.dataset.mExpCount = String(items.length);
+    }
+
+    function decorateDay(el, content) {
+        content.classList.add('mobile-sticky-modal', 'm-day-modal');
+        const label = document.getElementById('drill-day-title');
+        if (label) {
+            const raw = label.textContent.trim();
+            const p = dateParts(raw);
+            if (p) {
+                let day = '';
+                try {
+                    day = new Intl.DateTimeFormat('ar-IQ', { weekday: 'long' })
+                        .format(new Date(p.y, p.mo - 1, p.d));
+                } catch (e) {}
+                label.textContent = (day ? day + ' ' : '') + prettyDate(raw);
+            }
+        }
+        const body = content.querySelector('.modal-body-scrollable');
+        if (body) body.style.removeProperty('overflow-x');
+        const head = content.querySelector('.modal-header-sticky');
+        if (head && !head.querySelector('.m-day-hint')) {
+            const hint = document.createElement('div');
+            hint.className = 'm-day-hint';
+            hint.innerHTML = '<i class="fa-solid fa-hand-pointer"></i><span>اضغط على أي قائمة لعرض تفاصيلها</span>';
+            head.appendChild(hint);
+        }
+        const rows = qsa('#drill-transactions-body tr');
+        let empty = content.querySelector('.m-day-empty');
+        if (!empty && body) {
+            empty = document.createElement('div');
+            empty.className = 'm-day-empty';
+            empty.innerHTML = '<i class="fa-solid fa-moon"></i><span>لا حركات مسجّلة في هذا اليوم</span>';
+            body.appendChild(empty);
+        }
+        if (empty) empty.style.display = rows.length ? 'none' : 'flex';
+    }
+
+    function decorateTx(el, content) {
+        el.classList.add('m-center');
+        content.classList.add('mobile-sticky-modal', 'm-tx-modal');
+        const body = content.querySelector('.modal-body-scrollable');
+        if (body) body.style.removeProperty('overflow-x');
+        const rows = qsa('#drill-cart-items-body tr');
+        let empty = content.querySelector('.m-tx-empty');
+        if (!empty && body) {
+            empty = document.createElement('div');
+            empty.className = 'm-tx-empty';
+            empty.innerHTML = '<i class="fa-solid fa-box-open"></i><span>لا قطع في هذه القائمة</span>';
+            body.appendChild(empty);
+        }
+        if (empty) empty.style.display = rows.length ? 'none' : 'flex';
     }
 
     function requestSheetClose(el) {
@@ -3150,35 +3707,8 @@ html.is-mobile .modal-footer-sticky {
     }
 
     /* سحب النافذة للأسفل للإغلاق */
-    function bindSheetDrag(el, content) {
-        if (!content || content.dataset.mDragBound === '1') return;
-        content.dataset.mDragBound = '1';
-        let sy = 0, dy = 0, active = false, t0 = 0;
-        content.addEventListener('touchstart', (e) => {
-            if (e.touches.length > 1) return;
-            const scrollerIsTop = content.scrollTop <= 0;
-            const onHeader = !!e.target.closest('.modal-title, .m-grab, .m-sheet-x');
-            if (!scrollerIsTop && !onHeader) return;
-            active = true; sy = e.touches[0].clientY; dy = 0; t0 = now();
-            content.classList.add('m-live');
-        }, { passive: true });
-        content.addEventListener('touchmove', (e) => {
-            if (!active) return;
-            dy = e.touches[0].clientY - sy;
-            if (dy < 0) dy *= 0.25;
-            content.style.transform = 'translateY(' + dy.toFixed(1) + 'px)';
-        }, { passive: true });
-        const end = () => {
-            if (!active) return;
-            active = false;
-            content.classList.remove('m-live');
-            const v = dy / Math.max(16, now() - t0);
-            content.style.transform = '';
-            if (dy > 120 || v > 0.9) requestSheetClose(el);
-        };
-        content.addEventListener('touchend', end, { passive: true });
-        content.addEventListener('touchcancel', end, { passive: true });
-    }
+    /* النوافذ ثابتة بالكامل: لا سحب للإغلاق ولا إغلاق بالنقر على الستارة.
+       الإغلاق حصراً من زر الإغلاق الرسمي أو × في الركن. */
 
     /* لوحة المفاتيح: لا تغطي النافذة الحقل النشط.
        الآيفون يغيّر visualViewport كلما صعد شريط العنوان أو انزلقت الصفحة، فلو حسبنا

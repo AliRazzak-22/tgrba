@@ -4296,6 +4296,14 @@ window.viewTransactionDetails = (invId) => {
 
 window.onload = initializeDB;
 
+// جسر قراءة لطبقة الجوال: بطاقات الصرفيات تحتاج وقت الحركة لتصفية الشهر وعرض الساعة
+window.getExpensesForMobile = () => (localData.expenses || []).map(exp => ({
+    date: exp.date,
+    detail: exp.detail,
+    amount: exp.amount,
+    timestamp: exp.timestamp
+}));
+
 // دالة فتح الصرفيات للآدمن مع استخراج اسم اليوم
 window.openAdminExpensesModal = () => {
     const tbody = document.getElementById('admin-expenses-detail-body');
