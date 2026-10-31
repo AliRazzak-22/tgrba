@@ -952,6 +952,11 @@ html.is-mobile .bottom-nav-btn.m-hi span { opacity: 1; }
 html.is-mobile .bottom-nav-btn.active { color: #ffffff; }
 html.is-mobile .bottom-nav-btn.active i { transform: translateY(-2px) scale(1.08); filter: none; }
 html.is-mobile .bottom-nav-btn.active span { opacity: 1; }
+/* أثناء السحب يهدأ توهّج التبويب الذي غادرناه، فيبقى المؤشر وحده يقود العين
+   إلى الوجهة بدل توهّجين يتزاحمان */
+html.is-mobile body.m-dragging .bottom-nav-btn.active:not(.m-hi) { color: #a3bcdb; }
+html.is-mobile body.m-dragging .bottom-nav-btn.active:not(.m-hi) i { transform: none; }
+html.is-mobile body.m-dragging .bottom-nav-btn.active:not(.m-hi) span { opacity: .75; }
 
 /* الكتلة السائلة: تتبع الإصبع بنبضة متأخرة، تنضغط في اتجاه الحركة، تتكتّل ثم تستقر */
 html.is-mobile .m-ind {
@@ -1043,30 +1048,53 @@ html.is-mobile .modal-overlay.m-sheet.m-on { opacity: 1; pointer-events: auto; }
 /* الدخول والخروج حركات CSS لا انتقالات: النظام يُخفي النافذة بـ display:none
    والانتقال لا يعمل عبر الإخفاء — فكانت تختفي فجأة أو تهبط ثم تصعد. */
 @keyframes mSheetIn { from { transform: translateY(105%); } to { transform: translateY(0); } }
-@keyframes mSheetOut { from { transform: translateY(0); } to { transform: translateY(105%); } }
+@keyframes mSheetOut {
+    0% { transform: translateY(0) scale(1); opacity: 1; }
+    14% { transform: translateY(12px) scale(.998); opacity: 1; }
+    100% { transform: translateY(104%) scale(.984); opacity: .86; }
+}
 @keyframes mScrimIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes mScrimOut { from { opacity: 1; } to { opacity: 0; } }
-/* بناء تدريجي لمحتوى النوافذ: البطاقة تنبثق بعد التي قبلها بلا أي خصائص تخطيط */
+/* بناء تدريجي لمحتوى النوافذ: البطاقة تنبثق بعد التي قبلها بلا أي خصائص تخطيط.
+   التأخير الأساسي يترك الورقة تصل أولاً، ثم يبدأ المحتوى يتركّب أمام العين. */
 @keyframes mRise {
-    from { opacity: 0; transform: translateY(16px) scale(.985); }
+    from { opacity: 0; transform: translateY(22px) scale(.975); }
     to { opacity: 1; transform: none; }
 }
 html.is-mobile .m-rise {
-    animation: mRise .44s cubic-bezier(.22,.9,.26,1) both;
-    animation-delay: calc(var(--i, 0) * 38ms);
+    animation: mRise .62s cubic-bezier(.2,.78,.22,1) both;
+    animation-delay: calc(160ms + var(--i, 0) * 58ms);
+}
+/* تفكيك عند الإغلاق: البطاقات تنسحب من الأسفل إلى الأعلى بينما الورقة تتراجع */
+@keyframes mSink {
+    from { opacity: 1; transform: translateY(0) scale(1); }
+    to { opacity: 0; transform: translateY(16px) scale(.984); }
+}
+html.is-mobile .modal-overlay.m-sheet.m-closing .m-exp-sum,
+html.is-mobile .modal-overlay.m-sheet.m-closing .m-exp-card,
+html.is-mobile .modal-overlay.m-sheet.m-closing #drill-transactions-body tr,
+html.is-mobile .modal-overlay.m-sheet.m-closing #drill-cart-info,
+html.is-mobile .modal-overlay.m-sheet.m-closing #drill-cart-items-body tr {
+    animation: mSink .40s cubic-bezier(.35,.6,.3,1) both;
+    animation-delay: calc(var(--j, 0) * 24ms);
 }
 @media (prefers-reduced-motion: reduce) {
-    html.is-mobile .m-rise { animation: none !important; }
+    html.is-mobile .m-rise,
+    html.is-mobile .modal-overlay.m-sheet.m-closing .m-exp-sum,
+    html.is-mobile .modal-overlay.m-sheet.m-closing .m-exp-card,
+    html.is-mobile .modal-overlay.m-sheet.m-closing #drill-transactions-body tr,
+    html.is-mobile .modal-overlay.m-sheet.m-closing #drill-cart-info,
+    html.is-mobile .modal-overlay.m-sheet.m-closing #drill-cart-items-body tr { animation: none !important; }
 }
 html.is-mobile .modal-overlay.m-sheet .modal-content { animation: none; }
-html.is-mobile .modal-overlay.m-sheet.m-on { animation: mScrimIn .26s linear both; }
-html.is-mobile .modal-overlay.m-sheet.m-in .modal-content { animation: mSheetIn .42s var(--m-ease-out) both; }
+html.is-mobile .modal-overlay.m-sheet.m-on { animation: mScrimIn .28s linear both; }
+html.is-mobile .modal-overlay.m-sheet.m-in .modal-content { animation: mSheetIn .46s cubic-bezier(.16,.9,.24,1) both; }
 html.is-mobile .modal-overlay.m-sheet.m-closing {
     display: flex !important;
     pointer-events: none;
-    animation: mScrimOut .32s linear both;
+    animation: mScrimOut .46s cubic-bezier(.4,0,.6,1) both;
 }
-html.is-mobile .modal-overlay.m-sheet.m-closing .modal-content { animation: mSheetOut .34s var(--m-ease) both; }
+html.is-mobile .modal-overlay.m-sheet.m-closing .modal-content { animation: mSheetOut .50s cubic-bezier(.5,.04,.72,.22) both; }
 html.is-mobile .modal-overlay.m-sheet .modal-content {
     position: relative;
     width: 100% !important;
@@ -1459,15 +1487,15 @@ html.is-mobile .modal-overlay.m-sheet.m-center .modal-content {
     border: 1px solid rgba(172,218,255,.28) !important;
     padding: 0 !important;
     animation: none !important;
-    transform: translateY(14px) scale(.97);
+    transform: translateY(14px) scale(.94);
     opacity: 0;
-    transition: transform .30s var(--m-ease-out), opacity .20s linear;
+    transition: transform .36s cubic-bezier(.16,.9,.26,1), opacity .26s linear;
 }
 html.is-mobile .modal-overlay.m-sheet.m-center.m-on .modal-content { transform: none; opacity: 1; }
 html.is-mobile .modal-overlay.m-sheet.m-center.m-closing .modal-content {
-    transform: translateY(10px) scale(.985);
+    transform: translateY(22px) scale(.955);
     opacity: 0;
-    transition: transform .22s var(--m-ease), opacity .18s linear;
+    transition: transform .36s cubic-bezier(.5,.05,.7,.2), opacity .30s linear .04s;
 }
 html.is-mobile .m-tx-modal .modal-header-sticky {
     flex: none;
@@ -2843,7 +2871,12 @@ html.is-mobile .modal-footer-sticky {
             const seen = live
                 ? Math.abs(v - P) <= 0.999 && (v <= state.swipeHi || i === state.index)
                 : i === state.index;
-            if (seen !== el.classList.contains('m-seen')) el.classList.toggle('m-seen', seen);
+            if (seen !== el.classList.contains('m-seen')) {
+                el.classList.toggle('m-seen', seen);
+                /* الوجهة تُصفَّر لحظة ظهورها، في المهمة نفسها وقبل أي رسم:
+                   لا يراها المستخدم منزلقة وهي عند أسفلها ثم تقفز */
+                if (seen) resetScrollOnReveal(el);
+            }
             const cur = i === state.index;
             if (cur !== el.classList.contains('m-cur')) el.classList.toggle('m-cur', cur);
             if (seen && state.keys[i] === 'invoice-designer') ensureStudioFonts();
@@ -2908,9 +2941,10 @@ html.is-mobile .modal-footer-sticky {
     /* المؤشر يتحرك من نفس الموضع العشري للصفحات.
        قياس الشريط محفوظ: قراءة clientWidth داخل كل إطار تُجبر المتصفح على تخطيط كامل
        وهو ما كان يُظهر التأخير في بداية السحب. */
-    /* المؤشر كتلة سائل: تتأخر عن الإصبع بنبضة، تنضغط في اتجاه الحركة، ثم تتكتل
-       وتستقر حول لوغو التبويب المفتوح. تُقرأ هندسة الشريط مرة واحدة وتُحفظ. */
-    const ind = { pos: 0, vel: 0, raf: 0, init: false };
+    /* المؤشر كتلة سائل: تلاحق الإصبع بثابت زمني قصير (~55م.س)، تنضغط في اتجاه
+       الحركة، وتستقر مع الصفحة نفسها. النابض السابق كان يتأخر عن الوجهة نحو
+       نصف ثانية بعد توقف الإصبع — وهو التأخير الذي وصفه المستخدم. */
+    const ind = { pos: 0, vel: 0, raf: 0, init: false, at: 0 };
 
     function paintIndicator() {
         const el = document.querySelector('.m-ind');
@@ -2925,24 +2959,35 @@ html.is-mobile .modal-footer-sticky {
             state.cell = (w - pad * 2) / M;
         }
         const target = clamp(barPosFor(phys.P), 0, M - 1);
-        if (!ind.init) { ind.init = true; ind.pos = target; ind.vel = 0; }
+        const t = now();
+        if (!ind.init) {
+            ind.init = true;
+            ind.pos = target;
+            ind.vel = 0;
+            ind.at = t;
+        } else {
+            const dt = ind.at ? clamp(t - ind.at, 1, 64) : 16;
+            const k = 1 - Math.exp(-dt / 55);
+            const prev = ind.pos;
+            ind.pos += (target - ind.pos) * k;
+            ind.vel = (ind.pos - prev) / dt;
+            ind.at = t;
+        }
         const cell = state.cell;
         const left = dirSign() < 0 ? (state.barW - pad - (ind.pos + 1) * cell) : (pad + ind.pos * cell);
-        const sq = Math.min(0.3, Math.abs(ind.vel) * 0.85);
+        const sq = Math.min(0.24, Math.abs(ind.vel) * 55);
         el.style.width = cell + 'px';
         el.style.transform = 'translate3d(' + left.toFixed(2) + 'px,0,0) scale(' +
             (1 + sq).toFixed(3) + ',' + (1 - sq * 0.5).toFixed(3) + ')';
         el.style.setProperty('--m-sq', sq.toFixed(3));
-        const bi = barIndexOfPage(pageForPos(phys.P));
+        /* توهّج الأيقونة يتبع أقرب تبويب لنسبة السحب نفسها، لا الوجهة النهائية */
+        const bi = clamp(Math.round(target), 0, M - 1);
         state.barBtns.forEach((b, i) => b.classList.toggle('m-hi', i === bi));
-        /* نابض: قريبة = تسارع، وكبح = استقرار. يُلغى الإطار حين لا فرق باقٍ */
-        const d = target - ind.pos;
-        ind.vel += d * 0.3 - ind.vel * 0.42;
-        ind.pos += ind.vel;
-        if (Math.abs(target - ind.pos) > 0.0015 || Math.abs(ind.vel) > 0.0015) {
+        if (Math.abs(target - ind.pos) > 0.0012) {
             if (!ind.raf) ind.raf = requestAnimationFrame(() => { ind.raf = 0; paintIndicator(); });
         } else {
-            ind.pos = target; ind.vel = 0;
+            ind.pos = target;
+            ind.vel = 0;
             if (ind.raf) { cancelAnimationFrame(ind.raf); ind.raf = 0; }
         }
     }
@@ -3034,8 +3079,6 @@ html.is-mobile .modal-footer-sticky {
                 const ni = pageForPos(want);
                 if (ni !== state.index && vpos(ni) === want) {
                     enterAnimate(state.pages[ni]);
-                    /* اللوحة القادمة تُكشف من أعلاها لا من موضعها القديم */
-                    if (state.pages[ni]) state.pages[ni].scrollTop = 0;
                 }
             }
         }
@@ -3401,12 +3444,25 @@ html.is-mobile .modal-footer-sticky {
         flushRepaint();
     }
 
-    /* المتصفح يحفظ موضع تمرير الصفحة المخفية ويعيده لحظة ظهورها، والضبط قبل
-       الظهور لا يُحتسب. لذلك نصفّر بعد الرسم وفي الإطار الذي يليه. */
-    function resetPageTop(page) {
+    /* المتصفح يعيد موضع تمرير اللوحة المخفية لحظة ظهورها. الضبط قبل الظهور لا
+       يُحتسب، فنفرض التخطيط بعد إظهارها ونصفّر في المهمة نفسها: أول إطار
+       يُرسم للمستخدم يبدأ من الأعلى، لا من الموضع القديم ثم قفزة. */
+    function resetScrollOnReveal(page) {
         if (!page) return;
         page.scrollTop = 0;
-        requestAnimationFrame(() => { if (page) page.scrollTop = 0; });
+        if (page.scrollLeft) page.scrollLeft = 0;
+        void page.offsetHeight;
+        page.scrollTop = 0;
+        if (page.scrollLeft) page.scrollLeft = 0;
+        requestAnimationFrame(() => {
+            if (!page.classList.contains('m-seen')) return;
+            if (page.scrollTop) page.scrollTop = 0;
+            if (page.scrollLeft) page.scrollLeft = 0;
+        });
+    }
+
+    function resetPageTop(page) {
+        resetScrollOnReveal(page);
     }
 
     function pageOf(key) { return document.getElementById('admin-' + key); }
@@ -3468,7 +3524,10 @@ html.is-mobile .modal-footer-sticky {
         /* قراءة تخطيط واحدة لتثبيت الوضع الأول ثم التحريك، بلا انتظار إطار رسم */
         void el.offsetHeight;
         el.classList.add('m-on', 'm-in');
-        setTimeout(() => el.classList.remove('m-in'), 330);
+        prepSheetMotion(content);
+        armSheetRise(el);
+        /* مدّة الدخول 460م.س: الإزالة قبلها كانت تقصّ الحركة في اللحظة الأخيرة */
+        setTimeout(() => el.classList.remove('m-in'), 470);
     }
 
     function addCloseButton(el, content) {
@@ -3549,18 +3608,67 @@ html.is-mobile .modal-footer-sticky {
         catch (e) { return ''; }
     }
 
-    /* حركة البناء التدريجي داخل النوافذ: تُعاد في كل فتح فتشعر أن المحتوى يتركّب */
-    function staggerRise(container, selector, cap) {
-        if (!container) return;
-        const els = qsa(selector, container);
-        if (!els.length) return;
-        for (let i = 0; i < els.length; i++) els[i].classList.remove('m-rise');
-        void container.offsetWidth;
-        const n = Math.min(els.length, cap || 10);
-        for (let i = 0; i < n; i++) {
-            els[i].style.setProperty('--i', String(Math.min(i, 9)));
-            els[i].classList.add('m-rise');
+    /* ================== حركة محتوى النوافذ ==================
+       البطاقات تُبنى بعد أن تصل الورقة لا وهي مخفية أو منزلقة (كانت الحركة
+       تنتهي قبل أن تُرى، فيظهر المحتوى جاهزاً أو سريعاً بلا سبب). armSheetRise
+       يُستدعى بعد إظهار النافذة، ويتقبّل صفوفاً تُرسم بعد أول لحظة. */
+    const RISE_SELECTOR = {
+        'modal-admin-expenses': '.m-exp-sum, .m-exp-card',
+        'modal-daily-transactions': '#drill-transactions-body tr',
+        'modal-transaction-details': '#drill-cart-info, #drill-cart-items-body tr'
+    };
+
+    function prepSheetMotion(content) {
+        if (!content) return;
+        qsa('.m-rise, .m-sink', content).forEach((n) => {
+            n.classList.remove('m-rise', 'm-sink');
+            n.style.removeProperty('--i');
+            n.style.removeProperty('--j');
+        });
+        void content.offsetWidth;
+    }
+
+    function armSheetRise(el) {
+        const content = el.querySelector('.modal-content');
+        const sel = RISE_SELECTOR[el.id];
+        if (!content || !sel) return;
+        const run = () => {
+            if (!el.classList.contains('m-sheet') || !el.classList.contains('m-on')) return;
+            const all = qsa(sel, content);
+            let n = 0;
+            for (let i = 0; i < all.length; i++) {
+                const node = all[i];
+                if (node.classList.contains('m-rise') || node.classList.contains('m-sink')) { n++; continue; }
+                if (n >= 10) break;
+                node.style.setProperty('--i', String(Math.min(n, 9)));
+                node.classList.add('m-rise');
+                n++;
+            }
+        };
+        run();
+        setTimeout(run, 140);
+        setTimeout(run, 460);
+    }
+
+    /* تفكيك الإغلاق: آخر بطاقة تنسحب أولاً بينما الورقة تتراجع */
+    function prepSheetExit(content) {
+        if (!content) return;
+        qsa('.m-rise', content).forEach((n) => n.classList.remove('m-rise'));
+        const nodes = qsa('.m-exp-sum, .m-exp-card, #drill-transactions-body tr, #drill-cart-info, #drill-cart-items-body tr', content);
+        const cap = Math.min(nodes.length, 10);
+        for (let i = 0; i < cap; i++) {
+            const n = nodes[i];
+            n.style.setProperty('--j', String(Math.min(8, cap - 1 - i)));
+            n.classList.add('m-sink');
         }
+    }
+
+    function stripSheetMotion(content) {
+        if (!content) return;
+        qsa('.m-sink', content).forEach((n) => {
+            n.classList.remove('m-sink');
+            n.style.removeProperty('--j');
+        });
     }
 
     function decorateExpenses(el, content) {
@@ -3655,8 +3763,6 @@ html.is-mobile .modal-footer-sticky {
         body.querySelector('.m-exp-empty').style.display = items.length ? 'none' : 'flex';
         el.dataset.mExpTotal = String(total);
         el.dataset.mExpCount = String(items.length);
-        staggerRise(content, '.m-exp-sum', 1);
-        staggerRise(body, '.m-exp-card', 10);
     }
 
     function decorateDay(el, content) {
@@ -3692,7 +3798,6 @@ html.is-mobile .modal-footer-sticky {
             body.appendChild(empty);
         }
         if (empty) empty.style.display = rows.length ? 'none' : 'flex';
-        staggerRise(content.querySelector('#drill-transactions-body'), 'tr', 10);
     }
 
     function decorateTx(el, content) {
@@ -3709,8 +3814,6 @@ html.is-mobile .modal-footer-sticky {
             body.appendChild(empty);
         }
         if (empty) empty.style.display = rows.length ? 'none' : 'flex';
-        staggerRise(content, '#drill-cart-info', 1);
-        staggerRise(content.querySelector('#drill-cart-items-body'), 'tr', 8);
     }
 
     function requestSheetClose(el) {
@@ -3758,26 +3861,32 @@ html.is-mobile .modal-footer-sticky {
             el.style.removeProperty('padding-bottom');
             content.style.removeProperty('height');
             content.style.removeProperty('max-height');
-        }, 380);
+        }, 560);
     }
 
     function closeSheet(el, skipHistory, instant) {
         if (el.classList.contains('m-closing')) return;
         const wasPeek = !!el.__mPeek;
         if (wasPeek) delete el.__mPeek;
+        const content = el.querySelector('.modal-content');
         if (instant) {
             /* التنقل لا ينتظر الانزلاق: اللوحة الجديدة تصعد خلف هذه النافذة،
                فأي حركة خروج تبقى فوقها تُرى كنافذة معلّقة. */
             el.classList.remove('m-on', 'm-sheet', 'm-in');
+            stripSheetMotion(content);
         } else {
             freezeSheet(el);
             el.classList.remove('m-on');
             el.classList.add('m-closing');
+            /* محتوى النافذة ينسحب متدرجاً من الأسفل إلى الأعلى مع تراجع الورقة.
+               حركة البناء تُزال أولاً كي لا تعاد من الصفر لحظة الإخفاء. */
+            prepSheetExit(content);
             setTimeout(() => {
                 if (el.classList.contains('m-on')) return;
                 /* نبقي m-sheet علامةً على النافذة المفتوحة، فإزالتها هنا تجعل إعادة الفتح تعمل */
                 el.classList.remove('m-closing', 'm-sheet', 'm-in');
-            }, 340);
+                stripSheetMotion(content);
+            }, 520);
         }
         const i = sheetStack.lastIndexOf(el);
         if (i > -1) sheetStack.splice(i, 1);
@@ -5525,7 +5634,7 @@ html.is-mobile .modal-footer-sticky {
         const wasAdmin = document.body.classList.contains('m-admin');
         document.body.classList.add('m-admin');
         /* الشريط يصبح ظاهراً الآن: خانته تُقاس من جديد، والمؤشر يثبت في مكانه */
-        if (!wasAdmin) { state.cell = 0; ind.init = false; }
+        if (!wasAdmin) { state.cell = 0; ind.init = false; ind.at = 0; }
         /* الشريط كان مخفياً عند التركيب: نعيد قياس الخانة والمؤشر بعد إظهاره */
         if (state.started) paintTransforms();
     }
