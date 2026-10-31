@@ -274,7 +274,8 @@
         const eliteSet = new Set(sortedBySpend.slice(0, eliteCut).map((c) => c.name));
         const tiers = { elite: [], loyal: [], fresh: [], casual: [] };
         customers.forEach((c) => {
-            if (eliteSet.has(c.name) && c.spent > 0) tiers.elite.push(c);
+            c.elite = eliteSet.has(c.name) && c.spent > 0;
+            if (c.elite) tiers.elite.push(c);
             else if (c.visits >= 3) tiers.loyal.push(c);
             else if (c.isNew) tiers.fresh.push(c);
             else tiers.casual.push(c);
@@ -789,17 +790,23 @@
         return s ? s.slice(0, 1) : '؟';
     }
 
+    function filterCustomers(customers, filter, query) {
+        let list = customers;
+        if (filter === 'elite') list = list.filter((c) => c.elite);
+        if (filter === 'debt') list = list.filter((c) => c.debt > 0);
+        if (filter === 'new') list = list.filter((c) => c.isNew);
+        const q = String(query || '').trim().toLowerCase();
+        if (q) list = list.filter((c) => c.name.toLowerCase().includes(q) || (c.phone || '').toLowerCase().includes(q));
+        return list;
+    }
+
     function directory(customers, filter, query, allTime, sort, limit) {
         let list = customers.slice().sort((a, b) => {
             if (sort === 'visits') return b.visits - a.visits || b.spent - a.spent;
             if (sort === 'recent') return (b.lastTs || 0) - (a.lastTs || 0) || b.spent - a.spent;
             return b.spent - a.spent;
         });
-        if (filter === 'elite') list = list.filter((c) => c.visits >= 3 || c.spent > 0).slice(0, Math.max(3, Math.ceil(list.length * 0.2)));
-        if (filter === 'debt') list = list.filter((c) => c.debt > 0);
-        if (filter === 'new') list = list.filter((c) => c.isNew);
-        const q = String(query || '').trim().toLowerCase();
-        if (q) list = list.filter((c) => c.name.toLowerCase().includes(q) || (c.phone || '').toLowerCase().includes(q));
+        list = filterCustomers(list, filter, query);
         if (!list.length) return emptyMini(q ? 'لا نتائج لهذا البحث' : 'لا يوجد زبائن في هذه الفئة');
         const cap = Math.max(40, Number(limit) || 40);
         const shown = list.slice(0, cap);
@@ -888,6 +895,11 @@
            يجده ولو لم يزر هذا الشهر؛ الافتراضي بلا بحث يبقى زبائن الفترة. */
         const searchAll = !!String(state.query || '').trim();
         const dirSeed = searchAll ? build(0) : null;
+        const dirBase = dirSeed || vm;
+        const dirShown = filterCustomers(dirBase.customers, state.filter, state.query).length;
+        const dirBadge = dirShown === dirBase.customers.length
+            ? fmt(dirShown)
+            : fmt(dirShown) + ' من ' + fmt(dirBase.customers.length);
 
         root.innerHTML =
         '<div class="ri-sheet-top">' +
@@ -1007,7 +1019,7 @@
 
             '<div class="ri-card ri-card-dir">' +
                 '<div class="ri-card-head ri-card-head-seg"><h3><i class="fa-solid fa-address-book"></i> دليل الزبائن</h3>' +
-                    '<div class="ri-dir-tools"><span class="ri-dir-count">' + fmt(vm.customers.length) + '</span>' +
+                    '<div class="ri-dir-tools"><span class="ri-dir-count">' + dirBadge + '</span>' +
                         '<div class="ri-svc-seg ri-dir-seg" role="group" aria-label="ترتيب الدليل">' +
                             '<button type="button" data-dirsort="spend" aria-pressed="' + (state.dirSort === 'spend') + '" class="' + (state.dirSort === 'spend' ? 'on' : '') + '">إنفاق</button>' +
                             '<button type="button" data-dirsort="visits" aria-pressed="' + (state.dirSort === 'visits') + '" class="' + (state.dirSort === 'visits' ? 'on' : '') + '">زيارات</button>' +
@@ -1069,6 +1081,11 @@
             if (!vm) return;
             const dirHost = document.getElementById('ri-dir-host');
             if (dirHost) dirHost.innerHTML = directory(vm.customers, state.filter, state.query, searching, state.dirSort, state.dirLimit);
+            const badge = host.querySelector('.ri-dir-count');
+            if (badge) {
+                const shownN = filterCustomers(vm.customers, state.filter, state.query).length;
+                badge.textContent = shownN === vm.customers.length ? fmt(shownN) : fmt(shownN) + ' من ' + fmt(vm.customers.length);
+            }
         };
         host.addEventListener('click', (e) => {
             const period = e.target.closest('[data-period]');
