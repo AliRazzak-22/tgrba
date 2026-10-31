@@ -1492,10 +1492,17 @@ html.is-mobile .modal-overlay.m-sheet.m-center .modal-content {
     transition: transform .36s cubic-bezier(.16,.9,.26,1), opacity .26s linear;
 }
 html.is-mobile .modal-overlay.m-sheet.m-center.m-on .modal-content { transform: none; opacity: 1; }
+/* الإغلاق حركة مفتاحية لا انتقال: التطبيق يخفي الطبقة قبل أن نعيد كشفها،
+   والانتقال لا يبدأ على عنصر كان مخفياً فتختفي النافذة فجأة. حركة مفتاحية
+   تبدأ من أول إطار مع إعادة الكشف وتتدرج حتى التلاشي. */
+@keyframes mTxOut {
+    0% { transform: none; opacity: 1; }
+    100% { transform: translateY(22px) scale(.955); opacity: 0; }
+}
 html.is-mobile .modal-overlay.m-sheet.m-center.m-closing .modal-content {
     transform: translateY(22px) scale(.955);
     opacity: 0;
-    transition: transform .36s cubic-bezier(.5,.05,.7,.2), opacity .30s linear .04s;
+    animation: mTxOut .42s cubic-bezier(.45,.06,.62,.2) both !important;
 }
 html.is-mobile .m-tx-modal .modal-header-sticky {
     flex: none;
