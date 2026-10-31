@@ -29,6 +29,7 @@
         period: '30',
         query: '',
         filter: 'all',
+        svcMode: 'rev',
         rendered: false,
         signature: '',
         timer: 0,
@@ -278,6 +279,7 @@
             });
         });
         const topServices = Object.values(services).sort((a, b) => b.rev - a.rev).slice(0, 6);
+        const topServicesQty = Object.values(services).sort((a, b) => b.qty - a.qty || b.rev - a.rev).slice(0, 6);
 
         /* خريطة الأوقات */
         const heat = [];
@@ -349,6 +351,7 @@
             sortedBySpend,
             tiers,
             services: topServices,
+            servicesByQty: topServicesQty,
             heat,
             heatMax,
             ladder,
@@ -461,15 +464,19 @@
         return '<div class="ri-heat">' + cells + '</div>';
     }
 
-    function bars(list) {
+    /* ترتيب الخدمات: بالقيمة أو بعدد القطع («أكثر القطع سحباً») — نفس
+       البطاقة، والتبديل يعيد الرسم من نفس اللقطة بلا قراءة بيانات جديدة. */
+    function bars(list, mode) {
         if (!list.length) return emptyMini('لا توجد خدمات مسجّلة في هذه الفترة');
-        const max = Math.max(1, ...list.map((s) => s.rev));
+        const qtyMode = mode === 'qty';
+        const max = Math.max(1, ...list.map((s) => qtyMode ? s.qty : s.rev));
         return '<div class="ri-bars">' + list.map((s, i) => {
-            const w = clamp((s.rev / max) * 100, 2, 100);
+            const v = qtyMode ? s.qty : s.rev;
+            const w = clamp((v / max) * 100, 2, 100);
             return '<div class="ri-bar-row">' +
-                '<div class="ri-bar-top"><span class="ri-bar-name">' + esc(s.name) + '</span><span class="ri-bar-val">' + money(s.rev) + '</span></div>' +
+                '<div class="ri-bar-top"><span class="ri-bar-name">' + esc(s.name) + '</span><span class="ri-bar-val">' + (qtyMode ? fmt(s.qty) + ' قطعة' : money(s.rev)) + '</span></div>' +
                 '<div class="ri-bar-track"><i style="--w:' + w.toFixed(1) + '%;--c:' + SERIES[i % SERIES.length] + '"></i></div>' +
-                '<div class="ri-bar-sub">' + fmt(s.qty) + ' قطعة</div>' +
+                '<div class="ri-bar-sub">' + (qtyMode ? money(s.rev) : fmt(s.qty) + ' قطعة') + '</div>' +
             '</div>';
         }).join('') + '</div>';
     }
@@ -570,7 +577,10 @@
         '</div>';
     }
 
+    let cachedVm = null;
+
     function renderRoot(root, vm) {
+        cachedVm = vm;
         const period = PERIODS.find((p) => p.k === state.period) || PERIODS[2];
         const delta = vm.prevCount > 0 ? Math.round(((vm.customers.length - vm.prevCount) / vm.prevCount) * 100) : null;
         const deltaCls = delta == null ? 'flat' : (delta >= 0 ? 'up' : 'down');
@@ -630,8 +640,13 @@
             '</div>' +
 
             '<div class="ri-card">' +
-                '<div class="ri-card-head"><h3><i class="fa-solid fa-layer-group"></i> أعلى الخدمات</h3><span>قيمة</span></div>' +
-                bars(vm.services) +
+                '<div class="ri-card-head ri-card-head-seg"><h3><i class="fa-solid fa-layer-group"></i> أعلى الخدمات</h3>' +
+                    '<div class="ri-svc-seg" role="group" aria-label="ترتيب الخدمات">' +
+                        '<button type="button" data-svc="rev" aria-pressed="' + (state.svcMode !== 'qty') + '" class="' + (state.svcMode !== 'qty' ? 'on' : '') + '">قيمة</button>' +
+                        '<button type="button" data-svc="qty" aria-pressed="' + (state.svcMode === 'qty') + '" class="' + (state.svcMode === 'qty' ? 'on' : '') + '">قطع</button>' +
+                    '</div>' +
+                '</div>' +
+                '<div id="ri-svc-host">' + bars(state.svcMode === 'qty' ? vm.servicesByQty : vm.services, state.svcMode) + '</div>' +
             '</div>' +
 
             '<div class="ri-card">' +
@@ -724,6 +739,25 @@
                 return;
             }
             if (e.target.closest('#ri-export')) { exportCSV(); return; }
+            const svc = e.target.closest('[data-svc]');
+            if (svc) {
+                const mode = svc.getAttribute('data-svc');
+                if ((mode === 'qty' ? 'qty' : 'rev') === state.svcMode || !cachedVm) return;
+                state.svcMode = mode === 'qty' ? 'qty' : 'rev';
+                const svcHost = document.getElementById('ri-svc-host');
+                if (svcHost) {
+                    svcHost.innerHTML = bars(state.svcMode === 'qty' ? cachedVm.servicesByQty : cachedVm.services, state.svcMode);
+                    svcHost.classList.remove('ri-svc-pop');
+                    void svcHost.offsetWidth;
+                    svcHost.classList.add('ri-svc-pop');
+                }
+                host.querySelectorAll('[data-svc]').forEach((b) => {
+                    const on = b.getAttribute('data-svc') === state.svcMode;
+                    b.classList.toggle('on', on);
+                    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+                });
+                return;
+            }
             const cust = e.target.closest('[data-customer]');
             if (cust) openCustomer(cust.getAttribute('data-customer'));
         });
@@ -1095,6 +1129,31 @@ html.is-mobile .ri-card-head { display: flex; align-items: baseline; justify-con
 html.is-mobile .ri-card-head h3 { margin: 0; font-size: 13.5px; font-weight: 900; color: var(--m-text); display: flex; align-items: center; gap: 7px; }
 html.is-mobile .ri-card-head h3 i { color: var(--m-accent2); font-size: 11.5px; }
 html.is-mobile .ri-card-head > span { font-size: 10px; font-weight: 800; color: var(--m-faint); }
+html.is-mobile .ri-card-head-seg { align-items: center; }
+html.is-mobile .ri-svc-seg {
+    display: inline-flex; gap: 3px; padding: 3px;
+    border-radius: 10px;
+    background: rgba(0,0,0,.18);
+    border: 1px solid var(--ri-line);
+}
+html.is-mobile body.rg-light .ri-svc-seg { background: rgba(30,70,120,.06); }
+html.is-mobile .ri-svc-seg button {
+    border: 0; appearance: none;
+    background: transparent; color: var(--m-muted);
+    font-family: inherit; font-size: 10px; font-weight: 900;
+    padding: 4px 9px; border-radius: 7px;
+    cursor: pointer; -webkit-tap-highlight-color: transparent;
+    transition: background .2s var(--m-ease), color .2s var(--m-ease), transform .14s var(--m-ease);
+}
+html.is-mobile .ri-svc-seg button.on {
+    color: #fff;
+    background: linear-gradient(140deg, var(--rg-accent), #2a4b8f);
+    box-shadow: 0 4px 10px rgba(var(--rg-accent-rgb), .3), inset 0 1px 0 rgba(255,255,255,.28);
+}
+html.is-mobile .ri-svc-seg button:active { transform: scale(.94); }
+html.is-mobile .ri-svc-seg button:focus-visible { outline: none; box-shadow: inset 0 0 0 2px rgba(var(--rg-accent-rgb), .75); }
+html.is-mobile .ri-svc-pop { animation: riSvcPop .32s var(--m-ease-out) both; }
+@keyframes riSvcPop { from { opacity: 0; transform: translate3d(0, 6px, 0); } to { opacity: 1; transform: none; } }
 
 html.is-mobile .ri-chart-wrap { position: relative; padding-top: 6px; }
 html.is-mobile .ri-chart-max {
@@ -1340,7 +1399,8 @@ html.is-mobile .ri-foot i { color: var(--m-accent2); }
 
 /* الدخول المتدرج */
 html.is-mobile .ri-in { animation: riRise .62s var(--m-ease-out) both; animation-delay: calc(min(var(--ri-k, 0), 9) * 46ms); }
-html.is-mobile .ri-root.ri-no-motion .ri-in { animation: none; }
+html.is-mobile .ri-root.ri-no-motion .ri-in,
+html.is-mobile .ri-root.ri-no-motion .ri-svc-pop { animation: none; }
 @keyframes riRise { from { opacity: 0; transform: translate3d(0, 16px, 0); } to { opacity: 1; transform: none; } }
 
 /* ورقة الزبون */
