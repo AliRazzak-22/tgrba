@@ -800,6 +800,430 @@ html.is-mobile #admin-more-menu .stat-card { padding: 16px 10px 20px !important;
 html.is-mobile #admin-more-menu .stat-card .stat-icon { width: 56px !important; height: 56px !important; margin-bottom: 14px !important; }
 html.is-mobile #admin-more-menu .stat-card .stat-title { font-size: 12.5px !important; color: #dceaff !important; }
 
+/* ------------------------- مركز النشاط -------------------------
+   خط زمني واحد لكل ما يتحرك في المكوى: فواتير داخلة ودفعات مستلمة.
+   شريط رفيع في صفحة المزيد يفتحه، فلا يزاحم الترويسة ولا شبكة البطاقات.
+   قراءة فقط من الحالة الحيّة؛ لا يكتب شيئاً ولا يغيّر أي رقم. */
+html.is-mobile .m-act-bar {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    width: 100%;
+    margin: 0 0 12px;
+    padding: 9px 12px;
+    border-radius: 18px;
+    border: 1px solid rgba(160,205,255,.20);
+    background:
+        linear-gradient(160deg, rgba(190,222,255,.12), rgba(120,172,240,.02) 55%, rgba(160,205,255,.07)),
+        rgba(9,19,37,.46);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    backdrop-filter: blur(18px) saturate(140%);
+    color: #e8f2ff;
+    text-align: start;
+    font-family: inherit;
+    box-shadow: inset 0 1px 0 rgba(210,240,255,.16), 0 10px 24px rgba(0,4,14,.20);
+    transition: transform .16s var(--m-ease), background .3s var(--m-ease), border-color .3s var(--m-ease);
+}
+html.is-mobile .m-act-bar:active { transform: scale(.985); }
+html.is-mobile .m-act-bar-orb {
+    position: relative;
+    flex: none;
+    width: 36px; height: 36px;
+    display: grid;
+    place-items: center;
+    border-radius: 12px;
+    border: 1px solid rgba(214,190,120,.34);
+    background: linear-gradient(160deg, rgba(255,231,170,.18), rgba(255,196,64,.04));
+    color: var(--gold, #e6c46a);
+    font-size: 14px;
+    box-shadow: inset 0 1px 0 rgba(255,244,210,.22);
+}
+html.is-mobile .m-act-bar-orb::after {
+    content: "";
+    position: absolute;
+    top: 6px; inset-inline-end: 6px;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #6bf0b6;
+    box-shadow: 0 0 0 3px rgba(107,240,182,.14), 0 0 10px rgba(107,240,182,.65);
+    animation: mActPulse 2.6s ease-in-out infinite;
+}
+@keyframes mActPulse {
+    0%, 100% { box-shadow: 0 0 0 3px rgba(107,240,182,.12), 0 0 6px rgba(107,240,182,.45); }
+    50%      { box-shadow: 0 0 0 5px rgba(107,240,182,.06), 0 0 14px rgba(107,240,182,.85); }
+}
+html.is-mobile .m-act-bar-txt { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+html.is-mobile .m-act-bar-txt b { font-size: 13px; font-weight: 900; letter-spacing: .1px; }
+html.is-mobile .m-act-bar-txt small {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: rgba(172,200,232,.68);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+html.is-mobile .m-act-bar-n {
+    flex: none;
+    min-width: 24px;
+    height: 22px;
+    padding: 0 7px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 11px;
+    background: rgba(140,195,255,.12);
+    border: 1px solid rgba(160,210,255,.20);
+    color: #cfe6ff;
+    font-size: 11px;
+    font-weight: 900;
+}
+html.is-mobile .m-act-bar-go { flex: none; color: rgba(165,200,240,.48); font-size: 10px; }
+html.is-mobile body.rg-light .m-act-bar {
+    border-color: rgba(255,255,255,.95);
+    background: linear-gradient(160deg, rgba(255,255,255,.94), rgba(255,255,255,.70));
+    color: #16324f;
+    box-shadow: 0 8px 20px rgba(28,62,110,.10), inset 0 1px 0 #fff;
+}
+html.is-mobile body.rg-light .m-act-bar-txt small { color: rgba(70,100,135,.66); }
+html.is-mobile body.rg-light .m-act-bar-n { background: rgba(47,127,208,.08); border-color: rgba(47,127,208,.20); color: #2f6ea8; }
+html.is-mobile body.rg-light .m-act-bar-go { color: rgba(47,127,208,.42); }
+
+/* الطبقة: تحت نوافذ النظام (9560+) كي يفتح تفاصيل الفاتورة فوقها،
+   وفوق شريط التبويبات حتى لا يظهر تحته. */
+html.is-mobile .m-act {
+    position: fixed;
+    inset: 0;
+    z-index: 9540;
+    visibility: hidden;
+    pointer-events: none;
+}
+html.is-mobile .m-act.on { visibility: visible; pointer-events: auto; }
+html.is-mobile .m-act-scrim {
+    position: absolute;
+    inset: 0;
+    background: rgba(3,8,18,.50);
+    -webkit-backdrop-filter: blur(8px) saturate(130%);
+    backdrop-filter: blur(8px) saturate(130%);
+    opacity: 0;
+    transition: opacity .3s var(--m-ease);
+}
+html.is-mobile .m-act.on .m-act-scrim { opacity: 1; }
+html.is-mobile .m-act-card {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    max-height: calc(88vh - env(safe-area-inset-bottom, 0px) - var(--m-kb, 0px) * .55);
+    display: flex;
+    flex-direction: column;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    border-radius: 26px 26px 0 0;
+    border: 1px solid rgba(170,215,255,.22);
+    border-bottom: 0;
+    background:
+        linear-gradient(180deg, rgba(190,222,255,.13), rgba(120,172,240,.02) 42%, rgba(9,19,37,.55)),
+        rgba(9,19,37,.90);
+    -webkit-backdrop-filter: blur(26px) saturate(155%);
+    backdrop-filter: blur(26px) saturate(155%);
+    box-shadow: 0 -26px 60px rgba(0,6,18,.55), inset 0 1px 0 rgba(210,240,255,.22);
+    overflow: hidden;
+    transform: translate3d(0, 100%, 0);
+    transition: transform .46s cubic-bezier(.16,1,.3,1);
+}
+html.is-mobile .m-act.on .m-act-card { transform: none; }
+html.is-mobile .m-act.closing .m-act-card {
+    transform: translate3d(0, 100%, 0);
+    transition: transform .24s ease-in;
+}
+html.is-mobile .m-act.closing .m-act-scrim { opacity: 0; transition-duration: .2s; }
+html.is-mobile .m-act-head {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 15px 16px 11px;
+}
+html.is-mobile .m-act-head-orb {
+    flex: none;
+    width: 38px; height: 38px;
+    display: grid;
+    place-items: center;
+    border-radius: 13px;
+    border: 1px solid rgba(214,190,120,.34);
+    background: linear-gradient(160deg, rgba(255,231,170,.18), rgba(255,196,64,.04));
+    color: var(--gold, #e6c46a);
+    font-size: 15px;
+    box-shadow: inset 0 1px 0 rgba(255,244,210,.22);
+}
+html.is-mobile .m-act-hd { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; }
+html.is-mobile .m-act-hd b { font-size: 16px; font-weight: 900; color: #eef6ff; letter-spacing: .1px; }
+html.is-mobile .m-act-hd small { font-size: 10.5px; color: rgba(170,198,230,.62); }
+html.is-mobile .m-act-x {
+    flex: none;
+    width: 32px; height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 1px solid rgba(160,205,255,.20);
+    background: rgba(255,255,255,.05);
+    color: #cfe4ff;
+    font-size: 13px;
+}
+html.is-mobile .m-act-x:active { transform: scale(.92); }
+html.is-mobile .m-act-sum {
+    flex: none;
+    display: flex;
+    gap: 8px;
+    padding: 0 16px 11px;
+}
+html.is-mobile .m-act-chip {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 9px 10px;
+    border-radius: 14px;
+    border: 1px solid rgba(150,200,255,.14);
+    background: rgba(255,255,255,.045);
+}
+html.is-mobile .m-act-chip b {
+    font-size: 14px;
+    font-weight: 900;
+    color: #eaf4ff;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+html.is-mobile .m-act-chip small { font-size: 9.5px; font-weight: 700; color: rgba(168,198,232,.60); }
+html.is-mobile .m-act-chip.inv b { color: #ffe6a8; }
+html.is-mobile .m-act-chip.pay b { color: #a9dcff; }
+html.is-mobile .m-act-chip.val b { color: #f2d489; }
+html.is-mobile .m-act-tabs {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 0 16px 10px;
+    border-bottom: 1px solid rgba(150,200,255,.10);
+}
+html.is-mobile .m-act-seg {
+    appearance: none;
+    padding: 7px 13px;
+    border-radius: 12px;
+    border: 1px solid rgba(160,205,255,.16);
+    background: rgba(255,255,255,.035);
+    color: rgba(190,214,240,.80);
+    font-family: inherit;
+    font-size: 11.5px;
+    font-weight: 800;
+    transition: background .2s var(--m-ease), border-color .2s var(--m-ease), color .2s var(--m-ease);
+}
+html.is-mobile .m-act-seg.sel {
+    background: linear-gradient(160deg, rgba(120,180,255,.18), rgba(60,110,190,.06));
+    border-color: rgba(150,205,255,.30);
+    color: #eaf4ff;
+    box-shadow: inset 0 1px 0 rgba(210,240,255,.16);
+}
+html.is-mobile .m-act-seg:active { transform: scale(.97); }
+html.is-mobile .m-act-live {
+    margin-inline-start: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 9.5px;
+    font-weight: 700;
+    color: rgba(160,190,225,.46);
+}
+html.is-mobile .m-act-live i {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #6bf0b6;
+    box-shadow: 0 0 8px rgba(107,240,182,.7);
+}
+html.is-mobile .m-act-list {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    padding: 2px 10px 12px;
+}
+html.is-mobile .m-act-day {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 8px 7px;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: .5px;
+    color: rgba(168,198,232,.62);
+    background: linear-gradient(180deg, rgba(12,24,44,.94), rgba(12,24,44,.78) 70%, transparent);
+}
+html.is-mobile .m-act-day::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(150,200,255,.18), transparent);
+}
+html.is-mobile .m-act-day em {
+    font-style: normal;
+    font-weight: 700;
+    color: rgba(150,185,222,.42);
+}
+html.is-mobile .m-act-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 9px 10px;
+    border-radius: 15px;
+    border: 1px solid transparent;
+    background: none;
+    color: #e8f2ff;
+    text-align: start;
+    font-family: inherit;
+    transition: background .16s ease, border-color .16s ease, transform .14s ease;
+}
+html.is-mobile .m-act-row:active {
+    transform: scale(.985);
+    background: rgba(120,180,255,.07);
+    border-color: rgba(150,205,255,.16);
+}
+html.is-mobile .m-act.on .m-act-row,
+html.is-mobile .m-act.on .m-act-day {
+    animation: mActIn .42s var(--m-ease-out) both;
+    animation-delay: calc(min(var(--i, 0), 14) * 24ms);
+}
+@keyframes mActIn {
+    from { opacity: 0; transform: translate3d(0, 9px, 0); }
+    to   { opacity: 1; transform: none; }
+}
+html.is-mobile .m-act-ic {
+    flex: none;
+    width: 34px; height: 34px;
+    display: grid;
+    place-items: center;
+    border-radius: 11px;
+    font-size: 13px;
+}
+html.is-mobile .m-act-ic.inv {
+    border: 1px solid rgba(214,190,120,.26);
+    background: linear-gradient(160deg, rgba(255,231,170,.14), rgba(255,196,64,.03));
+    color: #f2d489;
+}
+html.is-mobile .m-act-ic.pay {
+    border: 1px solid rgba(120,180,255,.26);
+    background: linear-gradient(160deg, rgba(150,205,255,.14), rgba(70,130,220,.03));
+    color: #a9d6ff;
+}
+html.is-mobile .m-act-txt { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+html.is-mobile .m-act-txt b {
+    font-size: 12.5px;
+    font-weight: 800;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+html.is-mobile .m-act-txt small {
+    font-size: 10px;
+    color: rgba(170,198,230,.62);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+html.is-mobile .m-act-amt {
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    font-size: 12px;
+    font-weight: 900;
+    color: #eaf4ff;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+html.is-mobile .m-act-amt em {
+    font-style: normal;
+    font-size: 8.5px;
+    font-weight: 700;
+    color: rgba(160,190,225,.46);
+}
+html.is-mobile .m-act-amt.inv { color: #ffe6a8; }
+html.is-mobile .m-act-amt.pay { color: #a9dcff; }
+html.is-mobile .m-act-empty {
+    padding: 34px 20px 44px;
+    text-align: center;
+}
+html.is-mobile .m-act-empty i { display: block; font-size: 24px; color: rgba(150,195,245,.42); margin-bottom: 10px; }
+html.is-mobile .m-act-empty b { display: block; font-size: 13px; font-weight: 800; color: #dbe9fb; margin-bottom: 4px; }
+html.is-mobile .m-act-empty span { font-size: 11px; color: rgba(160,190,225,.55); }
+html.is-mobile .m-act-more {
+    display: block;
+    margin: 8px auto 2px;
+    padding: 9px 18px;
+    border-radius: 13px;
+    border: 1px solid rgba(160,205,255,.18);
+    background: rgba(255,255,255,.045);
+    color: #cfe4ff;
+    font-family: inherit;
+    font-size: 11.5px;
+    font-weight: 800;
+}
+html.is-mobile body.rg-light .m-act-scrim { background: rgba(232,240,250,.55); }
+html.is-mobile body.rg-light .m-act-card {
+    border-color: rgba(255,255,255,.96);
+    background: linear-gradient(180deg, rgba(255,255,255,.97), rgba(247,251,255,.92));
+    box-shadow: 0 -24px 60px rgba(24,54,100,.22), inset 0 1px 0 #fff;
+}
+html.is-mobile body.rg-light .m-act-hd b { color: #142c47; }
+html.is-mobile body.rg-light .m-act-hd small { color: rgba(60,90,125,.62); }
+html.is-mobile body.rg-light .m-act-x { border-color: rgba(30,70,120,.14); background: rgba(30,70,120,.06); color: #24466f; }
+html.is-mobile body.rg-light .m-act-chip { border-color: rgba(30,70,120,.10); background: rgba(30,70,120,.045); }
+html.is-mobile body.rg-light .m-act-chip b { color: #142c47; }
+html.is-mobile body.rg-light .m-act-chip small { color: rgba(60,90,125,.60); }
+html.is-mobile body.rg-light .m-act-chip.inv b { color: #8a6316; }
+html.is-mobile body.rg-light .m-act-chip.pay b { color: #1f5f9e; }
+html.is-mobile body.rg-light .m-act-chip.val b { color: #9a7018; }
+html.is-mobile body.rg-light .m-act-tabs { border-bottom-color: rgba(30,70,120,.09); }
+html.is-mobile body.rg-light .m-act-seg { border-color: rgba(30,70,120,.12); background: rgba(30,70,120,.03); color: rgba(50,80,115,.80); }
+html.is-mobile body.rg-light .m-act-seg.sel {
+    background: linear-gradient(160deg, rgba(47,127,208,.13), rgba(47,127,208,.04));
+    border-color: rgba(47,127,208,.26);
+    color: #17395e;
+    box-shadow: inset 0 1px 0 #fff;
+}
+html.is-mobile body.rg-light .m-act-live { color: rgba(60,90,125,.48); }
+html.is-mobile body.rg-light .m-act-day {
+    color: rgba(60,90,125,.62);
+    background: linear-gradient(180deg, rgba(250,253,255,.97), rgba(250,253,255,.82) 70%, transparent);
+}
+html.is-mobile body.rg-light .m-act-day::after { background: linear-gradient(90deg, rgba(47,127,208,.18), transparent); }
+html.is-mobile body.rg-light .m-act-day em { color: rgba(60,90,125,.45); }
+html.is-mobile body.rg-light .m-act-row { color: #16324f; }
+html.is-mobile body.rg-light .m-act-row:active { background: rgba(47,127,208,.06); border-color: rgba(47,127,208,.16); }
+html.is-mobile body.rg-light .m-act-ic.inv { border-color: rgba(190,150,60,.30); background: linear-gradient(160deg, rgba(255,231,170,.35), rgba(255,214,120,.10)); color: #9a7018; }
+html.is-mobile body.rg-light .m-act-ic.pay { border-color: rgba(47,127,208,.24); background: linear-gradient(160deg, rgba(150,205,255,.30), rgba(120,180,255,.08)); color: #1f5f9e; }
+html.is-mobile body.rg-light .m-act-txt small { color: rgba(60,90,125,.62); }
+html.is-mobile body.rg-light .m-act-amt { color: #142c47; }
+html.is-mobile body.rg-light .m-act-amt.inv { color: #8a6316; }
+html.is-mobile body.rg-light .m-act-amt.pay { color: #1f5f9e; }
+html.is-mobile body.rg-light .m-act-amt em { color: rgba(60,90,125,.48); }
+html.is-mobile body.rg-light .m-act-empty b { color: #24466f; }
+html.is-mobile body.rg-light .m-act-empty span { color: rgba(60,90,125,.55); }
+html.is-mobile body.rg-light .m-act-more { border-color: rgba(47,127,208,.20); background: rgba(47,127,208,.06); color: #1f5f9e; }
+@media (prefers-reduced-motion: reduce) {
+    html.is-mobile .m-act-card,
+    html.is-mobile .m-act-scrim,
+    html.is-mobile .m-act.on .m-act-row,
+    html.is-mobile .m-act.on .m-act-day,
+    html.is-mobile .m-act-bar-orb::after { transition: none; animation: none; }
+}
+
 /* ------------------------- اللوحاتControl والفلاتر ------------------------- */
 html.is-mobile .admin-control-panel { display: flex !important; flex-direction: column !important; align-items: stretch !important; gap: 10px !important; margin-bottom: 14px !important; }
 html.is-mobile .admin-control-panel h2 { margin: 0 2px !important; }
@@ -4391,6 +4815,7 @@ html.is-mobile .modal-footer-sticky {
         if (!document.body.classList.contains('m-admin')) return;
         if (document.body.classList.contains('m-sheet-open')) return;
         if (document.querySelector('.m-lk-fx')) return;
+        actClose();
         cmdBuild();
         cmdOpen = true;
         clearTimeout(cmdCloseTimer);
@@ -4428,6 +4853,320 @@ html.is-mobile .modal-footer-sticky {
                 e.preventDefault();
                 openCmd();
             }
+        });
+    }
+
+    /* ================= مركز النشاط (قراءة فقط) =================
+       يقرأ من نفس الجسر الذي تقرأ منه الطبقة: royalDataRead. لا كتابة،
+       ولا تعديل لأي سجل. الفواتير والدفعات تُدمج خطاً زمنياً واحداً. */
+    const ACT_STEP = 50;
+    const ACT_FA = {
+        inv: 'fa-receipt',
+        pay: 'fa-hand-holding-dollar'
+    };
+    let actEl = null, actList = null, actOpen = false, actFilter = 'all', actLimit = ACT_STEP;
+    let actCloseTimer = 0, actLastFocus = null, actBarEl = null;
+
+    function actNum(v) {
+        const n = Number(v);
+        return isFinite(n) ? n : 0;
+    }
+
+    function actPad(n) { return (n < 10 ? '0' : '') + n; }
+
+    function actMoney(n) { return actNum(n).toLocaleString('en-US'); }
+
+    function actClock(ms) {
+        const d = new Date(ms);
+        return actPad(d.getHours()) + ':' + actPad(d.getMinutes());
+    }
+
+    function actDayKey(ms) {
+        const d = new Date(ms);
+        return d.getFullYear() + '-' + actPad(d.getMonth() + 1) + '-' + actPad(d.getDate());
+    }
+
+    function actEventStamp(e) {
+        if (!e) return NaN;
+        const t = Number(e.timestamp);
+        if (isFinite(t) && t > 1e11) return t;
+        if (isFinite(t) && t > 1e9) return t * 1000;
+        const d = /^\d{4}-\d{2}-\d{2}$/.test(String(e.date || '')) ? String(e.date) : '';
+        const tm = /^\d{1,2}:\d{2}/.test(String(e.time || '')) ? String(e.time).slice(0, 5) : '00:00';
+        const ms = d ? Date.parse(d + 'T' + tm + ':00') : NaN;
+        return isFinite(ms) ? ms : NaN;
+    }
+
+    function actEventDay(e, ts) {
+        const d = String((e && e.date) || '');
+        return /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : actDayKey(ts);
+    }
+
+    function actPayLabel(v) {
+        const k = String(v == null ? '' : v).toLowerCase();
+        if (k === 'cash') return 'كاش';
+        if (k === 'electronic') return 'إلكتروني';
+        return String(v == null ? '' : v);
+    }
+
+    function actDayLabel(key) {
+        const today = actDayKey(Date.now());
+        const yest = actDayKey(Date.now() - 864e5);
+        if (key === today) return 'اليوم';
+        if (key === yest) return 'أمس';
+        const p = key.split('-');
+        const y = Number(p[0]), m = Number(p[1]), d = Number(p[2]);
+        const wd = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'][new Date(y, m - 1, d).getDay()];
+        return wd + ' · ' + d + '/' + m + (y === new Date().getFullYear() ? '' : '/' + y);
+    }
+
+    function actSnapshot() {
+        const data = window.royalDataRead ? window.royalDataRead() : null;
+        const list = [];
+        const invs = data && Array.isArray(data.invoices) ? data.invoices : [];
+        const pays = data && Array.isArray(data.payments) ? data.payments : [];
+        invs.forEach((inv) => {
+            const ts = actEventStamp(inv);
+            if (!isFinite(ts)) return;
+            const no = inv.dailyNumber || String(inv.id || '').slice(-6);
+            list.push({
+                kind: 'inv',
+                ts,
+                day: actEventDay(inv, ts),
+                id: String(inv.id || ''),
+                title: (inv.customer && inv.customer.name) ? inv.customer.name : 'عميل نقدي',
+                sub: 'فاتورة #' + no + ' · ' + actClock(ts) + (inv.paymentType ? ' · ' + actPayLabel(inv.paymentType) : ''),
+                amount: actNum(inv.total)
+            });
+        });
+        pays.forEach((p) => {
+            const ts = actEventStamp(p);
+            if (!isFinite(ts)) return;
+            list.push({
+                kind: 'pay',
+                ts,
+                day: actEventDay(p, ts),
+                id: String(p.id || ''),
+                title: p.type || 'دفعة',
+                sub: actClock(ts) + (p.details ? ' · ' + String(p.details) : ''),
+                amount: actNum(p.amount)
+            });
+        });
+        list.sort((a, b) => b.ts - a.ts);
+        return list;
+    }
+
+    function actTodayTotals(all) {
+        const today = actDayKey(Date.now());
+        let inv = 0, pay = 0, value = 0;
+        all.forEach((ev) => {
+            if (ev.day !== today) return;
+            if (ev.kind === 'inv') { inv++; value += ev.amount; }
+            else { pay++; }
+        });
+        return { inv: inv, pay: pay, value: value };
+    }
+
+    function actSafe(v) {
+        return window.plainText ? window.plainText(v) : esc(v);
+    }
+
+    function actRow(ev, i) {
+        const inv = ev.kind === 'inv';
+        return '<button type="button" class="m-act-row" style="--i:' + i + '"' +
+            (inv ? ' data-act-inv="' + esc(ev.id) + '" aria-label="فتح تفاصيل الفاتورة في النظام"' : ' data-act-pay="1" aria-label="فتح الملخص المالي"') + '>' +
+            '<span class="m-act-ic ' + (inv ? 'inv' : 'pay') + '"><i class="fa-solid ' + ACT_FA[ev.kind] + '"></i></span>' +
+            '<span class="m-act-txt"><b>' + actSafe(ev.title) + '</b><small>' + actSafe(ev.sub) + '</small></span>' +
+            '<span class="m-act-amt ' + (inv ? 'inv' : 'pay') + '">' + actMoney(ev.amount) + '<em>د.ع</em></span>' +
+            '</button>';
+    }
+
+    function actDraw(keepScroll) {
+        if (!actEl || !actList) return;
+        const top = keepScroll ? actList.scrollTop : 0;
+        const all = actSnapshot();
+        const t = actTodayTotals(all);
+        const chips = actEl.querySelectorAll('.m-act-chip b');
+        if (chips[0]) chips[0].textContent = String(t.inv);
+        if (chips[1]) chips[1].textContent = String(t.pay);
+        if (chips[2]) chips[2].textContent = actMoney(t.value);
+
+        const list = actFilter === 'all' ? all : all.filter((ev) => ev.kind === actFilter);
+        if (!list.length) {
+            actList.innerHTML = '<div class="m-act-empty"><i class="fa-regular fa-circle-check"></i><b>' +
+                (all.length ? 'لا عناصر في هذا التصنيف' : 'لا حركة مسجلة بعد') + '</b><span>' +
+                (all.length ? 'جرّب تصنيفاً آخر' : 'ستظهر هنا الفواتير والدفعات لحظة تسجيلها') + '</span></div>';
+            return;
+        }
+        const dayCount = {};
+        list.forEach((ev) => { dayCount[ev.day] = (dayCount[ev.day] || 0) + 1; });
+        const html = [];
+        let lastDay = '', shown = 0, i = 0;
+        for (let x = 0; x < list.length; x++) {
+            if (shown >= actLimit) break;
+            const ev = list[x];
+            if (ev.day !== lastDay) {
+                lastDay = ev.day;
+                html.push('<div class="m-act-day" style="--i:' + i + '"><span>' + actDayLabel(ev.day) + '</span><em>' +
+                    dayCount[ev.day] + ' عمليات</em></div>');
+                i++;
+            }
+            html.push(actRow(ev, i));
+            i++;
+            shown++;
+        }
+        if (list.length > actLimit) {
+            html.push('<button type="button" class="m-act-more">عرض المزيد · ' + (list.length - actLimit) + '</button>');
+        }
+        actList.innerHTML = html.join('');
+        actList.scrollTop = top;
+    }
+
+    function actRenderBar() {
+        if (!actBarEl) return;
+        const all = actSnapshot();
+        const t = actTodayTotals(all);
+        const sub = actBarEl.querySelector('.m-act-bar-txt small');
+        const badge = actBarEl.querySelector('.m-act-bar-n');
+        if (!all.length) {
+            sub.textContent = 'لا حركة مسجلة بعد';
+        } else if (t.inv || t.pay) {
+            sub.textContent = t.inv + ' فواتير · ' + t.pay + ' دفعات اليوم';
+        } else {
+            sub.textContent = 'آخر حركة: ' + actDayLabel(all[0].day) + ' · ' + actClock(all[0].ts);
+        }
+        const n = t.inv + t.pay;
+        badge.textContent = n > 99 ? '99+' : String(n);
+        badge.style.display = n ? '' : 'none';
+    }
+
+    function syncActivity() {
+        if (!actBarEl) return;
+        actRenderBar();
+        if (actOpen) actDraw(true);
+    }
+
+    function actBuild() {
+        if (actEl) return;
+        actEl = document.createElement('div');
+        actEl.className = 'm-act';
+        actEl.setAttribute('aria-hidden', 'true');
+        actEl.innerHTML =
+            '<div class="m-act-scrim" data-act-close></div>' +
+            '<div class="m-act-card" role="dialog" aria-modal="true" aria-label="مركز النشاط">' +
+                '<div class="m-act-head">' +
+                    '<span class="m-act-head-orb"><i class="fa-solid fa-wave-square"></i></span>' +
+                    '<span class="m-act-hd"><b>مركز النشاط</b><small>حيّ من بيانات المكوى · قراءة فقط</small></span>' +
+                    '<button type="button" class="m-act-x" data-act-close aria-label="إغلاق مركز النشاط"><i class="fa-solid fa-xmark"></i></button>' +
+                '</div>' +
+                '<div class="m-act-sum">' +
+                    '<span class="m-act-chip inv"><b>0</b><small>فواتير اليوم</small></span>' +
+                    '<span class="m-act-chip pay"><b>0</b><small>دفعات اليوم</small></span>' +
+                    '<span class="m-act-chip val"><b>0</b><small>قيمة فواتير اليوم</small></span>' +
+                '</div>' +
+                '<div class="m-act-tabs">' +
+                    '<button type="button" class="m-act-seg sel" data-act-filter="all">الكل</button>' +
+                    '<button type="button" class="m-act-seg" data-act-filter="inv">فواتير</button>' +
+                    '<button type="button" class="m-act-seg" data-act-filter="pay">دفعات</button>' +
+                    '<span class="m-act-live"><i></i>مباشر</span>' +
+                '</div>' +
+                '<div class="m-act-list" role="list"></div>' +
+            '</div>';
+        document.body.appendChild(actEl);
+        actList = actEl.querySelector('.m-act-list');
+        actEl.addEventListener('click', (e) => {
+            if (e.target.closest('[data-act-close]')) { actClose(); return; }
+            const seg = e.target.closest('.m-act-seg');
+            if (seg) {
+                actFilter = seg.getAttribute('data-act-filter') || 'all';
+                actLimit = ACT_STEP;
+                qsa('.m-act-seg', actEl).forEach((b) => b.classList.toggle('sel', b === seg));
+                actDraw();
+                return;
+            }
+            if (e.target.closest('.m-act-more')) { actLimit += ACT_STEP; actDraw(true); return; }
+            const invRow = e.target.closest('[data-act-inv]');
+            if (invRow) {
+                const id = invRow.getAttribute('data-act-inv');
+                if (id && typeof window.viewTransactionDetails === 'function') window.viewTransactionDetails(id);
+                return;
+            }
+            if (e.target.closest('[data-act-pay]')) {
+                actClose();
+                setTimeout(() => {
+                    if (typeof window.switchAdminTab === 'function') window.switchAdminTab('finance', 'none');
+                }, 300);
+            }
+        });
+    }
+
+    function actOpenSheet() {
+        if (actOpen || !state.started) return;
+        if (!document.body.classList.contains('m-admin')) return;
+        if (document.querySelector('.m-lk-fx')) return;
+        actBuild();
+        actOpen = true;
+        actFilter = 'all';
+        actLimit = ACT_STEP;
+        qsa('.m-act-seg', actEl).forEach((b) => b.classList.toggle('sel', b.getAttribute('data-act-filter') === 'all'));
+        clearTimeout(actCloseTimer);
+        actEl.classList.remove('closing');
+        actDraw();
+        actEl.classList.add('on');
+        actEl.setAttribute('aria-hidden', 'false');
+        actLastFocus = document.activeElement;
+        setTimeout(() => {
+            const x = actEl.querySelector('.m-act-x');
+            if (!x || !actOpen) return;
+            try { x.focus({ preventScroll: true }); } catch (err) { x.focus(); }
+        }, REDUCED ? 0 : 300);
+    }
+
+    function actClose() {
+        if (!actOpen || !actEl) return;
+        actOpen = false;
+        actEl.classList.add('closing');
+        actEl.setAttribute('aria-hidden', 'true');
+        clearTimeout(actCloseTimer);
+        actCloseTimer = setTimeout(() => {
+            if (!actOpen) actEl.classList.remove('on', 'closing');
+        }, REDUCED ? 0 : 240);
+        /* اللمس على الويب لا يمنح الزر تركيزاً دائماً، فنرجع إلى شريط مركز النشاط */
+        const back = (actLastFocus && actLastFocus !== document.body) ? actLastFocus : actBarEl;
+        if (back && typeof back.focus === 'function') {
+            try { back.focus({ preventScroll: true }); } catch (err) {}
+        }
+        actLastFocus = null;
+    }
+
+    function injectActivityBar() {
+        const more = document.getElementById('admin-more-menu');
+        if (!more || more.querySelector('.m-act-bar')) return;
+        const bar = document.createElement('button');
+        bar.type = 'button';
+        bar.className = 'm-act-bar';
+        bar.setAttribute('aria-label', 'مركز النشاط: فواتير ودفعات');
+        bar.setAttribute('aria-haspopup', 'dialog');
+        bar.innerHTML =
+            '<span class="m-act-bar-orb"><i class="fa-solid fa-wave-square"></i></span>' +
+            '<span class="m-act-bar-txt"><b>مركز النشاط</b><small>—</small></span>' +
+            '<span class="m-act-bar-n">0</span>' +
+            '<i class="fa-solid fa-chevron-left m-act-bar-go"></i>';
+        const h2 = more.querySelector(':scope > h2');
+        if (h2 && h2.parentElement === more) h2.insertAdjacentElement('afterend', bar);
+        else more.insertBefore(bar, more.firstChild);
+        actBarEl = bar;
+        bar.addEventListener('click', actOpenSheet);
+        actRenderBar();
+    }
+
+    function bindActivity() {
+        document.addEventListener('keydown', (e) => {
+            if (e.key !== 'Escape' || !actOpen) return;
+            /* نافذة النظام فوق النشاط تستهلك Escape لنفسها */
+            if (document.body.classList.contains('m-sheet-open')) return;
+            e.preventDefault();
+            actClose();
         });
     }
 
@@ -4473,6 +5212,7 @@ html.is-mobile .modal-footer-sticky {
             const k = state.keys[state.index];
             if (k === 'logs') callOriginal('renderLogs');
             if (k === 'subscriptions') callOriginal('renderAdminSubs');
+            if (k === 'more-menu' || actOpen) syncActivity();
         } catch (err) { console.warn('mobile repaint:', err); }
         markSyncTime();
         paintToday();
@@ -6812,6 +7552,7 @@ html.is-mobile .modal-footer-sticky {
             } else {
                 document.body.classList.remove('m-admin');
                 closeCmd();
+                actClose();
             }
         };
         new MutationObserver(sync).observe(admin, { attributes: true, attributeFilter: ['class'] });
@@ -6853,6 +7594,7 @@ html.is-mobile .modal-footer-sticky {
         const more = document.getElementById('admin-more-menu');
         const content = document.querySelector('#admin-screen .admin-content');
         if (more && content && more.parentElement !== content) content.appendChild(more);
+        injectActivityBar();
         unstyleBento();
         const order = readTabsOrder();
         if (!order.length) return;
@@ -6885,6 +7627,7 @@ html.is-mobile .modal-footer-sticky {
         bindPullRefresh();
         bindScrollProgress();
         bindCommandPalette();
+        bindActivity();
         observeSheets();
         bindKeyboard();
         bindTodayPanel();
