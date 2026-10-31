@@ -588,7 +588,10 @@ html.is-mobile body.rm-motion-off *::before,
 html.is-mobile body.rm-motion-off *::after {
     animation-duration: .001ms !important;
     animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
     transition-duration: .001ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
 }
 html.is-mobile body.rm-motion-off::before,
 html.is-mobile body.rm-motion-off::after { animation: none !important; }
