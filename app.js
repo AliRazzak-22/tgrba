@@ -4493,6 +4493,7 @@ window.renderLogs = () => {
     
     const sorted = (localData.logs || []).sort((a,b) => b.timestamp - a.timestamp);
     
+    let rowsHTML = '';
     sorted.forEach(log => {
         // حماية الذاكرة: تجاوز الحركات التي لا تطابق التاريخ
         if (log.timestamp < startTimestamp || log.timestamp > endTimestamp) return;
@@ -4509,7 +4510,7 @@ window.renderLogs = () => {
         // التدخل الجراحي: تعقيم تفاصيل الحركة بالكامل
         const safeDetails = window.escapeHTML(log.details);
 
-        tbody.innerHTML += `
+        rowsHTML += `
             <tr>
                 <td style="font-size:13px; color:var(--text-gray);">${log.date} <br> ${log.time}</td>
                 <td><span class="${typeClass}">${log.type}</span></td>
@@ -4519,6 +4520,7 @@ window.renderLogs = () => {
             </tr>
         `;
     });
+    tbody.innerHTML = rowsHTML;
 };
 
 // ==========================================================

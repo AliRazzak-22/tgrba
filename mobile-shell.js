@@ -1293,6 +1293,65 @@ html.is-mobile .m-wb-empty-go {
     html.is-mobile .m-wb-card, html.is-mobile .m-wb-scrim { transition: none; }
 }
 
+/* ------------------------- سجل الحركات: فلاتر وعرض متدرّج -------------------------
+   993 حركة تُبنى كبطاقات زجاجية = تمرير ثقيل وفراغ طويل. البحث كان ينضغط إلى
+   55px لأن نمطاً سطرياً يفرض flex:2. الآن الفلاتر صفوف واضحة، ونطاقات سريعة،
+   والسجل يعرض ٤٠ بطاقة ثم زر «عرض المزيد» من عقد محفوظة بلا إعادة قراءة. */
+html.is-mobile .admin-filters > input[style*="flex: 2"] { flex: 1 1 100% !important; }
+html.is-mobile #admin-logs .admin-filters > input[type="date"] { flex: 1 1 0 !important; }
+
+html.is-mobile .m-logs-ranges {
+    display: flex; gap: 7px;
+    margin: 0 0 11px;
+    animation: mWbRise .45s var(--m-ease-out) both;
+}
+html.is-mobile .m-logs-ranges button {
+    flex: 1 1 0; min-width: 0;
+    min-height: 36px; padding: 0 6px;
+    border-radius: 12px;
+    border: 1px solid var(--m-edge);
+    background:
+        linear-gradient(155deg, rgba(255,255,255,.08), rgba(255,255,255,.015) 60%),
+        rgba(var(--rg-glass-rgb), .62);
+    color: var(--m-muted);
+    font-family: inherit; font-size: 11px; font-weight: 900;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform .15s var(--m-ease), color .2s var(--m-ease), background .25s var(--m-ease), border-color .2s var(--m-ease);
+}
+html.is-mobile .m-logs-ranges button.on {
+    color: var(--m-text);
+    border-color: rgba(var(--rg-accent-rgb), .42);
+    background:
+        linear-gradient(150deg, rgba(var(--rg-accent-rgb), .28), rgba(var(--rg-accent-rgb), .05) 75%),
+        rgba(var(--rg-glass-rgb), .78);
+}
+html.is-mobile .m-logs-ranges button:active { transform: scale(.96); }
+html.is-mobile body.rg-light .m-logs-ranges button {
+    background: linear-gradient(155deg, rgba(255,255,255,.9), rgba(255,255,255,.55));
+    border-color: rgba(47,127,208,.2);
+    color: #4a6a8d;
+}
+html.is-mobile body.rg-light .m-logs-ranges button.on {
+    color: #16324f;
+    border-color: rgba(47,127,208,.36);
+    background: linear-gradient(150deg, rgba(47,127,208,.16), rgba(47,127,208,.04)), rgba(255,255,255,.8);
+}
+
+html.is-mobile .m-logs-foot {
+    display: flex; flex-direction: column; align-items: center; gap: 7px;
+    padding: 6px 0 4px;
+}
+html.is-mobile .m-logs-more { flex: none; width: auto; min-width: 190px; min-height: 42px; }
+html.is-mobile .m-logs-count {
+    font-size: 10px; font-weight: 800; letter-spacing: .2px;
+    color: var(--m-faint);
+}
+html.is-mobile .m-logs-empty { margin: 2px 0 8px; }
+html.is-mobile .m-logs-all { flex: none; width: auto; min-height: 40px; padding: 0 18px; margin-top: 8px; font-size: 12px; }
+@media (prefers-reduced-motion: reduce) {
+    html.is-mobile .m-logs-ranges { animation: none !important; }
+}
+
 /* ------------------------- صفحة المزيد -------------------------
    البطاقات تملأ ارتفاع اللوحة: لا تصعد الأيقونات تحت الترويسة ولا فراغ أسفلها. */
 html.is-mobile #admin-more-menu { padding-top: 8px !important; display: none; flex-direction: column; }
@@ -6791,7 +6850,7 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
         try {
             callOriginal('updateAdminDashboard');
             const k = state.keys[state.index];
-            if (k === 'logs') callOriginal('renderLogs');
+            if (k === 'logs') { callOriginal('renderLogs'); trimLogs(); }
             if (k === 'subscriptions') callOriginal('renderAdminSubs');
             if (k === 'more-menu' || actOpen) syncActivity();
         } catch (err) { console.warn('mobile repaint:', err); }
@@ -7789,6 +7848,178 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
         } else if (hasRows && empty) {
             empty.parentNode.removeChild(empty);
         }
+    }
+
+    /* ==================== سجل الحركات: نطاقات وعرض متدرّج ====================
+       لا نغيّر منطق renderLogs المشترك: نطاقاتنا تملأ نفس حقلي التاريخ، والقصّ
+       يزيل الصفوف الزائدة من الـDOM فقط ويحتفظ بها لزر «عرض المزيد». */
+    const LOGS_PAGE = 40;
+    let logsStash = [];
+    const pad2 = (n) => (n < 10 ? '0' + n : String(n));
+    const isoOf = (d) => d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+    const isoDay = (off) => {
+        const n = new Date();
+        return isoOf(new Date(n.getFullYear(), n.getMonth(), n.getDate() + off));
+    };
+
+    function logsEarliest() {
+        let min = '';
+        try {
+            const d = typeof window.royalDataRead === 'function' ? window.royalDataRead() : null;
+            ((d && d.logs) || []).forEach((l) => {
+                const s = l && /^\d{4}-\d{2}-\d{2}$/.test(String(l.date || '')) ? String(l.date) : '';
+                if (s && (!min || s < min)) min = s;
+            });
+        } catch (e) {}
+        return min;
+    }
+
+    function syncLogsRanges() {
+        const wrap = document.querySelector('#admin-logs .m-logs-ranges');
+        if (!wrap) return;
+        const fromEl = document.getElementById('log-date-from');
+        const toEl = document.getElementById('log-date-to');
+        const from = (fromEl && fromEl.value) || '';
+        const to = (toEl && toEl.value) || '';
+        const today = isoDay(0);
+        let on = '';
+        if (from === today && to === today) on = 'today';
+        else if (from === isoDay(-1) && to === isoDay(-1)) on = 'yday';
+        else if (from === isoDay(-6) && to === today) on = 'week';
+        else if (from === (logsEarliest() || '2000-01-01') && to === today) on = 'all';
+        wrap.querySelectorAll('[data-r]').forEach((b) => {
+            const is = b.getAttribute('data-r') === on;
+            b.classList.toggle('on', is);
+            b.setAttribute('aria-pressed', String(is));
+        });
+    }
+
+    function setLogsRange(r) {
+        const from = document.getElementById('log-date-from');
+        const to = document.getElementById('log-date-to');
+        if (!from || !to) return;
+        if (r === 'all') {
+            from.value = logsEarliest() || '2000-01-01';
+            to.value = isoDay(0);
+        } else if (r === 'week') {
+            from.value = isoDay(-6); to.value = isoDay(0);
+        } else if (r === 'yday') {
+            from.value = isoDay(-1); to.value = isoDay(-1);
+        } else {
+            from.value = isoDay(0); to.value = isoDay(0);
+        }
+        try { if (typeof haptic === 'function') haptic(6); } catch (e) {}
+        syncLogsRanges();
+        if (typeof window.renderLogs === 'function') window.renderLogs();
+    }
+
+    function buildLogsRanges() {
+        const sec = document.getElementById('admin-logs');
+        if (!sec || sec.querySelector('.m-logs-ranges')) return;
+        const h2 = sec.querySelector('h2');
+        if (!h2) return;
+        const wrap = document.createElement('div');
+        wrap.className = 'm-logs-ranges';
+        wrap.setAttribute('role', 'group');
+        wrap.setAttribute('aria-label', 'نطاق سجل الحركات');
+        wrap.innerHTML =
+            '<button type="button" data-r="today" aria-pressed="false">اليوم</button>' +
+            '<button type="button" data-r="yday" aria-pressed="false">أمس</button>' +
+            '<button type="button" data-r="week" aria-pressed="false">٧ أيام</button>' +
+            '<button type="button" data-r="all" aria-pressed="false">الكل</button>';
+        h2.insertAdjacentElement('afterend', wrap);
+        wrap.addEventListener('click', (e) => {
+            const b = e.target.closest('[data-r]');
+            if (b) setLogsRange(b.getAttribute('data-r'));
+        });
+    }
+
+    function paintLogsFoot(total) {
+        const sec = document.getElementById('admin-logs');
+        const table = sec && sec.querySelector('.cart-table');
+        if (!sec || !table) return;
+        const remaining = logsStash.length;
+        let foot = sec.querySelector('.m-logs-foot');
+        if (!total) { if (foot) foot.remove(); return; }
+        if (!foot) {
+            foot = document.createElement('div');
+            foot.className = 'm-logs-foot';
+            foot.innerHTML = '<button type="button" class="m-wb-act prime m-logs-more"><i class="fa-solid fa-angles-down"></i><span>عرض المزيد</span></button>' +
+                '<small class="m-logs-count"></small>';
+            table.insertAdjacentElement('afterend', foot);
+            foot.querySelector('.m-logs-more').addEventListener('click', () => {
+                const body = document.getElementById('logs-table-body');
+                if (!body || !logsStash.length) return;
+                const frag = document.createDocumentFragment();
+                logsStash.splice(0, LOGS_PAGE).forEach((r) => frag.appendChild(r));
+                body.appendChild(frag);
+                try { if (typeof haptic === 'function') haptic(6); } catch (e) {}
+                paintLogsFoot(body.children.length + logsStash.length);
+            });
+        }
+        const btn = foot.querySelector('.m-logs-more');
+        const cnt = foot.querySelector('.m-logs-count');
+        const shown = Math.max(0, total - remaining);
+        btn.style.display = remaining ? '' : 'none';
+        if (remaining) {
+            btn.querySelector('span').textContent = 'عرض المزيد · المتبقي ' + remaining;
+            cnt.textContent = 'عرض ' + shown + ' من ' + total + ' حركة';
+        } else {
+            cnt.textContent = 'تم عرض كل الحركات · ' + total;
+        }
+    }
+
+    function paintLogsEmpty(count) {
+        const sec = document.getElementById('admin-logs');
+        const table = sec && sec.querySelector('.cart-table');
+        if (!sec || !table) return;
+        const old = sec.querySelector('.m-logs-empty');
+        let loaded = false;
+        try {
+            const d = typeof window.royalDataRead === 'function' ? window.royalDataRead() : null;
+            loaded = !!(d && typeof d === 'object');
+        } catch (e) { loaded = false; }
+        if (!loaded || count > 0) { if (old) old.remove(); return; }
+        if (old) return;
+        const card = document.createElement('div');
+        card.className = 'm-wb-empty m-logs-empty';
+        card.setAttribute('role', 'note');
+        card.innerHTML =
+            '<span class="m-wb-empty-orb"><i class="fa-solid fa-clock-rotate-left"></i></span>' +
+            '<b>لا حركات في هذا النطاق</b>' +
+            '<p>جرّب «٧ أيام» أو «الكل»، أو امسح كلمة البحث.</p>' +
+            '<button type="button" class="m-wb-act prime m-logs-all"><i class="fa-solid fa-arrow-left"></i><span>عرض كل الحركات</span></button>';
+        table.insertAdjacentElement('afterend', card);
+        card.querySelector('.m-logs-all').addEventListener('click', () => {
+            /* البحث كلمة قديمة تُبقي النتيجة صفراً حتى بعد «الكل»
+               فنمسحه مع توسيع النطاق وإلا بقيت البطاقة تعرض نفسها */
+            const search = document.getElementById('log-search-text');
+            if (search && search.value) { search.value = ''; }
+            setLogsRange('all');
+        });
+    }
+
+    function trimLogs() {
+        const body = document.getElementById('logs-table-body');
+        if (!body) return;
+        const rows = Array.prototype.slice.call(body.children);
+        logsStash = rows.slice(LOGS_PAGE);
+        logsStash.forEach((r) => r.remove());
+        paintLogsFoot(rows.length);
+        paintLogsEmpty(rows.length);
+        syncLogsRanges();
+    }
+
+    function initLogsChrome() {
+        buildLogsRanges();
+        const from = document.getElementById('log-date-from');
+        const to = document.getElementById('log-date-to');
+        if (from && to && !from.value && !to.value) {
+            from.value = isoDay(0);
+            to.value = isoDay(0);
+            if (typeof window.renderLogs === 'function') window.renderLogs();
+        }
+        syncLogsRanges();
     }
 
     function paintToday() {
@@ -9303,6 +9534,10 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
         const from = clamp(state.index, 0, state.n - 1);
         if (i === from) {
             const page = state.pages[i];
+            /* switchAdminTab استُدعي والأصل أعاد جدولة الرسم، وbusy رُفع قبله:
+               الخروج هنا دون رفعه يترك كل رسم لاحق معلّقاً (فلاتر السجل مثلاً) */
+            setBusy(false);
+            flushRepaint();
             if (page) page.scrollTo({ top: 0, behavior: REDUCED ? 'auto' : 'smooth' });
             return;
         }
@@ -9319,6 +9554,10 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
            فلا انزلاق — الهدف يحلّ مكانها بحركة دخوله الخاصة. */
         if (vfrom === vto) {
             if (src) src.style.willChange = 'auto';
+            /* بناء المحتوى قبل الظهور: من دون طلب صريح تصل لوحة السجل
+               فارغة في أول زيارة لأن الرسم كان مشروطاً بوجود طلب معلّق */
+            setPending();
+            flushRepaint();
             /* البناء قبل الظهور: تُرسم اللوحة أول مرة وهي في حالتها الابتدائية */
             enterAnimate(dst);
             paintTransforms();
@@ -9333,7 +9572,9 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
         const s = vto > vfrom ? 1 : -1;
         /* الرسم الثقيل قبل الحركة والهدف ما زال خارج الشاشة: تحديث اللوحات يعيد
            بناء الجداول بأكملها، ولو جرى والانزلاق جارٍ انقطعت الحركة واختفت
-           اللوحة ربع ثانية ثم رجعت. */
+           اللوحة ربع ثانية ثم رجعت. والطلب صريح هنا: لوحة السجل لا تُرسم عند
+           الوصول إلا بطلب معلّق، فتصل فارغة إن لم نطلبه. */
+        setPending();
         flushRepaint();
         /* الحركة تبدأ الآن لا عند الوصول: تظهر اللوحة وهي تُبنى */
         enterAnimate(dst);
@@ -9514,6 +9755,7 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
         bindKeyboard();
         bindTodayPanel();
         syncWallet();
+        initLogsChrome();
         mirrorConnection();
         state.started = true;
         flushRepaint();
@@ -9657,6 +9899,11 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
             const wbEmpty = document.querySelector('#admin-wallet .m-wb-empty');
             if (wbEmpty) wbEmpty.remove();
             closeWalletSheet();
+            ['#admin-logs .m-logs-ranges', '#admin-logs .m-logs-foot', '#admin-logs .m-logs-empty'].forEach((sel) => {
+                const el = document.querySelector(sel);
+                if (el) el.remove();
+            });
+            logsStash = [];
             document.body.classList.remove('m-admin', 'm-sheet-open', 'm-lock', 'm-dragging');
         }
     };
