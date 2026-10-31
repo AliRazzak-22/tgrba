@@ -142,7 +142,7 @@
             s.setProperty('--m-text', '#0e2138');
             s.setProperty('--m-ink', '#0e2138');
             s.setProperty('--m-muted', '#4d6a8a');
-            s.setProperty('--m-faint', '#7a93ad');
+            s.setProperty('--m-faint', '#5e7b9d');
             s.setProperty('--text-white', '#0e2138');
             s.setProperty('--text-gray', '#5b7591');
             s.setProperty('--light-gray', 'rgba(30,80,140,.16)');
@@ -150,7 +150,7 @@
                بـ !important في index.html، فلا يمكن تجاوزها إلا بتعتيم المتغيّر نفسه. */
             s.setProperty('--gold', darken(accent, 0.26));
             s.setProperty('--gold-gradient', 'linear-gradient(135deg, ' + darken(accent, 0.02) + ' 0%, ' + darken(accent, 0.28) + ' 100%)');
-            s.setProperty('--rg-accent-ink', darken(accent, 0.24));
+            s.setProperty('--rg-accent-ink', darken(accent, 0.34));
         }
 
         document.body.classList.toggle('rg-light', light);

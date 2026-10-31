@@ -3833,6 +3833,254 @@ html.is-mobile .modal-footer-sticky {
     border-top: 1px solid rgba(150,200,255,.12) !important;
 }
 
+/* ================= الوضع النهاري: تصحيح التباين =================
+   لوحات الأدمن بُنيت للزجاج الليلي، فبقيت نصوصها البيضاء وأسطح أزرارها
+   الداكنة فوق الصفحات الفاتحة. كل ما هنا تحت body.rg-light وحده:
+   المشهد الليلي وواجهة الكمبيوتر لا يُمَسّان بحرف. */
+
+/* «المزيد»: العنوان كان #dceaff فوق بطاقة بيضاء (1.1:1) */
+html.is-mobile body.rg-light #admin-more-menu .stat-card .stat-title {
+    color: #16324f !important;
+    text-shadow: none !important;
+}
+/* صحن الأيقونة كان أبيض على زجاج فاتح، وقاعدة #f39c12 تُبقيه أبيض */
+html.is-mobile body.rg-light #admin-more-menu .stat-card .stat-icon {
+    color: #1d3f66 !important;
+    background:
+        linear-gradient(152deg, rgba(255,255,255,.98) 0%, rgba(var(--rg-accent-rgb), .12) 52%, rgba(255,255,255,.86) 100%) !important;
+    text-shadow: none !important;
+    box-shadow: none !important;
+}
+html.is-mobile body.rg-light #admin-more-menu .stat-card::after {
+    background: linear-gradient(90deg, rgba(var(--rg-accent-rgb), .45), rgba(var(--rg-accent-rgb), .06));
+    opacity: .6;
+}
+
+/* الأزرار: الزجاج الداكن الشفاف يذوب رمادياً فوق الأبيض، ونصّه الأبيض
+   يصبح 2.6:1. السطوح الفاتحة هنا تحمل حبراً داكناً، والأساسي صبغة أوضح. */
+html.is-mobile body.rg-light #admin-screen .btn,
+html.is-mobile body.rg-light #pos-screen .btn,
+html.is-mobile body.rg-light #main-screen .btn,
+html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .btn,
+html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-actions button,
+html.is-mobile body.rg-light .btn-royal-action,
+html.is-mobile body.rg-light .btn-save,
+html.is-mobile body.rg-light .btn-cancel,
+html.is-mobile body.rg-light #admin-screen .btn-confirm,
+html.is-mobile body.rg-light #pos-screen .btn-confirm,
+html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .btn-confirm,
+html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-actions .btn-confirm {
+    background:
+        linear-gradient(180deg, rgba(255,255,255,.92), rgba(255,255,255,.55) 62%),
+        rgba(var(--rg-accent-rgb), .08) !important;
+    border-color: rgba(var(--rg-accent-rgb), .26) !important;
+    color: #24466f !important;
+    box-shadow: inset 0 1px 0 #fff, 0 8px 18px rgba(28,62,110,.10) !important;
+    text-shadow: none !important;
+}
+html.is-mobile body.rg-light #admin-screen .btn-confirm,
+html.is-mobile body.rg-light #pos-screen .btn-confirm,
+html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .btn-confirm,
+html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-actions .btn-confirm,
+html.is-mobile body.rg-light .btn-save {
+    background:
+        linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,.12) 60%),
+        linear-gradient(160deg, rgba(var(--rg-accent-rgb), .32), rgba(var(--rg-accent-rgb), .16)) !important;
+    border-color: rgba(var(--rg-accent-rgb), .48) !important;
+    color: var(--rg-accent-ink) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 10px 22px rgba(28,62,110,.14) !important;
+}
+/* الأزرار التي تحمل دلالة حمراء/خضراء سطرياً تحتفظ بلونها بدل أن تزرقّ */
+html.is-mobile body.rg-light #admin-screen .btn-confirm[style*="red-danger"],
+html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .btn-confirm[style*="red-danger"] {
+    background:
+        linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,.10) 60%),
+        linear-gradient(160deg, rgba(220,50,75,.24), rgba(220,50,75,.10)) !important;
+    border-color: rgba(190,35,60,.45) !important;
+    color: #a11f34 !important;
+}
+html.is-mobile body.rg-light #admin-screen .btn-confirm[style*="green-success"],
+html.is-mobile body.rg-light #admin-screen .btn-royal-action[style*="green-success"],
+html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .btn-confirm[style*="green-success"] {
+    background:
+        linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,.10) 60%),
+        linear-gradient(160deg, rgba(16,160,105,.24), rgba(16,160,105,.10)) !important;
+    border-color: rgba(13,122,82,.42) !important;
+    color: #0d6b49 !important;
+}
+
+/* جداول البطاقات: الخلية الثانية كانت #e8f3ff دائماً، والمال كان أزرق فاتحاً */
+html.is-mobile body.rg-light #admin-screen .cart-table tr > td:nth-child(2),
+html.is-mobile body.rg-light #admin-screen .invoices-table tr > td:nth-child(2) {
+    color: #16324f !important;
+    text-shadow: none !important;
+}
+html.is-mobile body.rg-light #admin-screen .cart-table tr > td:last-child:not(:first-child),
+html.is-mobile body.rg-light #admin-screen .invoices-table tr > td:last-child:not(:first-child) {
+    color: var(--rg-accent-ink) !important;
+}
+/* بطاقة إدخال التكلفة: حافة وظل خفيفان يفصلانها عن الخلفية الفاتحة */
+html.is-mobile body.rg-light #admin-costs > div {
+    background: rgba(255,255,255,.74) !important;
+    border: 1px solid rgba(255,255,255,.92);
+    box-shadow: 0 12px 26px rgba(28,62,110,.08);
+}
+html.is-mobile body.rg-light #admin-screen #costs-table-body tr > td:nth-child(2) {
+    color: #16324f !important;
+    text-shadow: none !important;
+}
+html.is-mobile body.rg-light #admin-screen #costs-table-body tr > td:nth-child(3) {
+    color: #a8342c !important;
+}
+
+/* السجل: الشارة كانت أخضر نيون متوهجاً فوق أبيض، وزر العين زجاجاً داكناً */
+html.is-mobile body.rg-light .log-type {
+    background: rgba(var(--rg-accent-rgb), .08) !important;
+    text-shadow: none !important;
+}
+html.is-mobile body.rg-light .log-add {
+    color: #0d6b49 !important;
+    border-color: rgba(13,107,73,.38) !important;
+    background: rgba(34,197,94,.10) !important;
+}
+html.is-mobile body.rg-light .log-edit {
+    color: #1f5f9e !important;
+    border-color: rgba(31,95,158,.38) !important;
+    background: rgba(90,168,255,.10) !important;
+}
+html.is-mobile body.rg-light .log-delete {
+    color: #a11f34 !important;
+    border-color: rgba(161,31,52,.38) !important;
+    background: rgba(220,50,75,.08) !important;
+}
+html.is-mobile body.rg-light #admin-screen td:last-child .top-bar-btn,
+html.is-mobile body.rg-light #admin-screen td:last-child .action-icon {
+    background: linear-gradient(180deg, rgba(255,255,255,.95), rgba(255,255,255,.7)) !important;
+    border-color: rgba(var(--rg-accent-rgb), .28) !important;
+    color: var(--rg-accent-ink) !important;
+    box-shadow: inset 0 1px 0 #fff, 0 5px 12px rgba(28,62,110,.10) !important;
+}
+
+/* صفحات الزبائن والاستوديو: الشارات كانت accent2 الفاتح فوق أبيض */
+html.is-mobile body.rg-light .ri-export {
+    background: linear-gradient(180deg, rgba(255,255,255,.94), rgba(255,255,255,.62)) !important;
+    border-color: rgba(var(--rg-accent-rgb), .28) !important;
+    color: var(--rg-accent-ink) !important;
+    box-shadow: inset 0 1px 0 #fff, 0 6px 14px rgba(28,62,110,.10) !important;
+}
+html.is-mobile body.rg-light .ri-kicker,
+html.is-mobile body.rg-light .rg-st-kicker { color: var(--rg-accent-ink) !important; }
+html.is-mobile body.rg-light .rg-value { color: var(--rg-accent-ink) !important; }
+html.is-mobile body.rg-light .rg-label i { color: var(--rg-accent-ink) !important; opacity: .85; }
+html.is-mobile body.rg-light .rg-mode-btn { color: var(--rg-accent-ink); }
+
+/* تحليلات الزبائن: قيم الرُتب والفلاتر كانت accent2 الفاتح فوق أبيض */
+html.is-mobile body.rg-light .ri-rank-v,
+html.is-mobile body.rg-light .ri-filters button.on,
+html.is-mobile body.rg-light .ri-card-head h3 i,
+html.is-mobile body.rg-light .ri-foot i,
+html.is-mobile body.rg-light .ri-cust-head a,
+html.is-mobile body.rg-light .ri-cust-meta i,
+html.is-mobile body.rg-light .ri-inv-n {
+    color: var(--rg-accent-ink) !important;
+}
+html.is-mobile body.rg-light .ri-heat-cell.strong {
+    color: #0a2947 !important;
+    text-shadow: none !important;
+}
+html.is-mobile body.rg-light .admin-section h2 i,
+html.is-mobile body.rg-light .m-today-head i { color: var(--rg-accent-ink) !important; }
+html.is-mobile body.rg-light #admin-screen .btn-confirm,
+html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .btn-confirm,
+html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-actions .btn-confirm {
+    color: #2a5f9e !important;
+}
+
+/* جداول النوافذ: ورقة المتجر ترسم صفوفها فحماً داكناً بنصوص فاتحة، وبعد
+   تفعيل الوضع النهاري صارت النصوص داكنة فوق الفحم — أسطح فاتحة الآن. */
+html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-content .invoices-table tr,
+html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-content .cart-table tr {
+    background: linear-gradient(150deg, rgba(255,255,255,.97), rgba(255,255,255,.74)) !important;
+    border: 1px solid rgba(var(--rg-accent-rgb), .20) !important;
+    border-right: 4px solid rgba(var(--rg-accent-rgb), .48) !important;
+    box-shadow: 0 8px 20px rgba(28,62,110,.10) !important;
+}
+html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-content .invoices-table tr {
+    border-right-color: rgba(190,35,60,.48) !important;
+}
+html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-content .invoices-table td,
+html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-content .cart-table td {
+    color: #16324f !important;
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    text-align: start !important;
+}
+/* خلايا جدول الفواتير داخل النوافذ كانت تتكدس فوق بعضها: المواصفات القديمة
+   تضع الرقم والنوع في الخلية نفسها. شبكة صريحة: التاريخ والرقم يميناً،
+   النوع والمبلغ يساراً، والأزرار في صفّ مستقل. */
+html.is-mobile body.rg-light #modal-invoices .invoices-table tr {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    grid-template-rows: auto auto auto !important;
+    column-gap: 12px !important;
+    row-gap: 5px !important;
+    align-items: center !important;
+}
+html.is-mobile body.rg-light #modal-invoices .invoices-table td:nth-child(1) {
+    grid-area: 1 / 1 / 2 / 2 !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    color: #5e7b9d !important;
+}
+html.is-mobile body.rg-light #modal-invoices .invoices-table td:nth-child(2) {
+    grid-area: 2 / 1 / 3 / 2 !important;
+    font-size: 14px !important;
+    font-weight: 800 !important;
+    color: #0e2138 !important;
+}
+html.is-mobile body.rg-light #modal-invoices .invoices-table td:nth-child(3) {
+    grid-area: 1 / 2 / 2 / 3 !important;
+    justify-self: end !important;
+    font-size: 11.5px !important;
+    font-weight: 700 !important;
+    color: #4d6a8a !important;
+}
+html.is-mobile body.rg-light #modal-invoices .invoices-table td:nth-last-child(2) {
+    grid-area: 2 / 2 / 3 / 3 !important;
+    justify-self: end !important;
+    font-size: 16px !important;
+    font-weight: 900 !important;
+    color: #2a5f9e !important;
+}
+html.is-mobile body.rg-light #modal-invoices .invoices-table td:last-child {
+    grid-area: 3 / 1 / 4 / 3 !important;
+    display: flex !important;
+    justify-content: flex-end !important;
+    align-items: center !important;
+    gap: 10px !important;
+    margin-top: 2px !important;
+    padding-top: 8px !important;
+    border-top: 1px solid rgba(28,62,110,.10) !important;
+}
+/* كشف اليوم: خلاياه تستمد ألوانها من قواعده الخاصة، فتُصحَّح وحدها هنا */
+html.is-mobile body.rg-light #modal-daily-transactions .invoices-table td:nth-child(1) {
+    background: rgba(var(--rg-accent-rgb), .12) !important;
+    color: #1b5aa8 !important;
+}
+html.is-mobile body.rg-light #modal-daily-transactions .invoices-table td:nth-child(3) {
+    color: #0e2138 !important;
+}
+html.is-mobile body.rg-light #modal-daily-transactions .invoices-table td:nth-child(n+5)::before {
+    color: #5e7b9d !important;
+}
+html.is-mobile body.rg-light .m-day-empty { color: #4d6a8a !important; }
+html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-content .invoices-table td[style*="red-danger"],
+html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-content .invoices-table td[style*=" color: var(--red-danger)"],
+html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-content .invoices-table td[style*="var(--red-danger)"] {
+    color: #a11f34 !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
     html.is-mobile *, html.is-mobile *::before, html.is-mobile *::after {
         transition-duration: .001ms !important;
