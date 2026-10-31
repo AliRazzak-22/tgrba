@@ -225,12 +225,15 @@
             return f && f >= prevStart && f < start;
         }).length;
         /* نافذة سابقة بنفس الطول تنتهي عند بداية الفترة — تُحسب من كل الفواتير
-           لا من الدفعات، تماماً مثل قيمة الطلبات الحالية. */
+           لا من الدفعات، تماماً مثل قيمة الطلبات الحالية. والاحتفاظ = من زبائن
+           النافذة السابقة من عاد وسجّل فاتورة هنا. */
+        const retained = Object.keys(prevNames).filter((n) => map[n]).length;
         const prev = periodDays ? {
             billed: prevBilled,
             visits: inPrev.length,
             customers: prevCount,
-            newCount: prevNew
+            newCount: prevNew,
+            retained: retained
         } : null;
 
         /* المال: قيمة الطلبات + المستلَم وفق نفس مسارات النظام (بلا تكرار) */
@@ -662,6 +665,7 @@
         const period = PERIODS.find((p) => p.k === state.period) || PERIODS[2];
         const span = period.days === 1 ? 'مقابل أمس' : 'مقابل ' + period.label + ' قبلها';
         const was = vm.prev;
+        const ret = was.customers ? Math.round((was.retained / was.customers) * 100) : 0;
         return '<div class="ri-card ri-card-cmp">' +
             '<div class="ri-card-head"><h3><i class="fa-solid fa-code-compare"></i> مقارنة بالفترة السابقة</h3><span>' + span + '</span></div>' +
             '<div class="ri-cmp">' +
@@ -669,6 +673,11 @@
                 cmpRow('الفواتير', vm.visits, was.visits, false) +
                 cmpRow('الزبائن', vm.customers.length, was.customers, false) +
                 cmpRow('زبائن جدد', vm.newCount, was.newCount, false) +
+            '</div>' +
+            '<div class="ri-cmp-ret">' +
+                '<div class="ri-cmp-ret-top"><span><i class="fa-solid fa-arrow-rotate-left"></i> احتفاظ الزبائن</span><strong>' + ret + '%</strong></div>' +
+                '<div class="ri-cmp-ret-bar" aria-hidden="true"><i style="--w:' + ret + '%"></i></div>' +
+                '<small>عاد <b>' + fmt(was.retained) + '</b> من أصل <b>' + fmt(was.customers) + '</b> من زبائن الفترة السابقة وسجّلوا فواتير في هذه الفترة.</small>' +
             '</div>' +
         '</div>';
     }
@@ -1273,6 +1282,27 @@ html.is-mobile body.rg-light .ri-cmp-bar.was i { background: rgba(30,70,120,.30)
 html.is-mobile body.rg-light .ri-cmp-d.up { background: rgba(13,122,82,.10); color: #0d7a52; border-color: rgba(13,122,82,.2); }
 html.is-mobile body.rg-light .ri-cmp-d.down { color: #b32b3a; }
 html.is-mobile body.rg-light .ri-cmp-d.flat { background: rgba(30,70,120,.06); color: #5b7191; border-color: rgba(30,70,120,.12); }
+
+html.is-mobile .ri-cmp-ret { margin-top: 15px; padding-top: 13px; border-top: 1px solid var(--ri-line); display: flex; flex-direction: column; gap: 7px; }
+html.is-mobile .ri-cmp-ret-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+html.is-mobile .ri-cmp-ret-top span { display: inline-flex; align-items: center; gap: 6px; font-size: 10.5px; font-weight: 800; color: var(--m-muted); }
+html.is-mobile .ri-cmp-ret-top span i { font-size: 9px; color: var(--rg-accent); }
+html.is-mobile .ri-cmp-ret-top strong { font-size: 14px; font-weight: 900; color: var(--m-text); font-variant-numeric: tabular-nums; }
+html.is-mobile .ri-cmp-ret-bar { height: 5px; border-radius: 99px; background: rgba(255,255,255,.06); overflow: hidden; }
+html.is-mobile .ri-cmp-ret-bar i {
+    display: block; height: 100%; width: var(--w, 0%); border-radius: inherit;
+    background: linear-gradient(90deg, var(--rg-accent), color-mix(in srgb, var(--rg-accent) 45%, #3ddc97));
+    box-shadow: 0 0 10px rgba(var(--rg-accent-rgb), .3);
+}
+html.is-mobile .ri-in .ri-cmp-ret-bar i { animation: riCmpGrow .8s var(--m-ease-out) both; animation-delay: calc(min(var(--ri-k, 0), 9) * 46ms + 420ms); }
+html.is-mobile .ri-root.ri-no-motion .ri-cmp-ret-bar i { animation: none; }
+html.is-mobile .ri-cmp-ret small { font-size: 9.5px; line-height: 1.65; font-weight: 700; color: var(--m-faint); }
+html.is-mobile .ri-cmp-ret small b { color: var(--m-muted); font-weight: 800; font-variant-numeric: tabular-nums; }
+html.is-mobile body.rg-light .ri-cmp-ret-top span { color: #33507a; }
+html.is-mobile body.rg-light .ri-cmp-ret-top strong { color: #0e2138; }
+html.is-mobile body.rg-light .ri-cmp-ret-bar { background: rgba(30,70,120,.10); }
+html.is-mobile body.rg-light .ri-cmp-ret small { color: #5b7191; }
+html.is-mobile body.rg-light .ri-cmp-ret small b { color: #33507a; }
 
 html.is-mobile .ri-card {
     position: relative;
