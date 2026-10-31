@@ -30,6 +30,8 @@
         query: '',
         filter: 'all',
         svcMode: 'rev',
+        dirSort: 'spend',
+        dirLimit: 40,
         rendered: false,
         signature: '',
         timer: 0,
@@ -602,15 +604,20 @@
         return s ? s.slice(0, 1) : '؟';
     }
 
-    function directory(customers, filter, query, allTime) {
-        let list = customers.slice().sort((a, b) => b.spent - a.spent);
+    function directory(customers, filter, query, allTime, sort, limit) {
+        let list = customers.slice().sort((a, b) => {
+            if (sort === 'visits') return b.visits - a.visits || b.spent - a.spent;
+            if (sort === 'recent') return (b.lastTs || 0) - (a.lastTs || 0) || b.spent - a.spent;
+            return b.spent - a.spent;
+        });
         if (filter === 'elite') list = list.filter((c) => c.visits >= 3 || c.spent > 0).slice(0, Math.max(3, Math.ceil(list.length * 0.2)));
         if (filter === 'debt') list = list.filter((c) => c.debt > 0);
         if (filter === 'new') list = list.filter((c) => c.isNew);
         const q = String(query || '').trim().toLowerCase();
         if (q) list = list.filter((c) => c.name.toLowerCase().includes(q) || (c.phone || '').toLowerCase().includes(q));
         if (!list.length) return emptyMini(q ? 'لا نتائج لهذا البحث' : 'لا يوجد زبائن في هذه الفئة');
-        const shown = list.slice(0, 40);
+        const cap = Math.max(40, Number(limit) || 40);
+        const shown = list.slice(0, cap);
         const scope = allTime ? ' data-alltime="1"' : '';
         return '<div class="ri-dir">' + shown.map((c) =>
             '<button type="button" class="ri-dir-row" data-customer="' + esc(c.name) + '"' + scope + '>' +
@@ -620,7 +627,9 @@
                 '<span class="ri-dir-end"><strong>' + money(c.spent) + '</strong>' +
                 (c.debt > 0 ? '<small class="ri-debt">دين ' + money(c.debt) + '</small>' : '<small>' + esc(c.fav || '') + '</small>') + '</span>' +
             '</button>'
-        ).join('') + (list.length > shown.length ? '<div class="ri-more-note">تُعرض ' + shown.length + ' من ' + list.length + ' — ابحث بالاسم لتضييق النتيجة</div>' : '') + '</div>';
+        ).join('') + (list.length > shown.length
+            ? '<button type="button" class="ri-dir-more" data-dir-more="1"><i class="fa-solid fa-chevron-down"></i> عرض المزيد · المتبقي ' + fmt(list.length - shown.length) + '</button>'
+            : (list.length > 40 ? '<div class="ri-more-note">عُرض كل الزبائن · ' + fmt(list.length) + '</div>' : '')) + '</div>';
     }
 
     /* ---------------- الهيكل ---------------- */
@@ -792,7 +801,15 @@
             '</div>' +
 
             '<div class="ri-card ri-card-dir">' +
-                '<div class="ri-card-head"><h3><i class="fa-solid fa-address-book"></i> دليل الزبائن</h3><span>' + vm.customers.length + '</span></div>' +
+                '<div class="ri-card-head ri-card-head-seg"><h3><i class="fa-solid fa-address-book"></i> دليل الزبائن</h3>' +
+                    '<div class="ri-dir-tools"><span class="ri-dir-count">' + fmt(vm.customers.length) + '</span>' +
+                        '<div class="ri-svc-seg ri-dir-seg" role="group" aria-label="ترتيب الدليل">' +
+                            '<button type="button" data-dirsort="spend" aria-pressed="' + (state.dirSort === 'spend') + '" class="' + (state.dirSort === 'spend' ? 'on' : '') + '">إنفاق</button>' +
+                            '<button type="button" data-dirsort="visits" aria-pressed="' + (state.dirSort === 'visits') + '" class="' + (state.dirSort === 'visits' ? 'on' : '') + '">زيارات</button>' +
+                            '<button type="button" data-dirsort="recent" aria-pressed="' + (state.dirSort === 'recent') + '" class="' + (state.dirSort === 'recent' ? 'on' : '') + '">الأحدث</button>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
                 '<div class="ri-search"><i class="fa-solid fa-magnifying-glass"></i><input type="search" id="ri-search" placeholder="ابحث باسم الزبون أو رقمه…" value="' + esc(state.query) + '"></div>' +
                 '<div class="ri-search-scope" id="ri-search-scope"' + (searchAll ? '' : ' hidden') + '><i class="fa-solid fa-clock-rotate-left"></i> البحث يشمل كل الفترات</div>' +
                 '<div class="ri-filters">' +
@@ -801,7 +818,7 @@
                     '<button type="button" data-filter="debt" class="' + (state.filter === 'debt' ? 'on' : '') + '">مدينون</button>' +
                     '<button type="button" data-filter="new" class="' + (state.filter === 'new' ? 'on' : '') + '">جدد</button>' +
                 '</div>' +
-                '<div id="ri-dir-host">' + directory((dirSeed || vm).customers, state.filter, state.query, searchAll) + '</div>' +
+                '<div id="ri-dir-host">' + directory((dirSeed || vm).customers, state.filter, state.query, searchAll, state.dirSort, state.dirLimit) + '</div>' +
             '</div>' +
 
             '<div class="ri-foot"><i class="fa-solid fa-shield-halved"></i> أرقام من الفواتير المسجلة فقط — قراءة لا تعديل · آخر تحديث ' + nowLabel() + '</div>' +
@@ -841,25 +858,48 @@
     function bindRoot(host) {
         if (host.dataset.riBound === '1') return;
         host.dataset.riBound = '1';
+        const paintDir = () => {
+            const searching = !!String(state.query || '').trim();
+            const vm = searching ? build(0) : cachedVm;
+            if (!vm) return;
+            const dirHost = document.getElementById('ri-dir-host');
+            if (dirHost) dirHost.innerHTML = directory(vm.customers, state.filter, state.query, searching, state.dirSort, state.dirLimit);
+        };
         host.addEventListener('click', (e) => {
             const period = e.target.closest('[data-period]');
             if (period) {
                 const k = period.getAttribute('data-period');
                 if (k === state.period) return;
                 state.period = k;
+                state.dirLimit = 40;
                 draw(true);
                 return;
             }
             const filter = e.target.closest('[data-filter]');
             if (filter) {
                 state.filter = filter.getAttribute('data-filter');
-                const searching = !!String(state.query || '').trim();
-                const vm = build(searching ? 0 : periodDays());
-                if (vm) {
-                    const dirHost = document.getElementById('ri-dir-host');
-                    if (dirHost) dirHost.innerHTML = directory(vm.customers, state.filter, state.query, searching);
-                    host.querySelectorAll('[data-filter]').forEach((b) => b.classList.toggle('on', b.getAttribute('data-filter') === state.filter));
-                }
+                state.dirLimit = 40;
+                paintDir();
+                host.querySelectorAll('[data-filter]').forEach((b) => b.classList.toggle('on', b.getAttribute('data-filter') === state.filter));
+                return;
+            }
+            const sortBtn = e.target.closest('[data-dirsort]');
+            if (sortBtn) {
+                const k = sortBtn.getAttribute('data-dirsort');
+                if (k === state.dirSort) return;
+                state.dirSort = k;
+                state.dirLimit = 40;
+                paintDir();
+                host.querySelectorAll('[data-dirsort]').forEach((b) => {
+                    const on = b.getAttribute('data-dirsort') === state.dirSort;
+                    b.classList.toggle('on', on);
+                    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+                });
+                return;
+            }
+            if (e.target.closest('[data-dir-more]')) {
+                state.dirLimit += 40;
+                paintDir();
                 return;
             }
             if (e.target.closest('#ri-export')) { exportCSV(); return; }
@@ -889,12 +929,9 @@
         host.addEventListener('input', (e) => {
             if (!e.target || e.target.id !== 'ri-search') return;
             state.query = e.target.value;
+            state.dirLimit = 40;
+            paintDir();
             const searching = !!state.query.trim();
-            const vm = build(searching ? 0 : periodDays());
-            if (vm) {
-                const dirHost = document.getElementById('ri-dir-host');
-                if (dirHost) dirHost.innerHTML = directory(vm.customers, state.filter, state.query, searching);
-            }
             const scope = document.getElementById('ri-search-scope');
             if (scope) scope.hidden = !searching;
         });
@@ -1371,7 +1408,7 @@ html.is-mobile .ri-card-head { display: flex; align-items: baseline; justify-con
 html.is-mobile .ri-card-head h3 { margin: 0; font-size: 13.5px; font-weight: 900; color: var(--m-text); display: flex; align-items: center; gap: 7px; }
 html.is-mobile .ri-card-head h3 i { color: var(--m-accent2); font-size: 11.5px; }
 html.is-mobile .ri-card-head > span { font-size: 10px; font-weight: 800; color: var(--m-faint); }
-html.is-mobile .ri-card-head-seg { align-items: center; }
+html.is-mobile .ri-card-head-seg { align-items: center; flex-wrap: wrap; row-gap: 6px; }
 html.is-mobile .ri-svc-seg {
     display: inline-flex; gap: 3px; padding: 3px;
     border-radius: 10px;
@@ -1641,6 +1678,24 @@ html.is-mobile .ri-filters button.on {
     border-color: rgba(var(--rg-accent-rgb), .38);
     color: var(--m-accent2);
 }
+html.is-mobile .ri-dir-tools { display: inline-flex; align-items: center; gap: 8px; }
+html.is-mobile .ri-dir-count { font-size: 10px; font-weight: 800; color: var(--m-faint); font-variant-numeric: tabular-nums; }
+html.is-mobile .ri-dir-seg button { padding: 4px 8px; }
+html.is-mobile .ri-dir-more {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    width: 100%; margin-top: 7px; padding: 11px 10px;
+    border-radius: 12px;
+    border: 1px solid var(--ri-line);
+    background: rgba(255,255,255,.05);
+    color: var(--m-text);
+    font-family: inherit; font-size: 10.5px; font-weight: 900;
+    cursor: pointer; -webkit-tap-highlight-color: transparent;
+    transition: background .2s var(--m-ease), transform .14s var(--m-ease);
+}
+html.is-mobile .ri-dir-more i { font-size: 9px; color: var(--rg-accent); }
+html.is-mobile .ri-dir-more:active { transform: scale(.985); background: rgba(255,255,255,.09); }
+html.is-mobile body.rg-light .ri-dir-more { background: rgba(30,70,120,.05); color: #0e2138; }
+html.is-mobile body.rg-light .ri-dir-count { color: #5b7191; }
 html.is-mobile .ri-dir { display: flex; flex-direction: column; gap: 5px; }
 html.is-mobile .ri-dir-row {
     display: flex; align-items: center; gap: 9px;
