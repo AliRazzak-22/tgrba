@@ -952,6 +952,42 @@
         state.sheetCustomer = null;
     }
 
+    function telDigits(raw) {
+        return String(raw || '').replace(/[^\d+]/g, '').replace(/(?!^)\+/g, '');
+    }
+
+    /* الرقم المحلي العراقي 07… لا يفتح واتساب؛ نحوّله إلى 9647… */
+    function waNumber(raw) {
+        let d = String(raw || '').replace(/\D/g, '');
+        if (!d) return '';
+        if (d.indexOf('00') === 0) d = d.slice(2);
+        if (d.indexOf('964') === 0) return d;
+        if (d.charAt(0) === '0') return '964' + d.slice(1);
+        if (d.length === 10 && d.charAt(0) === '7') return '964' + d;
+        return d;
+    }
+
+    function copyPlain(text) {
+        const fallback = () => new Promise((resolve, reject) => {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.setAttribute('readonly', '');
+            ta.style.cssText = 'position:fixed;top:-1000px;left:0;opacity:0;';
+            document.body.appendChild(ta);
+            ta.select();
+            let ok = false;
+            try { ok = document.execCommand('copy'); } catch (e) {}
+            document.body.removeChild(ta);
+            if (ok) resolve(); else reject(new Error('copy'));
+        });
+        try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                return navigator.clipboard.writeText(text).catch(fallback);
+            }
+        } catch (e) {}
+        return fallback();
+    }
+
     function openCustomer(name, allTime) {
         const vm = build(allTime ? 0 : periodDays());
         if (!vm) return;
@@ -1023,6 +1059,13 @@
         sheet.setAttribute('role', 'dialog');
         sheet.setAttribute('aria-modal', 'true');
         sheet.setAttribute('aria-label', 'ملف الزبون ' + name);
+        const tel = telDigits(c.phone);
+        const wa = waNumber(c.phone);
+        const actions = tel ? '<div class="ri-cust-act">' +
+            '<a class="ri-act-call" href="tel:' + esc(tel) + '"><i class="fa-solid fa-phone"></i><span>اتصال</span></a>' +
+            (wa ? '<a class="ri-act-wa" href="https://wa.me/' + esc(wa) + '" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i><span>واتساب</span></a>' : '') +
+            '<button type="button" class="ri-act-copy" data-copy-phone="' + esc(String(c.phone || '')) + '"><i class="fa-solid fa-copy"></i><span>نسخ الرقم</span></button>' +
+        '</div>' : '';
         sheet.innerHTML =
             '<div class="ri-sheet-scrim" data-close></div>' +
             '<div class="ri-sheet-card">' +
@@ -1031,8 +1074,9 @@
                 '<div class="ri-cust-head">' +
                     '<span class="ri-av big">' + esc(initial(c.name)) + '</span>' +
                     '<div><h3>' + esc(c.name) + '</h3>' +
-                    '<p>' + (c.phone ? '<a href="tel:' + esc(c.phone.replace(/[^\d+]/g, '')) + '"><i class="fa-solid fa-phone"></i> ' + esc(c.phone) + '</a>' : 'بلا رقم هاتف') + '</p></div>' +
+                    '<p>' + (c.phone ? '<a href="tel:' + esc(tel) + '"><i class="fa-solid fa-phone"></i> ' + esc(c.phone) + '</a>' : 'بلا رقم هاتف') + '</p></div>' +
                 '</div>' +
+                actions +
                 '<div class="ri-cust-stats">' +
                     '<div><strong>' + money(c.spent) + '</strong><span>قيمة الطلبات</span></div>' +
                     '<div><strong>' + c.visits + '</strong><span>زيارة</span></div>' +
@@ -1056,7 +1100,29 @@
         document.body.appendChild(sheet);
         document.body.classList.add('ri-sheet-open');
         requestAnimationFrame(() => sheet.classList.add('on'));
-        sheet.addEventListener('click', (e) => { if (e.target.closest('[data-close]')) closeSheet(); });
+        sheet.addEventListener('click', (e) => {
+            const copyBtn = e.target.closest('[data-copy-phone]');
+            if (copyBtn) {
+                const label = copyBtn.querySelector('span');
+                copyPlain(copyBtn.getAttribute('data-copy-phone') || '').then(() => {
+                    copyBtn.classList.add('ok');
+                    if (label) label.textContent = 'تم النسخ';
+                    setTimeout(() => {
+                        copyBtn.classList.remove('ok');
+                        if (label) label.textContent = 'نسخ الرقم';
+                    }, 1600);
+                }).catch(() => {
+                    copyBtn.classList.add('bad');
+                    if (label) label.textContent = 'تعذّر النسخ';
+                    setTimeout(() => {
+                        copyBtn.classList.remove('bad');
+                        if (label) label.textContent = 'نسخ الرقم';
+                    }, 1600);
+                });
+                return;
+            }
+            if (e.target.closest('[data-close]')) closeSheet();
+        });
     }
 
     /* ---------------- التصدير ---------------- */
@@ -1786,6 +1852,29 @@ html.is-mobile .ri-cust-head { display: flex; align-items: center; gap: 12px; ma
 html.is-mobile .ri-cust-head h3 { margin: 0 0 3px; font-size: 19px; font-weight: 900; color: var(--m-text); }
 html.is-mobile .ri-cust-head p { margin: 0; font-size: 11px; font-weight: 700; color: var(--m-muted); }
 html.is-mobile .ri-cust-head a { color: var(--m-accent2); text-decoration: none; }
+html.is-mobile .ri-cust-act { display: flex; gap: 7px; margin: -2px 0 11px; }
+html.is-mobile .ri-cust-act > * {
+    flex: 1; min-height: 40px;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    border-radius: 12px;
+    border: 1px solid var(--ri-line);
+    background: rgba(255,255,255,.05);
+    color: var(--m-text);
+    font-family: inherit; font-size: 10.5px; font-weight: 900;
+    text-decoration: none; cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform .14s var(--m-ease), background .2s var(--m-ease), border-color .2s var(--m-ease);
+}
+html.is-mobile .ri-cust-act > *:active { transform: scale(.97); }
+html.is-mobile .ri-cust-act i { font-size: 11px; }
+html.is-mobile .ri-act-call { color: var(--m-accent2); border-color: rgba(var(--rg-accent-rgb), .34); background: rgba(var(--rg-accent-rgb), .12); }
+html.is-mobile .ri-act-wa i { color: #4fd07a; }
+html.is-mobile .ri-act-copy.ok { border-color: rgba(63,190,120,.45); }
+html.is-mobile .ri-act-copy.ok i { color: #58d18d; }
+html.is-mobile .ri-act-copy.bad { border-color: rgba(255,93,108,.42); }
+html.is-mobile .ri-act-copy.bad i { color: #ff8a95; }
+html.is-mobile body.rg-light .ri-cust-act > * { background: rgba(30,70,120,.05); color: #0e2138; }
+html.is-mobile body.rg-light .ri-act-call { color: #175d97; border-color: rgba(30,110,190,.26); background: rgba(30,110,190,.08); }
 html.is-mobile .ri-cust-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
 html.is-mobile .ri-cust-stats > div {
     padding: 10px 12px; border-radius: 14px;

@@ -1064,6 +1064,18 @@ html.is-mobile .m-po-av {
 html.is-mobile .m-po-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 html.is-mobile .m-po-body strong { font-size: 12px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 html.is-mobile .m-po-body small { font-size: 9.5px; font-weight: 700; color: var(--m-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html.is-mobile .m-po-call {
+    flex: none; width: 32px; height: 32px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 10px;
+    background: rgba(var(--rg-accent-rgb), .14);
+    border: 1px solid rgba(var(--rg-accent-rgb), .26);
+    color: var(--m-accent2); font-size: 11px;
+    text-decoration: none; -webkit-tap-highlight-color: transparent;
+    transition: transform .14s var(--m-ease), background .2s var(--m-ease);
+}
+html.is-mobile .m-po-call:active { transform: scale(.92); background: rgba(var(--rg-accent-rgb), .24); }
+html.is-mobile body.rg-light .m-po-call { color: #1c5f9e; background: rgba(30,110,190,.10); border-color: rgba(30,110,190,.22); }
 html.is-mobile .m-po-end { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
 html.is-mobile .m-po-end b { font-size: 11.5px; font-weight: 900; font-variant-numeric: tabular-nums; }
 html.is-mobile .m-po-age {
@@ -7910,9 +7922,11 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
         if (/^\d{4}-\d{2}-\d{2}$/.test(d)) bits.push(d.slice(8, 10) + '/' + d.slice(5, 7));
         if (phone) bits.push(phone);
         const age = o.age < 0 ? '' : (o.age === 0 ? 'اليوم' : o.age + ' يوم');
+        const tel = phone.replace(/[^\d+]/g, '').replace(/(?!^)\+/g, '');
         return '<div class="m-po" style="--m-po:' + i + '">' +
             '<span class="m-po-av">' + esc(name.slice(0, 1)) + '</span>' +
             '<span class="m-po-body"><strong>' + esc(name) + '</strong><small>' + esc(bits.join(' · ')) + '</small></span>' +
+            (tel ? '<a class="m-po-call" href="tel:' + esc(tel) + '" aria-label="اتصال بـ ' + esc(name) + '"><i class="fa-solid fa-phone"></i></a>' : '') +
             '<span class="m-po-end"><b>' + money(Number(inv.total) || 0) + ' د.ع</b>' +
                 (age ? '<span class="m-po-age' + (o.late ? ' hot' : '') + '">' + esc(age) + '</span>' : '') +
             '</span>' +
