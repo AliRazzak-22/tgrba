@@ -4770,6 +4770,98 @@ html.is-mobile body.rg-light #admin-screen .cart-table tr > td:last-child:not(:f
 html.is-mobile body.rg-light #admin-screen .invoices-table tr > td:last-child:not(:first-child) {
     color: var(--rg-accent-ink) !important;
 }
+/* الذمم والاشتراكات لهما ترتيب أعمدة مختلف عن باقي الجداول: بطاقة الجدول
+   العامة تجعل الخلية الثانية عنواناً كبيراً، وهي هنا الهاتف أو الاسم. */
+html.is-mobile #admin-debts .cart-table tr > td:nth-child(1) {
+    grid-column: 1 / -1 !important;
+    font-size: 16px !important;
+    font-weight: 900 !important;
+    color: var(--m-text) !important;
+    letter-spacing: .1px;
+    margin-bottom: 2px !important;
+}
+html.is-mobile #admin-debts .cart-table tr > td:nth-child(2) {
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    color: var(--m-muted) !important;
+    text-shadow: none !important;
+    direction: ltr;
+    text-align: right !important;
+}
+html.is-mobile #admin-debts .cart-table tr > td:nth-child(3) {
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    color: var(--m-faint) !important;
+}
+html.is-mobile #admin-debts .cart-table tr > td:nth-child(3)::before { content: "فواتير "; opacity: .8; }
+html.is-mobile #admin-debts .cart-table tr > td:nth-child(4) {
+    font-size: 18px !important;
+    font-weight: 900 !important;
+    color: #ff8a9a !important;
+    margin-top: 4px !important;
+    font-variant-numeric: tabular-nums;
+}
+html.is-mobile #admin-debts .cart-table tr > td:nth-child(4)::before {
+    content: "المتبقي ";
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--m-faint);
+}
+html.is-mobile body.rg-light #admin-debts .cart-table tr > td:nth-child(1) { color: #16324f !important; }
+html.is-mobile body.rg-light #admin-debts .cart-table tr > td:nth-child(4) { color: #a8342c !important; }
+
+html.is-mobile #admin-subscriptions .cart-table tr > td:nth-child(3) {
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    color: var(--m-muted) !important;
+    direction: ltr;
+    text-align: right !important;
+}
+html.is-mobile #admin-subscriptions .cart-table tr > td:nth-child(4) > span {
+    display: inline-block;
+    margin-top: 3px;
+    padding: 3px 9px !important;
+    border-radius: var(--m-radius-pill) !important;
+    background: rgba(var(--rg-glass-rgb), .56) !important;
+    border: 1px solid var(--m-edge) !important;
+    color: var(--m-accent) !important;
+    font-size: 11.5px !important;
+    font-weight: 800 !important;
+}
+html.is-mobile #admin-subscriptions .cart-table tr > td:nth-child(5) {
+    font-size: 14px !important;
+    font-weight: 800 !important;
+    color: #7ee0a8 !important;
+    font-variant-numeric: tabular-nums;
+}
+html.is-mobile #admin-subscriptions .cart-table tr > td:nth-child(5)::before {
+    content: "مدفوع ";
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--m-faint);
+}
+html.is-mobile #admin-subscriptions .cart-table tr > td:nth-child(6) {
+    font-size: 18px !important;
+    font-weight: 900 !important;
+    color: #f6d78a !important;
+    margin-top: 3px !important;
+    font-variant-numeric: tabular-nums;
+}
+html.is-mobile #admin-subscriptions .cart-table tr > td:nth-child(6)::before {
+    content: "متبقي ";
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--m-faint);
+}
+html.is-mobile body.rg-light #admin-subscriptions .cart-table tr > td:nth-child(4) > span {
+    background: rgba(var(--rg-accent-rgb), .10) !important;
+    border-color: rgba(var(--rg-accent-rgb), .28) !important;
+    color: #24466f !important;
+}
+html.is-mobile body.rg-light #admin-subscriptions .cart-table tr > td:nth-child(5) { color: #0d6b49 !important; }
+html.is-mobile body.rg-light #admin-subscriptions .cart-table tr > td:nth-child(6) { color: #8a6a1f !important; }
+html.is-mobile #admin-debts .m-led-empty,
+html.is-mobile #admin-subscriptions .m-led-empty { margin-top: 4px; }
 /* بطاقة إدخال التكلفة: حافة وظل خفيفان يفصلانها عن الخلفية الفاتحة */
 html.is-mobile body.rg-light #admin-costs > div {
     background: rgba(255,255,255,.74) !important;
@@ -6900,6 +6992,7 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
         markSyncTime();
         paintToday();
         syncWallet();
+        paintLedgerEmpties();
         syncProgress();
         if (page && Math.abs(page.scrollTop - top) > 2) page.scrollTop = top;
         openSheets.forEach((c, i) => { if (Math.abs(c.scrollTop - sheetTops[i]) > 2) c.scrollTop = sheetTops[i]; });
@@ -7891,6 +7984,41 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
         } else if (hasRows && empty) {
             empty.parentNode.removeChild(empty);
         }
+    }
+
+    /* ذمم واشتراكات بلا صفوف كانت تترك عنواناً فوق فراغ، فيبدو التبويب معطوباً
+       بينما البيانات ببساطة فارغة. البطاقة تشرح من أين تأتي السجلات. */
+    function paintLedgerEmpties() {
+        const map = [
+            ['admin-debts', 'debts-table-body', 'fa-handshake-angle', 'لا توجد ذمم مفتوحة',
+                'كل مبالغ البيع الآجل مسدّدة حالياً. عند بيع فاتورة آجلة يظهر الزبون هنا مع إجمالي دينه وزر تسديد دفعة.',
+                'تُحسب الذمة من الفواتير غير المسدّدة فقط'],
+            ['admin-subscriptions', 'admin-subs-body', 'fa-id-card-clip', 'لا توجد اشتراكات مسجّلة',
+                'باقات VIP وعروض الزبائن تُنشأ من شاشة البيع، وتظهر هنا مع المبلغ المدفوع والرصيد المتبقي لكل باقة.',
+                'كل باقة تعرض فواتيرها المسحوبة ورصيدها لحظة بلحظة']
+        ];
+        let loaded = false;
+        try {
+            const d = typeof window.royalDataRead === 'function' ? window.royalDataRead() : null;
+            loaded = !!(d && typeof d === 'object');
+        } catch (e) { loaded = false; }
+        map.forEach((item) => {
+            const sec = document.getElementById(item[0]);
+            const tbody = document.getElementById(item[1]);
+            const table = tbody ? tbody.closest('table') : null;
+            if (!sec || !table) return;
+            const hasRows = !!(tbody && tbody.children.length);
+            const old = sec.querySelector('.m-led-empty');
+            if (!loaded || hasRows) { if (old) old.remove(); return; }
+            if (old) return;
+            const card = document.createElement('div');
+            card.className = 'm-wb-empty m-led-empty';
+            card.setAttribute('role', 'note');
+            card.innerHTML =
+                '<span class="m-wb-empty-orb"><i class="fa-solid ' + item[2] + '"></i></span>' +
+                '<b>' + item[3] + '</b><p>' + item[4] + '</p><small>' + item[5] + '</small>';
+            table.insertAdjacentElement('afterend', card);
+        });
     }
 
     /* ==================== سجل الحركات: نطاقات وعرض متدرّج ====================
@@ -10057,7 +10185,7 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
             if (invHint) invHint.remove();
             const invFilters = document.querySelector('#modal-invoices .admin-filters');
             if (invFilters) { invFilters.classList.remove('m-search-on'); delete invFilters.dataset.mInvHint; }
-            ['#admin-logs .m-logs-ranges', '#admin-logs .m-logs-foot', '#admin-logs .m-logs-empty'].forEach((sel) => {
+            ['#admin-logs .m-logs-ranges', '#admin-logs .m-logs-foot', '#admin-logs .m-logs-empty', '#admin-debts .m-led-empty', '#admin-subscriptions .m-led-empty'].forEach((sel) => {
                 const el = document.querySelector(sel);
                 if (el) el.remove();
             });
