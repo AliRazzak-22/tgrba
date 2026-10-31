@@ -358,6 +358,32 @@
             if (wdWorst < 0 || d.avg < wd[wdWorst].avg) wdWorst = d.i;
         });
 
+        /* توزيع حجم الطلبات: يعدّ الفواتير لا المال، ليجيب هل الزبائن يطلبون
+           قطعاً قليلة متكررة أم طلبات كبيرة. الوسيط أصدق من المتوسط حين تجرّ
+           فاتورة واحدة الذيل، ولذلك يُعرض بجانب التوزيع. */
+        const ovalCuts = [5000, 10000, 25000];
+        const oval = { n: 0, buckets: [0, 0, 0, 0], totals: [0, 0, 0, 0], median: 0, max: 0 };
+        const ovalVals = [];
+        inPeriod.forEach((inv) => {
+            const v = num(inv.total);
+            if (v <= 0) return;
+            let b = 0;
+            if (v >= ovalCuts[2]) b = 3;
+            else if (v >= ovalCuts[1]) b = 2;
+            else if (v >= ovalCuts[0]) b = 1;
+            oval.buckets[b] += 1;
+            oval.totals[b] += v;
+            oval.n += 1;
+            ovalVals.push(v);
+        });
+        ovalVals.sort((a, b) => a - b);
+        if (oval.n) {
+            oval.median = oval.n % 2
+                ? ovalVals[(oval.n - 1) / 2]
+                : (ovalVals[oval.n / 2 - 1] + ovalVals[oval.n / 2]) / 2;
+            oval.max = ovalVals[oval.n - 1];
+        }
+
         /* غائب = زبون زار مرتين فأكثر ولم تُسجَّل له فاتورة منذ ٢١ يوماً.
            نُفرّق من تجاوز الشهر عن الذي ما زال في مهلة العودة. */
         const absent = Object.values(life)
@@ -432,6 +458,7 @@
             heat,
             heatMax,
             weekday: { list: wd, best: wdBest, worst: wdWorst },
+            orderValue: oval,
             ladder,
             absent,
             absentWarn,
@@ -561,6 +588,38 @@
         return '<div class="ri-heat-peak"><i class="fa-solid fa-bullseye"></i><span>أكثر الأوقات ازدحاماً: <b>' +
             esc(WEEKDAYS[pd] + ' · ' + PEAK_BUCKETS[pb]) + '</b> — <b>' + fmt(max) + '</b> طلباً (' + share + '% من طلبات الفترة)' +
             (ties > 1 ? ' · بالتساوي مع ' + fmt(ties - 1) + ' وقت آخر' : '') + '</span></div>';
+    }
+
+    /* توزيع حجم الطلبات: شريط مقسّم + وسيط. الحدود 5/10/25 ألف تفصل
+       الواقع الحالي (وسيط 5,000) بلا أن تجمع كل شيء في خانة واحدة. */
+    const OVAL_BUCKETS = [
+        { l: 'أقل من <span dir="ltr">5,000</span>', c: '#8b9dff' },
+        { l: '<span dir="ltr">5,000 – 9,999</span>', c: '#3ddc97' },
+        { l: '<span dir="ltr">10,000 – 24,999</span>', c: '#ffd166' },
+        { l: '<span dir="ltr">25,000</span> وأكثر', c: 'var(--rg-accent)' }
+    ];
+    function orderValueCard(ov) {
+        if (!ov || !ov.n) return emptyMini('لا فواتير في هذه الفترة بعد');
+        const segs = ov.buckets.map((n, i) => {
+            if (!n) return '';
+            const w = (n / ov.n) * 100;
+            return '<i style="--w:' + w.toFixed(2) + '%;--c:' + OVAL_BUCKETS[i].c + ';--i:' + i + '"></i>';
+        }).join('');
+        const rows = ov.buckets.map((n, i) => {
+            const p = Math.round((n / ov.n) * 100);
+            return '<div class="ri-ov-row">' +
+                '<i class="ri-ov-dot" style="--c:' + OVAL_BUCKETS[i].c + '"></i>' +
+                '<span class="ri-ov-l">' + OVAL_BUCKETS[i].l + '</span>' +
+                '<b class="ri-ov-n">' + fmt(n) + '</b>' +
+                '<span class="ri-ov-p" dir="ltr">' + p + '%</span>' +
+            '</div>';
+        }).join('');
+        return '<div class="ri-ov-bar" role="img" aria-label="توزيع الفواتير حسب قيمتها">' + segs + '</div>' +
+            '<div class="ri-ov-legend">' + rows + '</div>' +
+            '<div class="ri-ov-foot">' +
+                '<span><i class="fa-solid fa-scale-balanced"></i> وسيط الفاتورة: <b>' + money(ov.median) + '</b> — نصف الطلبات أقل منه</span>' +
+                '<small>أكبر فاتورة: <b>' + money(ov.max) + '</b> من أصل <b>' + fmt(ov.n) + '</b> فاتورة</small>' +
+            '</div>';
     }
 
     /* أعمدة أيام الأسبوع: متوسط قيمة الطلبات في اليوم الواحد، لا مجموعها،
@@ -826,6 +885,11 @@
             '<div class="ri-card">' +
                 '<div class="ri-card-head"><h3><i class="fa-solid fa-wave-square"></i> حركة الإيراد</h3><span>آخر ١٤ يوماً</span></div>' +
                 areaChart(vm.days) +
+            '</div>' +
+
+            '<div class="ri-card">' +
+                '<div class="ri-card-head"><h3><i class="fa-solid fa-scale-balanced"></i> حجم الطلبات</h3><span>قيمة الفاتورة</span></div>' +
+                orderValueCard(vm.orderValue) +
             '</div>' +
 
             '<div class="ri-card">' +
@@ -1769,6 +1833,49 @@ html.is-mobile body.rg-light .ri-wd-foot b { color: #0e2138; }
 html.is-mobile body.rg-light .ri-wd-best i { color: #1b5aa8; }
 html.is-mobile body.rg-light .ri-wd-worst,
 html.is-mobile body.rg-light .ri-wd-note { color: #5b7191; }
+
+html.is-mobile .ri-ov-bar {
+    display: flex; gap: 2px;
+    height: 14px; border-radius: 99px;
+    background: rgba(255,255,255,.05);
+    overflow: hidden;
+}
+html.is-mobile .ri-ov-bar i {
+    display: block; height: 100%; width: var(--w);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--c) 74%, #fff), var(--c));
+    transform: scaleX(0); transform-origin: right center;
+    animation: riSegGrow .7s var(--m-ease-out) forwards;
+    animation-delay: calc(160ms + var(--i, 0) * 70ms);
+}
+html.is-mobile body.rg-light .ri-ov-bar { background: rgba(30,70,120,.08); }
+html.is-mobile .ri-ov-legend { display: flex; flex-direction: column; gap: 6px; margin-top: 11px; }
+html.is-mobile .ri-ov-row { display: grid; grid-template-columns: 9px 1fr auto 36px; align-items: center; gap: 8px; }
+html.is-mobile .ri-ov-dot {
+    width: 9px; height: 9px; border-radius: 3px;
+    background: var(--c);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--c) 45%, transparent);
+}
+html.is-mobile .ri-ov-l { font-size: 10px; font-weight: 800; color: var(--m-muted); }
+html.is-mobile .ri-ov-n { font-size: 10.5px; font-weight: 900; color: var(--m-text); font-variant-numeric: tabular-nums; }
+html.is-mobile .ri-ov-p { font-size: 10px; font-weight: 800; color: var(--m-faint); text-align: end; font-variant-numeric: tabular-nums; }
+html.is-mobile .ri-ov-foot {
+    display: flex; flex-direction: column; gap: 4px;
+    margin-top: 10px; padding-top: 9px;
+    border-top: 1px solid var(--ri-line);
+    font-size: 10px; font-weight: 700; line-height: 1.55;
+    color: var(--m-muted);
+}
+html.is-mobile .ri-ov-foot b { color: var(--m-text); font-weight: 900; }
+html.is-mobile .ri-ov-foot i { color: var(--m-accent2); margin-inline-end: 3px; }
+html.is-mobile .ri-ov-foot small { font-size: 9px; font-weight: 700; color: var(--m-faint); }
+html.is-mobile body.rg-light .ri-ov-l { color: #4c5d75; }
+html.is-mobile body.rg-light .ri-ov-n { color: #0e2138; }
+html.is-mobile body.rg-light .ri-ov-p { color: #5b7191; }
+html.is-mobile body.rg-light .ri-ov-foot { color: #4c5d75; border-top-color: rgba(30,70,120,.10); }
+html.is-mobile body.rg-light .ri-ov-foot b { color: #0e2138; }
+html.is-mobile body.rg-light .ri-ov-foot i { color: #1b5aa8; }
+html.is-mobile body.rg-light .ri-ov-foot small { color: #5b7191; }
+@keyframes riSegGrow { to { transform: scaleX(1); } }
 
 html.is-mobile .ri-ladder { display: flex; flex-direction: column; gap: 9px; }
 html.is-mobile .ri-lad-row { display: grid; grid-template-columns: 64px 1fr 28px; align-items: center; gap: 8px; }
