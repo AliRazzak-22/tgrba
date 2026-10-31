@@ -280,6 +280,22 @@
             else tiers.casual.push(c);
         });
 
+        /* تركّز الإيراد: كم من المال يصنعه قليل من الزبائن. نلتقط أعلى 10%
+           و20% و50% بعدد صحيح من القائمة، ونعرض حصة الزبائن الفعلية لا
+           النسبة المطلوبة، كي لا تدّعي البطاقة «٢٠٪» وهي تضم ١٤٪ فقط.
+           الأساس إيراد الزبائن المسجّلين وحدهم، فالفواتير بلا اسم لا تنتمي
+           لأحد ولا يصح أن تُخفي تركّز الباقي. */
+        const concTotal = sortedBySpend.reduce((s, c) => s + c.spent, 0);
+        const conc = { n: sortedBySpend.length, total: concTotal, billed: billed, cuts: [] };
+        if (concTotal > 0 && conc.n) {
+            [0.1, 0.2, 0.5].forEach((p) => {
+                const k = Math.max(1, Math.round(conc.n * p));
+                let sum = 0;
+                for (let i = 0; i < k; i++) sum += sortedBySpend[i].spent;
+                conc.cuts.push({ k, spend: sum, share: (sum / concTotal) * 100 });
+            });
+        }
+
         /* منحنى 14 يوماً */
         const days = [];
         const dayMap = {};
@@ -453,6 +469,7 @@
             customers,
             sortedBySpend,
             tiers,
+            concentration: conc,
             services: topServices,
             servicesByQty: topServicesQty,
             heat,
@@ -556,6 +573,34 @@
                     '<div class="ri-donut-mid"><strong>' + total + '</strong><span>زبون</span></div>' +
                 '</div>' +
                 '<div class="ri-legend">' + legend + '</div>' +
+            '</div>';
+    }
+
+    function concentrationCard(cc) {
+        if (!cc || !cc.n || !(cc.total > 0)) return emptyMini('لا فواتير مسجّلة باسم زبون في هذه الفترة');
+        const CC_COLORS = ['var(--rg-accent)', '#8b9dff', '#3ddc97'];
+        const word = (n) => n === 1 ? 'زبون' : n === 2 ? 'زبونان' : 'زبوناً';
+        const top = cc.cuts[1];
+        const topPeople = Math.round((top.k / cc.n) * 100);
+        const topShare = Math.round(top.share);
+        const rows = cc.cuts.map((c, i) => {
+            const people = Math.round((c.k / cc.n) * 100);
+            return '<div class="ri-cc-row">' +
+                '<div class="ri-cc-top">' +
+                    '<span class="ri-cc-l">أعلى <b dir="ltr">' + people + '%</b> من الزبائن</span>' +
+                    '<span class="ri-cc-n">' + fmt(c.k) + ' ' + word(c.k) + ' · ' + money(c.spend) + '</span>' +
+                    '<b class="ri-cc-p" dir="ltr">' + Math.round(c.share) + '%</b>' +
+                '</div>' +
+                '<div class="ri-cc-track"><i style="--w:' + c.share.toFixed(2) + '%;--c:' + CC_COLORS[i] + ';--i:' + i + '"></i></div>' +
+            '</div>';
+        }).join('');
+        return '<div class="ri-cc-say">أعلى <b dir="ltr">' + topPeople + '%</b> من الزبائن (' + fmt(top.k) + ' ' + word(top.k) + ') صنعوا <b dir="ltr">' + topShare + '%</b> من قيمة الطلبات</div>' +
+            rows +
+            '<div class="ri-cc-foot">' +
+                '<span><i class="fa-solid fa-users"></i> الباقي ' + fmt(cc.n - top.k) + ' ' + word(cc.n - top.k) + ' صنعوا <b dir="ltr">' + (100 - topShare) + '%</b> فقط — التركّز العالي اعتماد على قلة، تابعهم قبل أن يغيبوا.</span>' +
+                '<small>' + (cc.billed - cc.total > 0.5
+                    ? 'فواتير الزبائن المسجّلين وحدها: <b>' + money(cc.total) + '</b> من أصل <b>' + money(cc.billed) + '</b> في هذه الفترة.'
+                    : 'كل فواتير الفترة مسجّلة باسم زبون — الأساس إيراد الفترة كاملاً.') + '</small>' +
             '</div>';
     }
 
@@ -896,6 +941,13 @@
                 '<div class="ri-card-head"><h3><i class="fa-solid fa-chart-pie"></i> شرائح الزبائن</h3><span>حسب السلوك</span></div>' +
                 donut(vm.tiers) +
             '</div>' +
+
+            (vm.customers.length >= 5 && vm.concentration.total > 0
+                ? '<div class="ri-card">' +
+                    '<div class="ri-card-head"><h3><i class="fa-solid fa-bullseye"></i> تركّز الإيراد</h3><span>باريتو الزبائن</span></div>' +
+                    concentrationCard(vm.concentration) +
+                  '</div>'
+                : '') +
 
             '<div class="ri-card">' +
                 '<div class="ri-card-head"><h3><i class="fa-solid fa-chart-column"></i> جدد مقابل عائدين</h3><span>آخر ' + monthsLabel(vm.months.length) + '</span></div>' +
@@ -1895,6 +1947,52 @@ html.is-mobile body.rg-light .ri-ov-foot i { color: #1b5aa8; }
 html.is-mobile body.rg-light .ri-ov-foot small { color: #5b7191; }
 @keyframes riSegGrow { to { transform: scaleX(1); } }
 
+html.is-mobile .ri-cc-say {
+    font-size: 11.5px; font-weight: 800; line-height: 1.6;
+    color: var(--m-muted);
+    padding: 9px 11px;
+    border-radius: 12px;
+    background: rgba(var(--rg-accent-rgb), .08);
+    border: 1px solid rgba(var(--rg-accent-rgb), .14);
+    margin-bottom: 12px;
+}
+html.is-mobile .ri-cc-say b { color: var(--m-text); font-weight: 900; }
+html.is-mobile .ri-cc-row { margin-top: 10px; }
+html.is-mobile .ri-cc-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+html.is-mobile .ri-cc-l { font-size: 10px; font-weight: 800; color: var(--m-muted); white-space: nowrap; }
+html.is-mobile .ri-cc-l b { color: var(--m-text); font-weight: 900; }
+html.is-mobile .ri-cc-n { flex: 1; font-size: 9px; font-weight: 700; color: var(--m-faint); font-variant-numeric: tabular-nums; text-align: center; }
+html.is-mobile .ri-cc-p { font-size: 11px; font-weight: 900; color: var(--m-text); font-variant-numeric: tabular-nums; }
+html.is-mobile .ri-cc-track { height: 9px; border-radius: 99px; background: rgba(255,255,255,.06); overflow: hidden; }
+html.is-mobile .ri-cc-track i {
+    display: block; height: 100%; width: var(--w); border-radius: 99px;
+    background: linear-gradient(90deg, color-mix(in srgb, var(--c) 45%, transparent), var(--c));
+    transform: scaleX(0); transform-origin: right center;
+    animation: riSegGrow .7s var(--m-ease-out) forwards;
+    animation-delay: calc(120ms + var(--i, 0) * 90ms);
+}
+html.is-mobile .ri-cc-foot {
+    display: flex; flex-direction: column; gap: 4px;
+    margin-top: 12px; padding-top: 9px;
+    border-top: 1px solid var(--ri-line);
+    font-size: 10px; font-weight: 700; line-height: 1.55;
+    color: var(--m-muted);
+}
+html.is-mobile .ri-cc-foot b { color: var(--m-text); font-weight: 900; }
+html.is-mobile .ri-cc-foot i { color: var(--m-accent2); margin-inline-end: 3px; }
+html.is-mobile .ri-cc-foot small { font-size: 9px; font-weight: 700; color: var(--m-faint); }
+html.is-mobile body.rg-light .ri-cc-say { background: rgba(var(--rg-accent-rgb), .06); border-color: rgba(var(--rg-accent-rgb), .14); color: #4c5d75; }
+html.is-mobile body.rg-light .ri-cc-say b { color: #0e2138; }
+html.is-mobile body.rg-light .ri-cc-l { color: #4c5d75; }
+html.is-mobile body.rg-light .ri-cc-l b { color: #0e2138; }
+html.is-mobile body.rg-light .ri-cc-n { color: #5b7191; }
+html.is-mobile body.rg-light .ri-cc-p { color: #0e2138; }
+html.is-mobile body.rg-light .ri-cc-track { background: rgba(30,70,120,.09); }
+html.is-mobile body.rg-light .ri-cc-foot { color: #4c5d75; border-top-color: rgba(30,70,120,.10); }
+html.is-mobile body.rg-light .ri-cc-foot b { color: #0e2138; }
+html.is-mobile body.rg-light .ri-cc-foot i { color: #1b5aa8; }
+html.is-mobile body.rg-light .ri-cc-foot small { color: #5b7191; }
+
 html.is-mobile .ri-ladder { display: flex; flex-direction: column; gap: 9px; }
 html.is-mobile .ri-lad-row { display: grid; grid-template-columns: 64px 1fr 28px; align-items: center; gap: 8px; }
 html.is-mobile .ri-lad-l { font-size: 10px; font-weight: 800; color: var(--m-muted); }
@@ -2085,6 +2183,10 @@ html.is-mobile .ri-foot i { color: var(--m-accent2); }
 html.is-mobile .ri-in { animation: riRise .62s var(--m-ease-out) both; animation-delay: calc(min(var(--ri-k, 0), 9) * 46ms); }
 html.is-mobile .ri-root.ri-no-motion .ri-in,
 html.is-mobile .ri-root.ri-no-motion .ri-svc-pop { animation: none; }
+/* أشرطة تكبر من صفر: إيقاف حركتها بلا إعادة التحويل يتركها غير مرئية */
+html.is-mobile .ri-root.ri-no-motion .ri-ov-bar i,
+html.is-mobile .ri-root.ri-no-motion .ri-wd-col i,
+html.is-mobile .ri-root.ri-no-motion .ri-cc-track i { animation: none; transform: none; }
 @keyframes riRise { from { opacity: 0; transform: translate3d(0, 16px, 0); } to { opacity: 1; transform: none; } }
 
 /* ورقة الزبون */
