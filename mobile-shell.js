@@ -929,6 +929,53 @@ html.is-mobile .m-today-row.up .m-today-val { color: #d6ffe9; text-shadow: 0 1px
 html.is-mobile .m-today-row.neg .m-today-val { color: #ffc9d0; }
 html.is-mobile .m-today-row.sum { background: linear-gradient(90deg, rgba(198,226,250,.10), transparent); }
 html.is-mobile .m-today-row.sum .m-today-val { font-size: 17px; color: #ffffff; }
+/* نبض التشغيل: ثلاثة عدّادات حيّة للطلبات المفتوحة — قيد التنفيذ، موعد
+   استلام اليوم، والمتأخرة عن موعدها. قراءة فقط من الفواتير نفسها. */
+html.is-mobile .m-pulse {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+    margin-top: 6px; padding: 12px 0 10px;
+    border-top: 1px solid var(--m-hair);
+}
+html.is-mobile .m-pulse-i {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    padding: 9px 6px 8px;
+    clip-path: var(--m-plate);
+    background:
+        linear-gradient(160deg, rgba(150,200,255,.13), rgba(120,165,235,.02) 60%, rgba(130,175,255,.07)),
+        rgba(12,22,40,.50);
+    text-align: center;
+}
+html.is-mobile .m-pulse-n {
+    font-size: 19px; font-weight: 900; color: #eef5ff; line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+    text-shadow: 0 1px 2px rgba(0,0,0,.5);
+    transition: color .3s var(--m-ease);
+}
+html.is-mobile .m-pulse-i small {
+    font-size: 10px; font-weight: 800; color: var(--m-muted);
+    display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;
+}
+html.is-mobile .m-pulse-i small i { font-size: 9.5px; color: var(--m-accent2); }
+html.is-mobile .m-pulse-i.due .m-pulse-n { color: #ffe0a6; }
+html.is-mobile .m-pulse-i.late .m-pulse-n { color: #ffc9d0; }
+html.is-mobile .m-pulse-i.late.zero .m-pulse-n { color: rgba(238,245,255,.56); }
+html.is-mobile body.rg-light .m-pulse { border-top-color: rgba(30,80,140,.10); }
+html.is-mobile body.rg-light .m-pulse-i {
+    background:
+        linear-gradient(160deg, rgba(255,255,255,.98), rgba(var(--rg-accent-rgb), .10) 60%, rgba(255,255,255,.72)),
+        rgba(255,255,255,.72);
+}
+html.is-mobile body.rg-light .m-pulse-n { color: #16324f; text-shadow: none; }
+html.is-mobile body.rg-light .m-pulse-i.due .m-pulse-n { color: #8a5a00; }
+html.is-mobile body.rg-light .m-pulse-i.late .m-pulse-n { color: #b32b3a; }
+html.is-mobile body.rg-light .m-pulse-i.late.zero .m-pulse-n { color: #7e93a8; }
+html.is-mobile body.rg-light .m-pulse-i small { color: #4d6a8a; }
+html.is-mobile body.rg-light .m-pulse-i small i { color: var(--rg-accent-ink); }
+html.is-mobile .admin-section .m-anim .m-today .m-pulse,
+html.is-mobile .m-today.m-anim .m-pulse {
+    animation: mWipe .82s var(--m-ease-out) both;
+    animation-delay: calc(330ms + min(var(--m-k, 0), 11) * 88ms + 500ms);
+}
 html.is-mobile .admin-section .m-anim.m-today .m-today-row,
 html.is-mobile .m-today.m-anim .m-today-row {
     animation: mWipe .82s var(--m-ease-out) both;
@@ -6884,7 +6931,12 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
                 '<i class="fa-solid ' + l[1] + '"></i>' +
                 '<div class="m-today-meta"><span>' + l[2] + '</span><em class="m-today-bar"><i></i></em></div>' +
                 '<b class="m-today-val">0</b></div>'
-            ).join('') + '</div>';
+            ).join('') + '</div>' +
+            '<div class="m-pulse">' +
+                '<div class="m-pulse-i"><b class="m-pulse-n" data-p="active">0</b><small><i class="fa-solid fa-shirt"></i> قيد التنفيذ</small></div>' +
+                '<div class="m-pulse-i due"><b class="m-pulse-n" data-p="due">0</b><small><i class="fa-solid fa-calendar-check"></i> موعدها اليوم</small></div>' +
+                '<div class="m-pulse-i late zero"><b class="m-pulse-n" data-p="late">0</b><small><i class="fa-solid fa-hourglass-half"></i> أقدم من ٧ أيام</small></div>' +
+            '</div>';
         page.appendChild(wrap);
         todayEl = wrap;
     }
@@ -6906,6 +6958,8 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
     function paintToday() {
         if (!todayEl) buildTodayPanel();
         if (!todayEl) return;
+        let key = '';
+        try { key = typeof window.royalTodayKey === 'function' ? String(window.royalTodayKey()) : ''; } catch (e) {}
         const td = todayRow();
         const sales = td ? num(td[2].textContent) : 0;
         const expenses = td ? num(td[3].textContent) : 0;
@@ -6927,9 +6981,39 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
             const w = pct + '%';
             if (fill.style.width !== w) fill.style.width = w;
         });
+        /* نبض التشغيل: قراءة فقط من الفواتير — الطلبات المفتوحة، منها ما موعده
+           اليوم، وما تجاوز سبعة أيام بلا تسليم. لا يمسّ أي رقم مالي. */
+        let active = 0, due = 0, late = 0;
+        let nowMs = Date.now();
+        try { if (typeof window.getRealTime === 'function') nowMs = Number(window.getRealTime().timestamp) || nowMs; } catch (e) {}
+        try {
+            const data = typeof window.royalDataRead === 'function' ? window.royalDataRead() : null;
+            const list = (data && Array.isArray(data.invoices)) ? data.invoices : [];
+            list.forEach((inv) => {
+                if (!inv || inv.type !== 'active') return;
+                active += 1;
+                const pd = inv.customer && inv.customer.pickupDate ? String(inv.customer.pickupDate).trim().slice(0, 10) : '';
+                if (key && /^\d{4}-\d{2}-\d{2}$/.test(pd) && pd === key) due += 1;
+                let ts = Number(inv.timestamp);
+                if (!isFinite(ts) || ts <= 0) {
+                    const ds = inv.date && /^\d{4}-\d{2}-\d{2}$/.test(String(inv.date)) ? String(inv.date) : '';
+                    ts = ds ? Date.parse(ds + 'T12:00:00+03:00') : 0;
+                } else if (ts < 1e12) {
+                    ts *= 1000;
+                }
+                if (ts > 0 && nowMs - ts >= 7 * 86400000) late += 1;
+            });
+        } catch (e) { /* العدادات تبقى على آخر قيمة سليمة */ }
+        const pulse = { active: active, due: due, late: late };
+        Object.keys(pulse).forEach((k) => {
+            const n = todayEl.querySelector('[data-p="' + k + '"]');
+            if (!n) return;
+            const t = money(pulse[k]);
+            if (n.textContent !== t) n.textContent = t;
+        });
+        const lateItem = todayEl.querySelector('.m-pulse-i.late');
+        if (lateItem) lateItem.classList.toggle('zero', late === 0);
         const d = todayEl.querySelector('.m-today-date');
-        let key = '';
-        try { key = typeof window.royalTodayKey === 'function' ? String(window.royalTodayKey()) : ''; } catch (e) {}
         const label = key ? new Intl.DateTimeFormat('ar-IQ', { weekday: 'long', day: 'numeric', month: 'long' })
             .format(new Date(key + 'T12:00:00')) : '';
         if (label && d.textContent !== label) d.textContent = label;
