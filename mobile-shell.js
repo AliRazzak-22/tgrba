@@ -1224,6 +1224,149 @@ html.is-mobile body.rg-light .m-act-more { border-color: rgba(47,127,208,.20); b
     html.is-mobile .m-act-bar-orb::after { transition: none; animation: none; }
 }
 
+/* ------------------------- قفل الجلسة التلقائي -------------------------
+   خيار في التخصيصات لا يفرض نفسه: متوقف حتى يختاره صاحب المكوى. عند
+   تفعيله يعود النظام لشاشة الرمز بعد خمول حقيقي، وينبّه قبل القفل
+   بثلاثين ثانية مع زر «ابقَ» كي لا يضيع عمل من ترك الجهاز لحظة. */
+html.is-mobile .m-idle-card {
+    margin-top: 14px;
+    padding: 15px 14px 13px;
+    border-radius: 20px;
+    border: 1px solid rgba(160,205,255,.18);
+    background:
+        linear-gradient(160deg, rgba(190,222,255,.10), rgba(120,172,240,.02) 55%, rgba(160,205,255,.06)),
+        rgba(9,19,37,.42);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    backdrop-filter: blur(18px) saturate(140%);
+    box-shadow: inset 0 1px 0 rgba(210,240,255,.14), 0 10px 24px rgba(0,4,14,.18);
+}
+html.is-mobile .m-idle-head { display: flex; align-items: center; gap: 10px; }
+html.is-mobile .m-idle-orb {
+    flex: none;
+    width: 36px; height: 36px;
+    display: grid;
+    place-items: center;
+    border-radius: 12px;
+    border: 1px solid rgba(214,190,120,.32);
+    background: linear-gradient(160deg, rgba(255,231,170,.16), rgba(255,196,64,.04));
+    color: var(--gold, #e6c46a);
+    font-size: 14px;
+    box-shadow: inset 0 1px 0 rgba(255,244,210,.20);
+}
+html.is-mobile .m-idle-hd { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+html.is-mobile .m-idle-hd b { font-size: 13.5px; font-weight: 900; color: #eaf3ff; }
+html.is-mobile .m-idle-hd small { font-size: 10.5px; font-weight: 600; line-height: 1.65; color: rgba(170,198,230,.60); }
+html.is-mobile .m-idle-seg { display: flex; gap: 6px; margin-top: 12px; }
+html.is-mobile .m-idle-seg button {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 9px 4px;
+    border-radius: 12px;
+    border: 1px solid rgba(160,205,255,.14);
+    background: rgba(255,255,255,.035);
+    color: rgba(190,214,240,.78);
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 800;
+    white-space: nowrap;
+    transition: background .2s var(--m-ease), border-color .2s var(--m-ease), color .2s var(--m-ease);
+}
+html.is-mobile .m-idle-seg button:active { transform: scale(.97); }
+html.is-mobile .m-idle-seg button.on {
+    background: linear-gradient(160deg, rgba(255,231,170,.20), rgba(255,196,64,.05));
+    border-color: rgba(226,196,120,.42);
+    color: #ffe9bf;
+    box-shadow: inset 0 1px 0 rgba(255,244,210,.20);
+}
+html.is-mobile .m-idle-note {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-top: 10px;
+    font-size: 10px;
+    font-weight: 700;
+    color: rgba(168,198,232,.58);
+}
+html.is-mobile .m-idle-note i { font-size: 7px; color: #6bf0b6; }
+html.is-mobile .m-idle-note.off i { color: rgba(150,180,215,.35); }
+html.is-mobile body.rg-light .m-idle-card {
+    border-color: rgba(255,255,255,.95);
+    background: linear-gradient(160deg, rgba(255,255,255,.93), rgba(255,255,255,.70));
+    box-shadow: 0 8px 20px rgba(28,62,110,.10), inset 0 1px 0 #fff;
+}
+html.is-mobile body.rg-light .m-idle-hd b { color: #142c47; }
+html.is-mobile body.rg-light .m-idle-hd small { color: rgba(60,90,125,.62); }
+html.is-mobile body.rg-light .m-idle-seg button { border-color: rgba(30,70,120,.12); background: rgba(30,70,120,.03); color: rgba(50,80,115,.78); }
+html.is-mobile body.rg-light .m-idle-seg button.on {
+    background: linear-gradient(160deg, rgba(255,231,170,.50), rgba(255,214,120,.16));
+    border-color: rgba(190,150,60,.40);
+    color: #7d5a12;
+    box-shadow: inset 0 1px 0 #fff;
+}
+html.is-mobile body.rg-light .m-idle-note { color: rgba(60,90,125,.60); }
+
+html.is-mobile .m-idle-warn {
+    position: fixed;
+    top: calc(env(safe-area-inset-top, 0px) + 66px);
+    left: 50%;
+    z-index: 9530;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    max-width: calc(100vw - 24px);
+    padding: 8px 8px 8px 12px;
+    border-radius: 16px;
+    border: 1px solid rgba(255,214,140,.34);
+    background:
+        linear-gradient(160deg, rgba(255,231,170,.16), rgba(255,196,64,.04)),
+        rgba(24,20,10,.74);
+    -webkit-backdrop-filter: blur(18px) saturate(150%);
+    backdrop-filter: blur(18px) saturate(150%);
+    color: #ffe9bf;
+    font-size: 11.5px;
+    font-weight: 800;
+    box-shadow: 0 16px 34px rgba(0,4,14,.44), inset 0 1px 0 rgba(255,244,210,.20);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translate(-50%, -8px);
+    transition: opacity .25s var(--m-ease), transform .3s var(--m-ease-out), visibility .25s;
+}
+html.is-mobile .m-idle-warn.on {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translate(-50%, 0);
+}
+html.is-mobile .m-idle-warn > i { color: #ffd27a; font-size: 12px; }
+html.is-mobile .m-idle-warn-t { white-space: nowrap; }
+html.is-mobile .m-idle-warn-t b { font-variant-numeric: tabular-nums; color: #fff3d6; }
+html.is-mobile .m-idle-warn-b {
+    flex: none;
+    padding: 6px 11px;
+    border-radius: 11px;
+    border: 1px solid rgba(255,225,160,.36);
+    background: rgba(255,225,160,.14);
+    color: #fff3d6;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 900;
+}
+html.is-mobile .m-idle-warn-b:active { transform: scale(.95); }
+html.is-mobile body.rg-light .m-idle-warn {
+    border-color: rgba(190,150,60,.36);
+    background: linear-gradient(160deg, rgba(255,255,255,.96), rgba(255,249,235,.90));
+    color: #7d5a12;
+    box-shadow: 0 16px 34px rgba(60,44,10,.16), inset 0 1px 0 #fff;
+}
+html.is-mobile body.rg-light .m-idle-warn > i { color: #a87a18; }
+html.is-mobile body.rg-light .m-idle-warn-t b { color: #5f430c; }
+html.is-mobile body.rg-light .m-idle-warn-b { border-color: rgba(190,150,60,.36); background: rgba(255,231,170,.45); color: #6a4b0e; }
+@media (prefers-reduced-motion: reduce) {
+    html.is-mobile .m-idle-warn,
+    html.is-mobile .m-idle-seg button { transition: none; }
+}
+
 /* ------------------------- اللوحاتControl والفلاتر ------------------------- */
 html.is-mobile .admin-control-panel { display: flex !important; flex-direction: column !important; align-items: stretch !important; gap: 10px !important; margin-bottom: 14px !important; }
 html.is-mobile .admin-control-panel h2 { margin: 0 2px !important; }
@@ -5170,6 +5313,163 @@ html.is-mobile .modal-footer-sticky {
         });
     }
 
+    /* ================= قفل الجلسة التلقائي =================
+       لا يفرض نفسه: يبقى متوقفاً حتى يختاره صاحب المكوى من التخصيصات.
+       اللمس والكتابة يصفّران العدّاد، والخمول وحده هو ما يقفل. */
+    const IDLE_KEY = 'royal.lock.min.v1';
+    const IDLE_WARN_MS = 30000;
+    let idleMin = 0;
+    let idleLast = Date.now();
+    let idleTimer = 0;
+    let idleWarnEl = null;
+
+    function idleLoad() {
+        let v = NaN;
+        try { v = Number(localStorage.getItem(IDLE_KEY)); } catch (e) {}
+        idleMin = isFinite(v) && v > 0 ? Math.min(v, 720) : 0;
+    }
+
+    function idleSave() {
+        try { localStorage.setItem(IDLE_KEY, String(idleMin)); } catch (e) {}
+    }
+
+    function idleMark() {
+        idleLast = Date.now();
+        idleHideWarn();
+    }
+
+    function idleWarnBuild() {
+        idleWarnEl = document.createElement('div');
+        idleWarnEl.className = 'm-idle-warn';
+        idleWarnEl.setAttribute('role', 'status');
+        idleWarnEl.innerHTML =
+            '<i class="fa-solid fa-lock"></i>' +
+            '<span class="m-idle-warn-t">سيُقفل النظام خلال <b>30</b> ثانية</span>' +
+            '<button type="button" class="m-idle-warn-b">ابقَ</button>';
+        document.body.appendChild(idleWarnEl);
+        idleWarnEl.querySelector('.m-idle-warn-b').addEventListener('click', idleMark);
+    }
+
+    function idleShowWarn(left) {
+        if (!idleWarnEl) idleWarnBuild();
+        const sec = Math.max(1, Math.ceil(left / 1000));
+        const b = idleWarnEl.querySelector('.m-idle-warn-t b');
+        if (b && b.textContent !== String(sec)) b.textContent = String(sec);
+        idleWarnEl.classList.add('on');
+    }
+
+    function idleHideWarn() {
+        if (idleWarnEl) idleWarnEl.classList.remove('on');
+    }
+
+    function idleLock() {
+        if (!idleMin) return;
+        if (!document.body.classList.contains('m-admin')) return;
+        if (document.querySelector('.m-lk-fx')) return;
+        idleHideWarn();
+        idleLast = Date.now();
+        try { window.exitToMain(); } catch (e) {}
+    }
+
+    function idleCheck() {
+        if (!idleMin) { idleHideWarn(); return; }
+        if (document.hidden) return;
+        /* خارج لوحة الإدارة أو أمام شاشة القفل: لا عدّاد معلّق */
+        if (!document.body.classList.contains('m-admin') || document.querySelector('.m-lk-fx')) {
+            idleLast = Date.now();
+            idleHideWarn();
+            return;
+        }
+        const limit = idleMin * 60000;
+        const left = limit - (Date.now() - idleLast);
+        if (left <= 0) { idleLock(); return; }
+        if (left <= Math.min(IDLE_WARN_MS, limit * .5)) idleShowWarn(left);
+        else idleHideWarn();
+    }
+
+    function syncIdleCard() {
+        const card = document.querySelector('.m-idle-card');
+        if (!card) return;
+        card.querySelectorAll('[data-idle-min]').forEach((b) => {
+            const on = Number(b.getAttribute('data-idle-min')) === idleMin;
+            b.classList.toggle('on', on);
+            b.setAttribute('aria-pressed', String(on));
+        });
+        const note = card.querySelector('.m-idle-note');
+        if (note) {
+            note.classList.toggle('off', !idleMin);
+            note.innerHTML = '<i class="fa-solid fa-circle"></i>' +
+                (idleMin ? 'مفعّل · يُقفل بعد ' + idleMin + ' دقيقة خمول، ويعود لشاشة الرمز' : 'متوقف · لن يُقفل تلقائياً');
+        }
+    }
+
+    function buildIdleCard() {
+        const page = document.getElementById('admin-settings');
+        if (!page || page.querySelector('.m-idle-card')) return;
+        const card = document.createElement('div');
+        card.className = 'm-idle-card';
+        card.innerHTML =
+            '<div class="m-idle-head">' +
+                '<span class="m-idle-orb"><i class="fa-solid fa-shield-halved"></i></span>' +
+                '<span class="m-idle-hd"><b>قفل الجلسة</b><small>إذا تُرك الجهاز بلا لمس، يعود النظام إلى شاشة الرمز.</small></span>' +
+            '</div>' +
+            '<div class="m-idle-seg" role="group" aria-label="مدة الخمول قبل القفل">' +
+                '<button type="button" data-idle-min="0" aria-pressed="false">متوقف</button>' +
+                '<button type="button" data-idle-min="5" aria-pressed="false">5 دقائق</button>' +
+                '<button type="button" data-idle-min="15" aria-pressed="false">15 دقيقة</button>' +
+                '<button type="button" data-idle-min="30" aria-pressed="false">30 دقيقة</button>' +
+            '</div>' +
+            '<div class="m-idle-note off"><i class="fa-solid fa-circle"></i>متوقف · لن يُقفل تلقائياً</div>';
+        page.appendChild(card);
+        card.addEventListener('click', (e) => {
+            const b = e.target.closest('[data-idle-min]');
+            if (!b) return;
+            const m = Number(b.getAttribute('data-idle-min')) || 0;
+            window.RoyalLock.set(m);
+            if (window.showAlert) {
+                window.showAlert(m ? 'سيُقفل النظام بعد ' + m + ' دقيقة خمول' : 'قفل الجلسة التلقائي متوقف', 'success');
+            }
+        });
+        syncIdleCard();
+    }
+
+    function bindIdleLock() {
+        idleLoad();
+        if (idleTimer) return;
+        const mark = (e) => {
+            const t = e && e.target;
+            if (t && t.closest && t.closest('.m-idle-warn')) return;
+            idleMark();
+        };
+        ['pointerdown', 'touchstart', 'keydown', 'wheel'].forEach((type) => {
+            document.addEventListener(type, mark, { capture: true, passive: true });
+        });
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden || !idleMin) return;
+            if (!document.body.classList.contains('m-admin')) return;
+            if (document.querySelector('.m-lk-fx')) return;
+            if (Date.now() - idleLast >= idleMin * 60000) idleLock();
+        });
+        idleTimer = setInterval(idleCheck, 1000);
+        buildIdleCard();
+    }
+
+    /* واجهة صغيرة للطبقات الأخرى: قراءة المدة، ضبطها، وتصفير العدّاد */
+    window.RoyalLock = {
+        minutes: () => idleMin,
+        remaining: () => (idleMin ? Math.max(0, idleMin * 60000 - (Date.now() - idleLast)) : 0),
+        set: (m) => {
+            const v = Number(m);
+            idleMin = isFinite(v) && v > 0 ? Math.min(v, 720) : 0;
+            idleLast = Date.now();
+            idleSave();
+            syncIdleCard();
+            idleHideWarn();
+        },
+        reset: idleMark,
+        lockNow: idleLock
+    };
+
     /* ================= إعادة الرسم المنظمة (debounce + إرجاء) ================= */
     const RENDERERS = ['updateAdminDashboard', 'renderLogs', 'renderAdminSubs'];
     const originals = {};
@@ -7549,10 +7849,12 @@ html.is-mobile .modal-footer-sticky {
                 if (!state.started) mount();
                 showAdminChrome();
                 addViewToggle();
+                idleMark();
             } else {
                 document.body.classList.remove('m-admin');
                 closeCmd();
                 actClose();
+                idleHideWarn();
             }
         };
         new MutationObserver(sync).observe(admin, { attributes: true, attributeFilter: ['class'] });
@@ -7628,6 +7930,7 @@ html.is-mobile .modal-footer-sticky {
         bindScrollProgress();
         bindCommandPalette();
         bindActivity();
+        bindIdleLock();
         observeSheets();
         bindKeyboard();
         bindTodayPanel();
