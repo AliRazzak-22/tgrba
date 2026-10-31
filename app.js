@@ -2622,7 +2622,7 @@ window.viewDayTransactions = (dateStr) => {
         }
 
         tbody.innerHTML += `
-            <tr onclick="window.viewTransactionDetails('${inv.id}'<tr onclick="window.viewTransactionDetails('${inv.id}')">)" title="انقر لعرض السلة">
+            <tr onclick="window.viewTransactionDetails('${inv.id}'<tr onclick="window.viewTransactionDetails('${inv.id}')">)" >
                 <td style="color:${typeColor}; font-weight:bold;">${typeStr}</td>
                 <td>${inv.dailyNumber || inv.id.slice(-4)}</td>
                 <td style="font-weight:bold;">${custName}</td>
@@ -4248,7 +4248,7 @@ window.viewDayTransactions = (dateStr) => {
         }
 
         tbody.innerHTML += `
-            <tr onclick="window.viewTransactionDetails('${inv.id}')" title="انقر لعرض السلة">
+            <tr onclick="window.viewTransactionDetails('${inv.id}')">
                 <td style="color:${typeColor}; font-weight:bold;">${typeStr}</td>
                 <td>${inv.dailyNumber || inv.id.slice(-4)}</td>
                 <td style="font-weight:bold;">${custName}</td>

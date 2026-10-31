@@ -1046,6 +1046,18 @@ html.is-mobile .modal-overlay.m-sheet.m-on { opacity: 1; pointer-events: auto; }
 @keyframes mSheetOut { from { transform: translateY(0); } to { transform: translateY(105%); } }
 @keyframes mScrimIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes mScrimOut { from { opacity: 1; } to { opacity: 0; } }
+/* بناء تدريجي لمحتوى النوافذ: البطاقة تنبثق بعد التي قبلها بلا أي خصائص تخطيط */
+@keyframes mRise {
+    from { opacity: 0; transform: translateY(16px) scale(.985); }
+    to { opacity: 1; transform: none; }
+}
+html.is-mobile .m-rise {
+    animation: mRise .44s cubic-bezier(.22,.9,.26,1) both;
+    animation-delay: calc(var(--i, 0) * 38ms);
+}
+@media (prefers-reduced-motion: reduce) {
+    html.is-mobile .m-rise { animation: none !important; }
+}
 html.is-mobile .modal-overlay.m-sheet .modal-content { animation: none; }
 html.is-mobile .modal-overlay.m-sheet.m-on { animation: mScrimIn .26s linear both; }
 html.is-mobile .modal-overlay.m-sheet.m-in .modal-content { animation: mSheetIn .42s var(--m-ease-out) both; }
@@ -1089,7 +1101,7 @@ html.is-mobile .modal-content.mobile-sticky-modal .modal-body-scrollable {
     min-height: 0 !important;
     overflow-y: auto !important;
     overflow-x: auto !important;
-    overscroll-behavior: contain;
+    overscroll-behavior: none;
     padding: 0 14px 10px !important;
 }
 html.is-mobile .modal-overlay .modal-content.mobile-sticky-modal .m-sheet-x { top: 12px; }
@@ -1193,7 +1205,7 @@ html.is-mobile .m-exp-modal .m-exp-body {
     min-height: 0 !important;
     overflow-y: auto !important;
     overflow-x: hidden !important;
-    overscroll-behavior: contain;
+    overscroll-behavior: none;
     -webkit-overflow-scrolling: touch;
     padding: 0 14px 12px !important;
     background: transparent !important;
@@ -1325,7 +1337,7 @@ html.is-mobile #modal-daily-transactions .modal-body-scrollable {
     min-height: 0 !important;
     overflow-x: hidden !important;
     overflow-y: auto !important;
-    overscroll-behavior: contain;
+    overscroll-behavior: none;
     -webkit-overflow-scrolling: touch;
     padding: 10px 14px 12px !important;
     background: transparent !important;
@@ -1481,7 +1493,7 @@ html.is-mobile .m-tx-modal .modal-body-scrollable {
     min-height: 0 !important;
     overflow-y: auto !important;
     overflow-x: hidden !important;
-    overscroll-behavior: contain;
+    overscroll-behavior: none;
     -webkit-overflow-scrolling: touch;
     padding: 2px 14px 10px !important;
     background: transparent !important;
@@ -3020,7 +3032,11 @@ html.is-mobile .modal-footer-sticky {
             const want = base + (dP > 0 ? 1 : -1);
             if (want >= 0 && want <= state.swipeHi) {
                 const ni = pageForPos(want);
-                if (ni !== state.index && vpos(ni) === want) enterAnimate(state.pages[ni]);
+                if (ni !== state.index && vpos(ni) === want) {
+                    enterAnimate(state.pages[ni]);
+                    /* اللوحة القادمة تُكشف من أعلاها لا من موضعها القديم */
+                    if (state.pages[ni]) state.pages[ni].scrollTop = 0;
+                }
             }
         }
 
@@ -3232,6 +3248,68 @@ html.is-mobile .modal-footer-sticky {
         document.addEventListener('touchcancel', () => { armed = false; }, { passive: true });
     }
 
+    /* ================== معاينة سريعة بالضغط المستمر ==================
+       ضغط مطوّل على حركة في كشف اليوم يفتح تفاصيلها مؤقتاً، ورفع الإصبع
+       يعيدها بانسحاب ناعم. أي سحب يلغي المعاينة كي لا يعطّل التمرير. */
+    let peekArm = false;
+    function bindQuickPeek() {
+        const S = { timer: 0, row: null, x: 0, y: 0, opened: false, el: null };
+        const SLOP = 12;
+        const MS = 360;
+        const clear = () => { clearTimeout(S.timer); S.timer = 0; };
+        const close = () => {
+            const el = S.el;
+            S.opened = false;
+            S.el = null;
+            if (el) requestSheetClose(el);
+        };
+        const suppressNextClick = () => {
+            const stop = (ev) => { ev.stopPropagation(); ev.preventDefault(); };
+            document.addEventListener('click', stop, true);
+            setTimeout(() => document.removeEventListener('click', stop, true), 420);
+        };
+        document.addEventListener('touchstart', (e) => {
+            if (!e.touches || e.touches.length !== 1) return;
+            const t = e.target;
+            const row = t && t.closest ? t.closest('#drill-transactions-body tr') : null;
+            if (!row) return;
+            if (document.querySelector('#modal-transaction-details.m-sheet.m-on')) return;
+            clear();
+            S.row = row;
+            S.x = e.touches[0].clientX;
+            S.y = e.touches[0].clientY;
+            S.opened = false;
+            S.el = null;
+            S.timer = setTimeout(() => {
+                if (!S.row || !S.row.isConnected) return;
+                S.opened = true;
+                peekArm = true;
+                setTimeout(() => { peekArm = false; }, 600);
+                try { S.row.click(); } catch (err) {}
+                S.el = document.getElementById('modal-transaction-details');
+            }, MS);
+        }, { passive: true });
+        document.addEventListener('touchmove', (e) => {
+            if (!S.row || !e.touches || e.touches.length !== 1) return;
+            const dx = e.touches[0].clientX - S.x;
+            const dy = e.touches[0].clientY - S.y;
+            if (Math.abs(dx) <= SLOP && Math.abs(dy) <= SLOP) return;
+            clear();
+            if (S.opened) { suppressNextClick(); close(); }
+            S.row = null;
+        }, { passive: true });
+        const end = () => {
+            clear();
+            if (S.opened) {
+                suppressNextClick();
+                close();
+            }
+            S.row = null;
+        };
+        document.addEventListener('touchend', end, { passive: true });
+        document.addEventListener('touchcancel', end, { passive: true });
+    }
+
     /* ================= إعادة الرسم المنظمة (debounce + إرجاء) ================= */
     const RENDERERS = ['updateAdminDashboard', 'renderLogs', 'renderAdminSubs'];
     const originals = {};
@@ -3315,9 +3393,20 @@ html.is-mobile .modal-footer-sticky {
     /* عند الوصول لتبويب: رسم فوري من نفس دوال النظام */
     function onArrive(key) {
         if (!key) return;
+        /* التبويب يفتح دائماً من أعلاه مهما كان موضع تمريره السابق */
+        const page = pageOf(key);
+        resetPageTop(page);
         setPending();
         if (state.busy) return;
         flushRepaint();
+    }
+
+    /* المتصفح يحفظ موضع تمرير الصفحة المخفية ويعيده لحظة ظهورها، والضبط قبل
+       الظهور لا يُحتسب. لذلك نصفّر بعد الرسم وفي الإطار الذي يليه. */
+    function resetPageTop(page) {
+        if (!page) return;
+        page.scrollTop = 0;
+        requestAnimationFrame(() => { if (page) page.scrollTop = 0; });
     }
 
     function pageOf(key) { return document.getElementById('admin-' + key); }
@@ -3366,7 +3455,12 @@ html.is-mobile .modal-footer-sticky {
         lockBackground();
         if (content) meterSheets(content);
         sheetStack.push(el);
-        if (!pushing) {
+        /* معاينة سريعة: بلا خطوة سجل كي لا يتغيّر سلوك زر الرجوع */
+        if (peekArm && el.id === 'modal-transaction-details') {
+            el.__mPeek = true;
+            peekArm = false;
+        }
+        if (!el.__mPeek && !pushing) {
             pushing = true;
             try { history.pushState({ royalSheet: el.id }, ''); } catch (e) {}
             pushing = false;
@@ -3453,6 +3547,20 @@ html.is-mobile .modal-footer-sticky {
         if (!t) return '';
         try { return new Intl.DateTimeFormat('ar-IQ', { weekday: 'long' }).format(new Date(t)); }
         catch (e) { return ''; }
+    }
+
+    /* حركة البناء التدريجي داخل النوافذ: تُعاد في كل فتح فتشعر أن المحتوى يتركّب */
+    function staggerRise(container, selector, cap) {
+        if (!container) return;
+        const els = qsa(selector, container);
+        if (!els.length) return;
+        for (let i = 0; i < els.length; i++) els[i].classList.remove('m-rise');
+        void container.offsetWidth;
+        const n = Math.min(els.length, cap || 10);
+        for (let i = 0; i < n; i++) {
+            els[i].style.setProperty('--i', String(Math.min(i, 9)));
+            els[i].classList.add('m-rise');
+        }
     }
 
     function decorateExpenses(el, content) {
@@ -3547,6 +3655,8 @@ html.is-mobile .modal-footer-sticky {
         body.querySelector('.m-exp-empty').style.display = items.length ? 'none' : 'flex';
         el.dataset.mExpTotal = String(total);
         el.dataset.mExpCount = String(items.length);
+        staggerRise(content, '.m-exp-sum', 1);
+        staggerRise(body, '.m-exp-card', 10);
     }
 
     function decorateDay(el, content) {
@@ -3582,6 +3692,7 @@ html.is-mobile .modal-footer-sticky {
             body.appendChild(empty);
         }
         if (empty) empty.style.display = rows.length ? 'none' : 'flex';
+        staggerRise(content.querySelector('#drill-transactions-body'), 'tr', 10);
     }
 
     function decorateTx(el, content) {
@@ -3598,6 +3709,8 @@ html.is-mobile .modal-footer-sticky {
             body.appendChild(empty);
         }
         if (empty) empty.style.display = rows.length ? 'none' : 'flex';
+        staggerRise(content, '#drill-cart-info', 1);
+        staggerRise(content.querySelector('#drill-cart-items-body'), 'tr', 8);
     }
 
     function requestSheetClose(el) {
@@ -3650,6 +3763,8 @@ html.is-mobile .modal-footer-sticky {
 
     function closeSheet(el, skipHistory, instant) {
         if (el.classList.contains('m-closing')) return;
+        const wasPeek = !!el.__mPeek;
+        if (wasPeek) delete el.__mPeek;
         if (instant) {
             /* التنقل لا ينتظر الانزلاق: اللوحة الجديدة تصعد خلف هذه النافذة،
                فأي حركة خروج تبقى فوقها تُرى كنافذة معلّقة. */
@@ -3670,7 +3785,7 @@ html.is-mobile .modal-footer-sticky {
             document.body.classList.remove('m-sheet-open');
             unlockBackground();
         }
-        if (!pushing && !skipHistory && !sheetStack.length && history.state && history.state.royalSheet) {
+        if (!pushing && !skipHistory && !wasPeek && !sheetStack.length && history.state && history.state.royalSheet) {
             pushing = true;
             try { history.back(); } catch (e) {}
             setTimeout(() => { pushing = false; }, 250);
@@ -5359,6 +5474,7 @@ html.is-mobile .modal-footer-sticky {
             /* البناء قبل الظهور: تُرسم اللوحة أول مرة وهي في حالتها الابتدائية */
             enterAnimate(dst);
             paintTransforms();
+            resetPageTop(dst);
             syncA11y();
             setBusy(false);
             resetOtherEntrances(dst);
@@ -5396,6 +5512,7 @@ html.is-mobile .modal-footer-sticky {
                فبقاء busy يترك اللوحة السابقة معروضة فوق الجديدة بلا إزاحة */
             setBusy(false);
             paintTransforms();
+            resetPageTop(dst);
             syncA11y();
             resetOtherEntrances(dst);
             /* ما استجد أثناء الحركة يُرسم بعد اكتمال الدخول، لا فوقه */
@@ -5531,6 +5648,7 @@ html.is-mobile .modal-footer-sticky {
         paintTransforms();
         bindGestures();
         bindBounceGuard();
+        bindQuickPeek();
         observeSheets();
         bindKeyboard();
         bindTodayPanel();
