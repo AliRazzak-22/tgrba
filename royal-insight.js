@@ -1,0 +1,1301 @@
+/* =========================================================================
+   مركز الزبائن — تحليل قراءة فقط لطبقة الجوال.
+   يقرأ localData عبر جسر app.js (window.royalDataRead) ولا يكتب أي شيء إطلاقاً.
+   كل قاعدة CSS تبدأ بـ html.is-mobile، وكل عنصر يُركّب داخل #admin-customers
+   أو على body (ورقة الزبون) — نسخة الكمبيوتر لا تراه ولا تتأثر به.
+   ========================================================================= */
+(function () {
+    'use strict';
+
+    const root = document.documentElement;
+    if (!root.classList.contains('is-mobile')) return;
+
+    const SEC_ID = 'admin-customers';
+    const REDUCED = (() => {
+        try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; }
+    })();
+
+    const SERIES = ['var(--rg-accent)', '#8b9dff', '#3ddc97', '#ffd166', '#ff86b3', '#38e1f0'];
+    const TIER_COLORS = { elite: 'var(--rg-accent)', loyal: '#8b9dff', fresh: '#3ddc97', casual: '#ffd166' };
+    const PERIODS = [
+        { k: 'today', label: 'اليوم', days: 1 },
+        { k: '7', label: '٧ أيام', days: 7 },
+        { k: '30', label: '٣٠ يوماً', days: 30 },
+        { k: 'all', label: 'الكل', days: 0 }
+    ];
+    const WEEKDAYS = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+
+    const state = {
+        period: '30',
+        query: '',
+        filter: 'all',
+        rendered: false,
+        signature: '',
+        timer: 0,
+        sheetCustomer: null
+    };
+
+    function esc(v) {
+        return String(v == null ? '' : v).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+    function num(v) { const n = Number(v); return isFinite(n) ? n : 0; }
+    function fmt(n) { return Math.round(num(n)).toLocaleString('en-US'); }
+    function money(n) { return fmt(n) + ' د.ع'; }
+    function pct(v, total) { return total > 0 ? Math.round((v / total) * 100) : 0; }
+    function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
+    function motionOff() {
+        if (REDUCED) return true;
+        if (document.body.classList.contains('rm-motion-off')) return true;
+        return false;
+    }
+    function motionSoft() {
+        return document.body.classList.contains('rm-motion-soft');
+    }
+
+    /* ---------------- التاريخ والوقت ---------------- */
+    function tsOf(inv) {
+        const t = num(inv && inv.timestamp);
+        if (t > 0) return t;
+        const s = inv && inv.date ? String(inv.date) : '';
+        const p = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+        if (p) return new Date(+p[1], +p[2] - 1, +p[3], 12, 0, 0).getTime();
+        return 0;
+    }
+    function dateOfMs(ms) {
+        const d = new Date(ms);
+        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+    function prettyDay(ms) {
+        const d = new Date(ms);
+        const today = new Date();
+        const same = d.toDateString() === today.toDateString();
+        if (same) return 'اليوم';
+        return d.getDate() + ' ' + ['كانون الثاني', 'شباط', 'آذار', 'نيسان', 'أيار', 'حزيران', 'تموز', 'آب', 'أيلول', 'تشرين الأول', 'تشرين الثاني', 'كانون الأول'][d.getMonth()];
+    }
+    function weekdayIdx(ms) {
+        const d = new Date(ms);
+        return d.getDay();
+    }
+    function hourOf(inv) {
+        const s = String((inv && inv.time) || '');
+        const m = /(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM|ص|م)?/i.exec(s);
+        if (!m) return 12;
+        let h = parseInt(m[1], 10);
+        const ap = (m[4] || '').toUpperCase();
+        if (ap === 'PM' || ap === 'م') { if (h < 12) h += 12; }
+        else if (ap === 'AM' || ap === 'ص') { if (h === 12) h = 0; }
+        return clamp(h, 0, 23);
+    }
+    function nowLabel() {
+        const d = new Date();
+        return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    }
+
+    /* ---------------- البيانات ---------------- */
+    function readData() {
+        try {
+            const d = typeof window.royalDataRead === 'function' ? window.royalDataRead() : null;
+            if (!d) return null;
+            return {
+                invoices: Array.isArray(d.invoices) ? d.invoices : [],
+                payments: Array.isArray(d.payments) ? d.payments : [],
+                debts: Array.isArray(d.debts) ? d.debts : []
+            };
+        } catch (e) { return null; }
+    }
+    function isNamed(inv) {
+        const n = inv && inv.customer && inv.customer.name ? String(inv.customer.name).trim() : '';
+        return n !== '' && n !== 'عميل نقدي' && n !== 'عميل نقدي ';
+    }
+    function periodStart(days) {
+        if (!days) return 0;
+        const today = typeof window.royalTodayKey === 'function' ? window.royalTodayKey() : dateOfMs(Date.now());
+        const p = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(today));
+        const base = p ? new Date(+p[1], +p[2] - 1, +p[3], 0, 0, 0).getTime() : Date.now();
+        return base - (days - 1) * 86400000;
+    }
+    function previousStart(days) {
+        if (!days) return 0;
+        return periodStart(days) - days * 86400000;
+    }
+
+    function build(periodDays) {
+        const data = readData();
+        if (!data) return null;
+        const start = periodStart(periodDays);
+        const prevStart = previousStart(periodDays);
+        const all = data.invoices.filter((i) => i && i.id);
+        const firstSeen = {};
+        all.forEach((inv) => {
+            const name = isNamed(inv) ? String(inv.customer.name).trim() : '';
+            if (!name) return;
+            const t = tsOf(inv);
+            if (!firstSeen[name] || t < firstSeen[name]) firstSeen[name] = t;
+        });
+
+        const inPeriod = all.filter((i) => !start || tsOf(i) >= start);
+        const inPrev = periodDays ? all.filter((i) => { const t = tsOf(i); return t >= prevStart && t < start; }) : [];
+
+        const map = {};
+        inPeriod.forEach((inv) => {
+            if (!isNamed(inv)) return;
+            const name = String(inv.customer.name).trim();
+            let c = map[name];
+            if (!c) {
+                c = map[name] = {
+                    name,
+                    phone: '',
+                    visits: 0,
+                    spent: 0,
+                    pieces: 0,
+                    items: {},
+                    invoices: [],
+                    firstTs: firstSeen[name] || tsOf(inv),
+                    lastTs: 0
+                };
+            }
+            const ph = inv.customer.phone ? String(inv.customer.phone).trim() : '';
+            if (ph && !c.phone) c.phone = ph;
+            c.visits += 1;
+            c.spent += num(inv.total);
+            c.invoices.push(inv);
+            const t = tsOf(inv);
+            if (t > c.lastTs) c.lastTs = t;
+            (Array.isArray(inv.items) ? inv.items : []).forEach((it) => {
+                const q = num(it.qty) || 1;
+                c.pieces += q;
+                const key = String(it.serviceName || it.name || 'خدمة').trim();
+                if (!c.items[key]) c.items[key] = { qty: 0, rev: 0 };
+                c.items[key].qty += q;
+                c.items[key].rev += num(it.price) * q;
+            });
+        });
+
+        const customers = Object.values(map).map((c) => {
+            const fav = Object.keys(c.items).sort((a, b) => c.items[b].qty - c.items[a].qty)[0] || '';
+            return Object.assign(c, {
+                avg: c.visits ? c.spent / c.visits : 0,
+                fav,
+                isNew: start ? (c.firstTs >= start) : (Date.now() - c.firstTs <= 30 * 86400000),
+                debt: 0
+            });
+        });
+
+        const debtsByName = {};
+        data.debts.forEach((d) => {
+            if (!d || num(d.remaining) <= 0) return;
+            const n = String(d.name || '').trim();
+            if (!n) return;
+            debtsByName[n] = (debtsByName[n] || 0) + num(d.remaining);
+        });
+        Object.keys(map).forEach((n) => {
+            if (debtsByName[n]) map[n].debt = debtsByName[n];
+        });
+
+        /* الفترات السابقة للمقارنة */
+        const prevNames = {};
+        inPrev.forEach((inv) => { if (isNamed(inv)) prevNames[String(inv.customer.name).trim()] = 1; });
+        const prevCount = Object.keys(prevNames).length;
+
+        /* المال: قيمة الطلبات + المستلَم وفق نفس مسارات النظام (بلا تكرار) */
+        let billed = 0;
+        inPeriod.forEach((inv) => { billed += num(inv.total); });
+
+        const payTypes = {
+            'تسديد دين': 1, 'اشتراك VIP': 1, 'تجديد VIP': 1, 'ترقية VIP': 1,
+            'دفع كاش (متبقي طلب)': 1, 'دفع مختلط (VIP + كاش)': 1
+        };
+        let cash = 0, electronic = 0;
+        inPeriod.forEach((inv) => {
+            const c = inv.customer || {};
+            if (inv.type === 'active' || inv.type === 'archived') cash += num(c.paid);
+            if (inv.type === 'archived' && inv.paymentType === 'credit') cash += num(c.remainingPaid);
+            if (inv.type === 'cash') cash += num(inv.total);
+            if (inv.type === 'electronic') electronic += num(inv.total);
+        });
+        data.payments.forEach((p) => {
+            const t = num(p && p.timestamp);
+            if (start && t < start) return;
+            const ty = String((p && p.type) || '');
+            if (ty === 'إلغاء اشتراك VIP') { cash -= num(p.amount); return; }
+            if (ty === 'دفع إلكتروني (متبقي طلب)') { electronic += num(p.amount); return; }
+            if (payTypes[ty]) cash += num(p.amount);
+        });
+        const collected = cash + electronic;
+
+        const debtsTotal = Object.keys(debtsByName).reduce((s, k) => s + debtsByName[k], 0);
+
+        /* الشرائح: النخبة = أعلى 10% إنفاقاً (زبون واحد على الأقل) */
+        const sortedBySpend = customers.slice().sort((a, b) => b.spent - a.spent);
+        const eliteCut = Math.max(1, Math.ceil(sortedBySpend.length * 0.1));
+        const eliteSet = new Set(sortedBySpend.slice(0, eliteCut).map((c) => c.name));
+        const tiers = { elite: [], loyal: [], fresh: [], casual: [] };
+        customers.forEach((c) => {
+            if (eliteSet.has(c.name) && c.spent > 0) tiers.elite.push(c);
+            else if (c.visits >= 3) tiers.loyal.push(c);
+            else if (c.isNew) tiers.fresh.push(c);
+            else tiers.casual.push(c);
+        });
+
+        /* منحنى 14 يوماً */
+        const days = [];
+        const dayMap = {};
+        const todayKey = typeof window.royalTodayKey === 'function' ? window.royalTodayKey() : dateOfMs(Date.now());
+        const todayParts = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(todayKey));
+        const todayMs = todayParts ? new Date(+todayParts[1], +todayParts[2] - 1, +todayParts[3], 12, 0, 0).getTime() : Date.now();
+        for (let i = 13; i >= 0; i--) {
+            const ms = todayMs - i * 86400000;
+            const key = dateOfMs(ms);
+            days.push({ key, ms, value: 0, count: 0 });
+            dayMap[key] = days[days.length - 1];
+        }
+        all.forEach((inv) => {
+            const t = tsOf(inv);
+            if (!t) return;
+            const key = dateOfMs(t);
+            if (dayMap[key]) { dayMap[key].value += num(inv.total); dayMap[key].count += 1; }
+        });
+
+        /* الخدمات */
+        const services = {};
+        inPeriod.forEach((inv) => {
+            (Array.isArray(inv.items) ? inv.items : []).forEach((it) => {
+                const key = String(it.serviceName || it.name || 'خدمة').trim();
+                const q = num(it.qty) || 1;
+                if (!services[key]) services[key] = { name: key, qty: 0, rev: 0 };
+                services[key].qty += q;
+                services[key].rev += num(it.price) * q;
+            });
+        });
+        const topServices = Object.values(services).sort((a, b) => b.rev - a.rev).slice(0, 6);
+
+        /* خريطة الأوقات */
+        const heat = [];
+        for (let d = 0; d < 7; d++) heat.push([0, 0, 0, 0]);
+        inPeriod.forEach((inv) => {
+            const h = hourOf(inv);
+            const b = h < 9 ? 0 : (h < 13 ? 1 : (h < 17 ? 2 : 3));
+            heat[weekdayIdx(tsOf(inv))][b] += 1;
+        });
+        const heatMax = Math.max(1, ...heat.reduce((a, r) => a.concat(r), []));
+
+        /* مدرّج الولاء */
+        const ladder = [
+            { label: 'زيارة واحدة', n: 0, cls: 'l1' },
+            { label: 'زيارتان', n: 0, cls: 'l2' },
+            { label: '٣ – ٥', n: 0, cls: 'l3' },
+            { label: '٦ – ١٠', n: 0, cls: 'l4' },
+            { label: 'أكثر من ١٠', n: 0, cls: 'l5' }
+        ];
+        customers.forEach((c) => {
+            if (c.visits <= 1) ladder[0].n++;
+            else if (c.visits === 2) ladder[1].n++;
+            else if (c.visits <= 5) ladder[2].n++;
+            else if (c.visits <= 10) ladder[3].n++;
+            else ladder[4].n++;
+        });
+
+        const pieces = customers.reduce((s, c) => s + c.pieces, 0);
+        const visits = customers.reduce((s, c) => s + c.visits, 0);
+        const newCount = customers.filter((c) => c.isNew).length;
+        const returning = customers.filter((c) => c.visits >= 2).length;
+        const avgTicket = visits ? billed / visits : 0;
+        const topSpender = sortedBySpend[0] || null;
+
+        return {
+            customers,
+            sortedBySpend,
+            tiers,
+            services: topServices,
+            heat,
+            heatMax,
+            ladder,
+            days,
+            billed,
+            collected,
+            cash,
+            electronic,
+            debtsTotal,
+            pieces,
+            visits,
+            newCount,
+            returning,
+            avgTicket,
+            topSpender,
+            prevCount,
+            debtByName: debtsByName
+        };
+    }
+
+    /* ---------------- SVG ---------------- */
+    function areaChart(days) {
+        const W = 320, H = 120, P = 6;
+        const max = Math.max(1, ...days.map((d) => d.value));
+        const step = (W - P * 2) / (days.length - 1);
+        const pts = days.map((d, i) => {
+            /* الأقدم يميناً والأحدث يساراً كي يطابق اتجاه القراءة العربي */
+            const x = P + (days.length - 1 - i) * step;
+            const y = H - P - (d.value / max) * (H - P * 2 - 14);
+            return [x, y];
+        });
+        let line = '';
+        pts.forEach((p, i) => {
+            if (i === 0) { line += 'M' + p[0].toFixed(1) + ' ' + p[1].toFixed(1); return; }
+            const prev = pts[i - 1];
+            const cx = (prev[0] + p[0]) / 2;
+            line += ' C' + cx.toFixed(1) + ' ' + prev[1].toFixed(1) + ' ' + cx.toFixed(1) + ' ' + p[1].toFixed(1) + ' ' + p[0].toFixed(1) + ' ' + p[1].toFixed(1);
+        });
+        const area = line + ' L' + pts[pts.length - 1][0].toFixed(1) + ' ' + (H - P) + ' L' + pts[0][0].toFixed(1) + ' ' + (H - P) + ' Z';
+        const dots = pts.map((p, i) => {
+            if (i !== pts.length - 1 && days[i].value === 0) return '';
+            return '<circle class="ri-dot" cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" r="' + (i === pts.length - 1 ? 3.2 : 2.2) + '"></circle>';
+        }).join('');
+        const labels = [0, 7, 13].map((i) => '<span>' + esc(prettyDay(days[i].ms)) + '</span>').join('');
+        return '' +
+            '<div class="ri-chart-wrap">' +
+                '<div class="ri-chart-max">' + money(max) + '</div>' +
+                '<svg class="ri-area" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" aria-hidden="true">' +
+                    '<defs><linearGradient id="riFill" x1="0" y1="0" x2="0" y2="1">' +
+                        '<stop offset="0%" stop-color="var(--rg-accent)" stop-opacity=".42"></stop>' +
+                        '<stop offset="100%" stop-color="var(--rg-accent)" stop-opacity="0"></stop>' +
+                    '</linearGradient></defs>' +
+                    '<path class="ri-area-fill" d="' + area + '" fill="url(#riFill)"></path>' +
+                    '<path class="ri-area-line" pathLength="1" d="' + line + '"></path>' +
+                    dots +
+                '</svg>' +
+                '<div class="ri-chart-days">' + labels + '</div>' +
+            '</div>';
+    }
+
+    function donut(tiers) {
+        const parts = [
+            { k: 'elite', label: 'النخبة', color: TIER_COLORS.elite, n: tiers.elite.length },
+            { k: 'loyal', label: 'دائمون', color: TIER_COLORS.loyal, n: tiers.loyal.length },
+            { k: 'fresh', label: 'جدد', color: TIER_COLORS.fresh, n: tiers.fresh.length },
+            { k: 'casual', label: 'عابرون', color: TIER_COLORS.casual, n: tiers.casual.length }
+        ];
+        const total = parts.reduce((s, p) => s + p.n, 0) || 1;
+        const R = 54, C = 2 * Math.PI * R;
+        let offset = 0;
+        const rings = parts.map((p) => {
+            if (!p.n) return '';
+            const len = (p.n / total) * C;
+            const seg = '<circle class="ri-dseg" r="' + R + '" cx="75" cy="75" fill="none" stroke="' + p.color + '" stroke-width="14" ' +
+                'stroke-linecap="butt" stroke-dasharray="' + Math.max(0, len - 2.5) + ' ' + (C - len + 2.5) + '" ' +
+                'stroke-dashoffset="' + (-offset) + '" transform="rotate(-90 75 75)"></circle>';
+            offset += len;
+            return seg;
+        }).join('');
+        const legend = parts.map((p) =>
+            '<div class="ri-leg"><span class="ri-leg-dot" style="--c:' + p.color + '"></span>' +
+            '<span class="ri-leg-l">' + p.label + '</span><span class="ri-leg-n">' + p.n + '</span>' +
+            '<small>' + pct(p.n, total) + '%</small></div>'
+        ).join('');
+        return '' +
+            '<div class="ri-donut-wrap">' +
+                '<div class="ri-donut">' +
+                    '<svg viewBox="0 0 150 150" aria-hidden="true">' +
+                        '<circle r="' + R + '" cx="75" cy="75" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="14"></circle>' +
+                        rings +
+                    '</svg>' +
+                    '<div class="ri-donut-mid"><strong>' + total + '</strong><span>زبون</span></div>' +
+                '</div>' +
+                '<div class="ri-legend">' + legend + '</div>' +
+            '</div>';
+    }
+
+    function heatmap(heat, heatMax) {
+        const buckets = ['قبل ٩', '٩ – ١٣', '١٣ – ١٧', 'بعد ١٧'];
+        let cells = '<div class="ri-heat-row ri-heat-head"><span></span>' + buckets.map((b) => '<span>' + b + '</span>').join('') + '</div>';
+        for (let d = 0; d < 7; d++) {
+            cells += '<div class="ri-heat-row"><span class="ri-heat-day">' + WEEKDAYS[d] + '</span>' +
+                heat[d].map((n) => {
+                    const a = n === 0 ? 0 : 0.12 + (n / heatMax) * 0.7;
+                    const dark = a > 0.46;
+                    return '<span class="ri-heat-cell' + (dark ? ' strong' : '') + '" style="--a:' + a.toFixed(2) + '" title="' + n + ' طلب">' + (n || '') + '</span>';
+                }).join('') + '</div>';
+        }
+        return '<div class="ri-heat">' + cells + '</div>';
+    }
+
+    function bars(list) {
+        if (!list.length) return emptyMini('لا توجد خدمات مسجّلة في هذه الفترة');
+        const max = Math.max(1, ...list.map((s) => s.rev));
+        return '<div class="ri-bars">' + list.map((s, i) => {
+            const w = clamp((s.rev / max) * 100, 2, 100);
+            return '<div class="ri-bar-row">' +
+                '<div class="ri-bar-top"><span class="ri-bar-name">' + esc(s.name) + '</span><span class="ri-bar-val">' + money(s.rev) + '</span></div>' +
+                '<div class="ri-bar-track"><i style="--w:' + w.toFixed(1) + '%;--c:' + SERIES[i % SERIES.length] + '"></i></div>' +
+                '<div class="ri-bar-sub">' + fmt(s.qty) + ' قطعة</div>' +
+            '</div>';
+        }).join('') + '</div>';
+    }
+
+    function ladderHTML(ladder) {
+        const max = Math.max(1, ...ladder.map((l) => l.n));
+        return '<div class="ri-ladder">' + ladder.map((l, i) => {
+            const w = clamp((l.n / max) * 100, l.n ? 3 : 0, 100);
+            return '<div class="ri-lad-row">' +
+                '<span class="ri-lad-l">' + l.label + '</span>' +
+                '<span class="ri-lad-track"><i style="--w:' + w.toFixed(1) + '%;--c:' + SERIES[i % SERIES.length] + '"></i></span>' +
+                '<span class="ri-lad-n">' + l.n + '</span>' +
+            '</div>';
+        }).join('') + '</div>';
+    }
+
+    function emptyMini(text) {
+        return '<div class="ri-empty-mini"><i class="fa-solid fa-chart-simple"></i><span>' + esc(text) + '</span></div>';
+    }
+
+    function rankRows(list, mode) {
+        if (!list.length) return emptyMini('لا يوجد زبائن مسجّلون بعد');
+        return '<div class="ri-ranks">' + list.slice(0, 5).map((c, i) => {
+            const val = mode === 'visits' ? (c.visits + ' زيارة') : money(c.spent);
+            const sub = mode === 'visits'
+                ? (fmt(c.pieces) + ' قطعة · ' + money(c.avg) + ' متوسط')
+                : (c.visits + ' زيارة · ' + fmt(c.pieces) + ' قطعة');
+            return '<button type="button" class="ri-rank" data-customer="' + esc(c.name) + '">' +
+                '<span class="ri-rank-n">' + (i + 1) + '</span>' +
+                '<span class="ri-av">' + esc(initial(c.name)) + '</span>' +
+                '<span class="ri-rank-body"><strong>' + esc(c.name) + '</strong><small>' + sub + '</small></span>' +
+                '<span class="ri-rank-v">' + val + '</span>' +
+            '</button>';
+        }).join('') + '</div>';
+    }
+
+    function initial(name) {
+        const s = String(name || '').trim();
+        return s ? s.slice(0, 1) : '؟';
+    }
+
+    function directory(customers, filter, query) {
+        let list = customers.slice().sort((a, b) => b.spent - a.spent);
+        if (filter === 'elite') list = list.filter((c) => c.visits >= 3 || c.spent > 0).slice(0, Math.max(3, Math.ceil(list.length * 0.2)));
+        if (filter === 'debt') list = list.filter((c) => c.debt > 0);
+        if (filter === 'new') list = list.filter((c) => c.isNew);
+        const q = String(query || '').trim().toLowerCase();
+        if (q) list = list.filter((c) => c.name.toLowerCase().includes(q) || (c.phone || '').toLowerCase().includes(q));
+        if (!list.length) return emptyMini(q ? 'لا نتائج لهذا البحث' : 'لا يوجد زبائن في هذه الفئة');
+        const shown = list.slice(0, 40);
+        return '<div class="ri-dir">' + shown.map((c) =>
+            '<button type="button" class="ri-dir-row" data-customer="' + esc(c.name) + '">' +
+                '<span class="ri-av">' + esc(initial(c.name)) + '</span>' +
+                '<span class="ri-dir-body"><strong>' + esc(c.name) + (c.isNew ? '<i class="ri-badge-new">جديد</i>' : '') + '</strong>' +
+                '<small>' + (c.phone ? esc(c.phone) : 'بلا رقم') + ' · ' + c.visits + ' زيارة · ' + fmt(c.pieces) + ' قطعة</small></span>' +
+                '<span class="ri-dir-end"><strong>' + money(c.spent) + '</strong>' +
+                (c.debt > 0 ? '<small class="ri-debt">دين ' + money(c.debt) + '</small>' : '<small>' + esc(c.fav || '') + '</small>') + '</span>' +
+            '</button>'
+        ).join('') + (list.length > shown.length ? '<div class="ri-more-note">تُعرض ' + shown.length + ' من ' + list.length + ' — ابحث بالاسم لتضييق النتيجة</div>' : '') + '</div>';
+    }
+
+    /* ---------------- الهيكل ---------------- */
+    function kpi(icon, label, value, sub, tone) {
+        return '<div class="ri-kpi" style="--tone:' + (tone || 'var(--rg-accent)') + '">' +
+            '<span class="ri-kpi-i"><i class="fa-solid ' + icon + '"></i></span>' +
+            '<span class="ri-kpi-l">' + label + '</span>' +
+            '<strong class="ri-kpi-v" data-count="' + num(value) + '">' + value + '</strong>' +
+            '<small class="ri-kpi-s">' + sub + '</small>' +
+        '</div>';
+    }
+
+    function renderRoot(root, vm) {
+        const period = PERIODS.find((p) => p.k === state.period) || PERIODS[2];
+        const delta = vm.prevCount > 0 ? Math.round(((vm.customers.length - vm.prevCount) / vm.prevCount) * 100) : null;
+        const deltaCls = delta == null ? 'flat' : (delta >= 0 ? 'up' : 'down');
+        const deltaTxt = delta == null ? 'لا مقارنة' : (delta >= 0 ? '+' + delta + '%' : delta + '%');
+        const topShare = vm.topSpender && vm.billed > 0 ? Math.round((vm.topSpender.spent / vm.billed) * 100) : 0;
+        const maxSpender = vm.sortedBySpend[0] || null;
+
+        root.innerHTML =
+        '<div class="ri-sheet-top">' +
+            '<div class="ri-hero">' +
+                '<div class="ri-hero-top">' +
+                    '<div>' +
+                        '<span class="ri-kicker"><i class="fa-solid fa-chart-line"></i> تحليل حيّ</span>' +
+                        '<h2 class="ri-title">مركز الزبائن</h2>' +
+                        '<p class="ri-sub">قراءة بصرية لسلوك زبائن المكوى — من فواتيرك، بلا أي تعديل.</p>' +
+                    '</div>' +
+                    '<button type="button" class="ri-export" id="ri-export" aria-label="تصدير الزبائن CSV"><i class="fa-solid fa-file-csv"></i></button>' +
+                '</div>' +
+                '<div class="ri-chips" role="tablist">' +
+                    PERIODS.map((p) => '<button type="button" role="tab" aria-selected="' + (p.k === state.period) + '" class="' + (p.k === state.period ? 'on' : '') + '" data-period="' + p.k + '">' + p.label + '</button>').join('') +
+                '</div>' +
+                '<div class="ri-hero-mid">' +
+                    '<div class="ri-hero-num"><strong data-count="' + vm.customers.length + '">' + fmt(vm.customers.length) + '</strong><span>زبوناً في ' + period.label + '</span></div>' +
+                    '<span class="ri-delta ' + deltaCls + '"><i class="fa-solid fa-arrow-trend-' + (delta != null && delta < 0 ? 'down' : 'up') + '"></i> ' + deltaTxt + '</span>' +
+                '</div>' +
+                '<div class="ri-hero-foot"><i class="fa-solid fa-crown"></i> ' +
+                    (maxSpender ? 'الأكثر إنفاقاً: <b>' + esc(maxSpender.name) + '</b> — ' + money(maxSpender.spent) + ' (' + topShare + '% من قيمة الطلبات)' : 'ستظهر هنا نخبة زبائنك بعد أول فاتورة.') +
+                '</div>' +
+            '</div>' +
+
+            '<div class="ri-kpis">' +
+                kpi('fa-user-plus', 'زبائن جدد', fmt(vm.newCount), 'أول زيارة ضمن الفترة', 'var(--rg-accent)') +
+                kpi('fa-rotate', 'عائدون', fmt(vm.returning), 'أكثر من زيارة', '#8b9dff') +
+                kpi('fa-receipt', 'متوسط الفاتورة', money(vm.avgTicket), fmt(vm.visits) + ' فاتورة', '#3ddc97') +
+                kpi('fa-shirt', 'القطع المعالجة', fmt(vm.pieces), 'مجموع القطع', '#ffd166') +
+            '</div>' +
+
+            '<div class="ri-money">' +
+                '<div class="ri-money-i"><span>قيمة الطلبات</span><strong>' + money(vm.billed) + '</strong></div>' +
+                '<div class="ri-money-i"><span>المستلَم</span><strong>' + money(vm.collected) + '</strong><small>عربون + دفعات</small></div>' +
+                '<div class="ri-money-i warn"><span>ذمم قائمة</span><strong>' + money(vm.debtsTotal) + '</strong><small>كل الفترات</small></div>' +
+            '</div>' +
+
+            '<div class="ri-card">' +
+                '<div class="ri-card-head"><h3><i class="fa-solid fa-wave-square"></i> حركة الإيراد</h3><span>آخر ١٤ يوماً</span></div>' +
+                areaChart(vm.days) +
+            '</div>' +
+
+            '<div class="ri-card">' +
+                '<div class="ri-card-head"><h3><i class="fa-solid fa-chart-pie"></i> شرائح الزبائن</h3><span>حسب السلوك</span></div>' +
+                donut(vm.tiers) +
+            '</div>' +
+
+            '<div class="ri-card">' +
+                '<div class="ri-card-head"><h3><i class="fa-solid fa-layer-group"></i> أعلى الخدمات</h3><span>قيمة</span></div>' +
+                bars(vm.services) +
+            '</div>' +
+
+            '<div class="ri-card">' +
+                '<div class="ri-card-head"><h3><i class="fa-solid fa-fire"></i> أوقات الذروة</h3><span>عدد الطلبات</span></div>' +
+                heatmap(vm.heat, vm.heatMax) +
+            '</div>' +
+
+            '<div class="ri-card">' +
+                '<div class="ri-card-head"><h3><i class="fa-solid fa-stairs"></i> مدرّج الولاء</h3><span>عدد الزيارات</span></div>' +
+                ladderHTML(vm.ladder) +
+            '</div>' +
+
+            '<div class="ri-card">' +
+                '<div class="ri-card-head"><h3><i class="fa-solid fa-sack-dollar"></i> قائمة النخبة</h3><span>أعلى إنفاقاً</span></div>' +
+                rankRows(vm.sortedBySpend, 'spend') +
+            '</div>' +
+
+            '<div class="ri-card">' +
+                '<div class="ri-card-head"><h3><i class="fa-solid fa-shoe-prints"></i> الأكثر ولاءً</h3><span>أكثر زيارة</span></div>' +
+                rankRows(vm.customers.slice().sort((a, b) => b.visits - a.visits), 'visits') +
+            '</div>' +
+
+            '<div class="ri-card ri-card-dir">' +
+                '<div class="ri-card-head"><h3><i class="fa-solid fa-address-book"></i> دليل الزبائن</h3><span>' + vm.customers.length + '</span></div>' +
+                '<div class="ri-search"><i class="fa-solid fa-magnifying-glass"></i><input type="search" id="ri-search" placeholder="ابحث باسم الزبون أو رقمه…" value="' + esc(state.query) + '"></div>' +
+                '<div class="ri-filters">' +
+                    '<button type="button" data-filter="all" class="' + (state.filter === 'all' ? 'on' : '') + '">الكل</button>' +
+                    '<button type="button" data-filter="elite" class="' + (state.filter === 'elite' ? 'on' : '') + '">النخبة</button>' +
+                    '<button type="button" data-filter="debt" class="' + (state.filter === 'debt' ? 'on' : '') + '">مدينون</button>' +
+                    '<button type="button" data-filter="new" class="' + (state.filter === 'new' ? 'on' : '') + '">جدد</button>' +
+                '</div>' +
+                '<div id="ri-dir-host">' + directory(vm.customers, state.filter, state.query) + '</div>' +
+            '</div>' +
+
+            '<div class="ri-foot"><i class="fa-solid fa-shield-halved"></i> أرقام من الفواتير المسجلة فقط — قراءة لا تعديل · آخر تحديث ' + nowLabel() + '</div>' +
+        '</div>';
+
+        const host = root;
+        [...host.children].forEach((el, i) => {
+            el.style.setProperty('--ri-k', String(i));
+            el.classList.add('ri-in');
+        });
+        if (motionOff()) host.classList.add('ri-no-motion');
+        countUpAll(host);
+        bindRoot(host);
+    }
+
+    function countUpAll(host) {
+        if (motionOff()) return;
+        host.querySelectorAll('[data-count]').forEach((el) => {
+            const end = num(el.getAttribute('data-count'));
+            if (!end) return;
+            const isMoney = false;
+            const start = 0;
+            const t0 = performance.now();
+            const dur = motionSoft() ? 450 : 760;
+            const step = (t) => {
+                const k = clamp((t - t0) / dur, 0, 1);
+                const e = 1 - Math.pow(1 - k, 3);
+                el.textContent = isMoney ? money(start + (end - start) * e) : fmt(start + (end - start) * e);
+                if (k < 1) requestAnimationFrame(step);
+                else el.textContent = isMoney ? money(end) : fmt(end);
+            };
+            requestAnimationFrame(step);
+        });
+    }
+
+    /* ---------------- التفاعل ---------------- */
+    function bindRoot(host) {
+        if (host.dataset.riBound === '1') return;
+        host.dataset.riBound = '1';
+        host.addEventListener('click', (e) => {
+            const period = e.target.closest('[data-period]');
+            if (period) {
+                const k = period.getAttribute('data-period');
+                if (k === state.period) return;
+                state.period = k;
+                draw(true);
+                return;
+            }
+            const filter = e.target.closest('[data-filter]');
+            if (filter) {
+                state.filter = filter.getAttribute('data-filter');
+                const vm = build(periodDays());
+                if (vm) {
+                    const dirHost = document.getElementById('ri-dir-host');
+                    if (dirHost) dirHost.innerHTML = directory(vm.customers, state.filter, state.query);
+                    host.querySelectorAll('[data-filter]').forEach((b) => b.classList.toggle('on', b.getAttribute('data-filter') === state.filter));
+                }
+                return;
+            }
+            if (e.target.closest('#ri-export')) { exportCSV(); return; }
+            const cust = e.target.closest('[data-customer]');
+            if (cust) openCustomer(cust.getAttribute('data-customer'));
+        });
+
+        host.addEventListener('input', (e) => {
+            if (!e.target || e.target.id !== 'ri-search') return;
+            state.query = e.target.value;
+            const vm = build(periodDays());
+            if (vm) {
+                const dirHost = document.getElementById('ri-dir-host');
+                if (dirHost) dirHost.innerHTML = directory(vm.customers, state.filter, state.query);
+            }
+        });
+    }
+
+    function periodDays() {
+        const p = PERIODS.find((x) => x.k === state.period) || PERIODS[2];
+        return p.days;
+    }
+
+    /* ---------------- ورقة الزبون ---------------- */
+    function closeSheet() {
+        const sheet = document.querySelector('.ri-sheet');
+        if (!sheet) return;
+        sheet.classList.add('out');
+        document.body.classList.remove('ri-sheet-open');
+        setTimeout(() => sheet.remove(), 320);
+        state.sheetCustomer = null;
+    }
+
+    function openCustomer(name) {
+        const vm = build(periodDays());
+        if (!vm) return;
+        const c = vm.customers.find((x) => x.name === name);
+        if (!c) return;
+        state.sheetCustomer = name;
+        const existing = document.querySelector('.ri-sheet');
+        if (existing) existing.remove();
+        const list = c.invoices.slice().sort((a, b) => tsOf(b) - tsOf(a)).slice(0, 12);
+        const favs = Object.keys(c.items).sort((a, b) => c.items[b].qty - c.items[a].qty).slice(0, 4)
+            .map((k) => '<span class="ri-chip">' + esc(k) + ' · ' + c.items[k].qty + '</span>').join('');
+        const rows = list.length ? list.map((inv) => {
+            const st = inv.type === 'active' ? 'قيد العمل' : (inv.paymentType === 'credit' ? 'آجل' : 'مكتمل');
+            return '<div class="ri-inv">' +
+                '<span class="ri-inv-n">#' + esc(inv.dailyNumber || inv.id) + '</span>' +
+                '<span class="ri-inv-d">' + esc(inv.date || '') + '</span>' +
+                '<span class="ri-inv-t">' + money(inv.total) + '</span>' +
+                '<span class="ri-inv-s">' + st + '</span>' +
+            '</div>';
+        }).join('') : emptyMini('لا فواتير لهذا الزبون ضمن الفترة المحددة');
+
+        const sheet = document.createElement('div');
+        sheet.className = 'ri-sheet';
+        sheet.setAttribute('role', 'dialog');
+        sheet.setAttribute('aria-modal', 'true');
+        sheet.setAttribute('aria-label', 'ملف الزبون ' + name);
+        sheet.innerHTML =
+            '<div class="ri-sheet-scrim" data-close></div>' +
+            '<div class="ri-sheet-card">' +
+                '<div class="ri-sheet-grip"></div>' +
+                '<button type="button" class="ri-sheet-x" data-close aria-label="إغلاق"><i class="fa-solid fa-xmark"></i></button>' +
+                '<div class="ri-cust-head">' +
+                    '<span class="ri-av big">' + esc(initial(c.name)) + '</span>' +
+                    '<div><h3>' + esc(c.name) + '</h3>' +
+                    '<p>' + (c.phone ? '<a href="tel:' + esc(c.phone.replace(/[^\d+]/g, '')) + '"><i class="fa-solid fa-phone"></i> ' + esc(c.phone) + '</a>' : 'بلا رقم هاتف') + '</p></div>' +
+                '</div>' +
+                '<div class="ri-cust-stats">' +
+                    '<div><strong>' + money(c.spent) + '</strong><span>قيمة الطلبات</span></div>' +
+                    '<div><strong>' + c.visits + '</strong><span>زيارة</span></div>' +
+                    '<div><strong>' + fmt(c.pieces) + '</strong><span>قطعة</span></div>' +
+                    '<div><strong>' + money(c.avg) + '</strong><span>متوسط الفاتورة</span></div>' +
+                '</div>' +
+                (c.debt > 0 ? '<div class="ri-cust-debt"><i class="fa-solid fa-triangle-exclamation"></i> دين قائم: <b>' + money(c.debt) + '</b></div>' : '') +
+                '<div class="ri-cust-meta">' +
+                    '<span><i class="fa-solid fa-calendar-plus"></i> أول زيارة: ' + esc(prettyDay(c.firstTs)) + '</span>' +
+                    '<span><i class="fa-solid fa-clock-rotate-left"></i> آخر زيارة: ' + (c.lastTs ? esc(prettyDay(c.lastTs)) : '—') + '</span>' +
+                    '<span><i class="fa-solid fa-star"></i> الأكثر طلباً: ' + esc(c.fav || '—') + '</span>' +
+                '</div>' +
+                (favs ? '<div class="ri-cust-chips">' + favs + '</div>' : '') +
+                '<div class="ri-cust-inv"><h4>آخر الفواتير</h4>' + rows + '</div>' +
+            '</div>';
+        document.body.appendChild(sheet);
+        document.body.classList.add('ri-sheet-open');
+        requestAnimationFrame(() => sheet.classList.add('on'));
+        sheet.addEventListener('click', (e) => { if (e.target.closest('[data-close]')) closeSheet(); });
+    }
+
+    /* ---------------- التصدير ---------------- */
+    function exportCSV() {
+        const vm = build(periodDays());
+        if (!vm) return;
+        const head = ['الاسم', 'الهاتف', 'الزيارات', 'القطع', 'قيمة الطلبات', 'متوسط الفاتورة', 'أول زيارة', 'آخر زيارة', 'الدين القائم'];
+        const rows = vm.customers.slice().sort((a, b) => b.spent - a.spent).map((c) => [
+            c.name, c.phone || '', c.visits, c.pieces, Math.round(c.spent), Math.round(c.avg),
+            dateOfMs(c.firstTs), c.lastTs ? dateOfMs(c.lastTs) : '', Math.round(c.debt)
+        ]);
+        const csv = '\ufeff' + [head].concat(rows).map((r) => r.map((v) => '"' + String(v).replace(/"/g, '""') + '"').join(',')).join('\r\n');
+        try {
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'royal-customers-' + dateOfMs(Date.now()) + '.csv';
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+        } catch (e) {}
+    }
+
+    /* ---------------- دورة الرسم ---------------- */
+    function signature() {
+        const d = readData();
+        if (!d) return '';
+        const lastTs = d.invoices.reduce((m, i) => Math.max(m, tsOf(i)), 0);
+        return [d.invoices.length, lastTs, d.payments.length, d.debts.length].join(':');
+    }
+
+    function draw(force) {
+        const sec = document.getElementById(SEC_ID);
+        if (!sec) return;
+        let host = sec.querySelector('.ri-root');
+        if (!host) {
+            host = document.createElement('div');
+            host.className = 'ri-root';
+            sec.insertBefore(host, sec.firstChild);
+        }
+        if (!sec.classList.contains('ri-on')) sec.classList.add('ri-on');
+        const sig = signature();
+        if (!force && state.rendered && sig === state.signature) return;
+        const vm = build(periodDays());
+        if (!vm) return;
+        state.signature = sig;
+        state.rendered = true;
+        const scroll = sec.scrollTop;
+        const active = document.activeElement;
+        const focusSearch = active && active.id === 'ri-search';
+        const caret = focusSearch ? active.selectionStart : null;
+        renderRoot(host, vm);
+        if (scroll) sec.scrollTop = scroll;
+        if (focusSearch) {
+            const s = host.querySelector('#ri-search');
+            if (s) { s.focus({ preventScroll: true }); try { s.setSelectionRange(caret, caret); } catch (e) {} }
+        }
+    }
+
+    function ensureHook() {
+        const sec = document.getElementById(SEC_ID);
+        if (!sec || sec.dataset.riObs === '1') return;
+        sec.dataset.riObs = '1';
+        new MutationObserver(() => {
+            if (!sec.classList.contains('active')) { closeSheet(); return; }
+            draw(false);
+        }).observe(sec, { attributes: true, attributeFilter: ['class'] });
+        if (sec.classList.contains('active')) draw(false);
+    }
+
+    function tick() {
+        const sec = document.getElementById(SEC_ID);
+        if (!sec || !sec.classList.contains('active') || document.hidden) return;
+        draw(false);
+    }
+
+    function boot() {
+        ensureHook();
+        setInterval(ensureHook, 1200);
+        setInterval(tick, 4000);
+        window.addEventListener('online', () => draw(true), { passive: true });
+        window.addEventListener('focus', () => { if (document.getElementById(SEC_ID)?.classList.contains('active')) draw(false); });
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && document.getElementById(SEC_ID)?.classList.contains('active')) draw(false);
+        });
+    }
+
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true });
+    else boot();
+    window.RoyalInsight = { refresh: () => draw(true), state };
+
+    /* ---------------- الأنماط ---------------- */
+    const CSS = `
+html.is-mobile #admin-customers.ri-on > *:not(.ri-root) { display: none !important; }
+html.is-mobile .ri-root {
+    --ri-card: rgba(var(--rg-glass-rgb), var(--rg-glass-a));
+    --ri-line: var(--m-hair);
+    color: var(--m-text);
+    padding-bottom: calc(104px + env(safe-area-inset-bottom, 0px));
+}
+html.is-mobile body.rg-light .ri-root { --ri-card: rgba(255,255,255,.78); }
+html.is-mobile .ri-root * { box-sizing: border-box; }
+html.is-mobile .ri-root button { font-family: inherit; -webkit-tap-highlight-color: transparent; }
+
+html.is-mobile .ri-hero {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--m-radius-card);
+    border: 1px solid var(--m-edge);
+    background:
+        radial-gradient(120% 100% at 88% -20%, rgba(var(--rg-accent-rgb), .34), transparent 62%),
+        radial-gradient(100% 80% at 0% 110%, rgba(139,157,255,.20), transparent 64%),
+        linear-gradient(152deg, rgba(255,255,255,.14), rgba(255,255,255,.02) 46%, rgba(255,255,255,.07)),
+        var(--ri-card);
+    box-shadow: var(--m-lift);
+    padding: 18px 16px 14px;
+    margin-bottom: 12px;
+    isolation: isolate;
+}
+html.is-mobile body.rg-light .ri-hero {
+    background:
+        radial-gradient(120% 100% at 88% -20%, rgba(var(--rg-accent-rgb), .18), transparent 62%),
+        radial-gradient(100% 80% at 0% 110%, rgba(139,157,255,.12), transparent 64%),
+        linear-gradient(152deg, rgba(255,255,255,.98), rgba(255,255,255,.62)),
+        var(--ri-card);
+}
+html.is-mobile .ri-hero::after {
+    content: "";
+    position: absolute; inset: -60% -30% auto -30%;
+    height: 120%;
+    background: radial-gradient(60% 50% at 60% 0%, rgba(255,255,255,.16), transparent 70%);
+    pointer-events: none; z-index: -1;
+}
+html.is-mobile .ri-hero-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+html.is-mobile .ri-kicker {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 10.5px; font-weight: 900; letter-spacing: .6px;
+    color: var(--m-accent2);
+}
+html.is-mobile .ri-title { margin: 4px 0 3px; font-size: 26px; font-weight: 900; letter-spacing: -.2px; color: var(--m-text); }
+html.is-mobile .ri-sub { margin: 0; font-size: 11.5px; line-height: 1.6; font-weight: 600; color: var(--m-muted); max-width: 240px; }
+html.is-mobile .ri-export {
+    flex: none;
+    width: 38px; height: 38px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 12px;
+    border: 1px solid var(--m-edge);
+    background: rgba(var(--rg-glass-rgb), calc(var(--rg-glass-a) * .9));
+    color: var(--m-accent2);
+    font-size: 15px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.22);
+}
+html.is-mobile .ri-export:active { transform: scale(.94); }
+html.is-mobile .ri-chips {
+    display: flex; gap: 5px; margin: 14px 0 12px;
+    padding: 4px; border-radius: 14px;
+    background: rgba(0,0,0,.16);
+    border: 1px solid var(--ri-line);
+}
+html.is-mobile body.rg-light .ri-chips { background: rgba(30,70,120,.06); }
+html.is-mobile .ri-chips button {
+    flex: 1; min-height: 32px;
+    border: none; border-radius: 10px;
+    background: transparent; color: var(--m-muted);
+    font-size: 11.5px; font-weight: 800;
+    transition: background .25s var(--m-ease), color .25s var(--m-ease), transform .16s var(--m-ease);
+}
+html.is-mobile .ri-chips button.on {
+    color: #fff;
+    background: linear-gradient(140deg, var(--rg-accent), #2a4b8f);
+    box-shadow: 0 6px 16px rgba(var(--rg-accent-rgb), .32), inset 0 1px 0 rgba(255,255,255,.3);
+}
+html.is-mobile .ri-chips button:active { transform: scale(.96); }
+html.is-mobile .ri-hero-mid { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; }
+html.is-mobile .ri-hero-num { display: flex; flex-direction: column; }
+html.is-mobile .ri-hero-num strong {
+    font-size: 46px; line-height: 1; font-weight: 900; letter-spacing: -1.4px;
+    color: var(--m-text);
+    font-variant-numeric: tabular-nums;
+    text-shadow: 0 10px 30px rgba(var(--rg-accent-rgb), .25);
+}
+html.is-mobile .ri-hero-num span { font-size: 11.5px; font-weight: 700; color: var(--m-muted); margin-top: 5px; }
+html.is-mobile .ri-delta {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11.5px; font-weight: 900;
+    padding: 6px 10px; border-radius: 99px;
+    direction: ltr;
+    background: rgba(61,220,151,.12);
+    color: #3ddc97;
+    border: 1px solid rgba(61,220,151,.25);
+}
+html.is-mobile .ri-delta.down { background: rgba(255,93,108,.12); color: #ff7b87; border-color: rgba(255,93,108,.28); }
+html.is-mobile .ri-delta.flat { background: rgba(255,255,255,.06); color: var(--m-muted); border-color: var(--ri-line); }
+html.is-mobile body.rg-light .ri-delta.up { color: #0d7a52; background: rgba(13,122,82,.10); border-color: rgba(13,122,82,.2); }
+html.is-mobile body.rg-light .ri-delta.down { color: #b32b3a; }
+html.is-mobile .ri-hero-foot {
+    margin-top: 12px; padding-top: 11px;
+    border-top: 1px solid var(--ri-line);
+    font-size: 11px; line-height: 1.6; font-weight: 600; color: var(--m-muted);
+}
+html.is-mobile .ri-hero-foot i { color: var(--rg-accent); margin-inline-end: 4px; }
+html.is-mobile .ri-hero-foot b { color: var(--m-text); }
+
+html.is-mobile .ri-kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-bottom: 12px; }
+html.is-mobile .ri-kpi {
+    position: relative;
+    display: flex; flex-direction: column; gap: 3px;
+    padding: 14px 13px 13px;
+    border-radius: 18px;
+    border: 1px solid var(--m-edge);
+    background:
+        linear-gradient(150deg, rgba(255,255,255,.12), rgba(255,255,255,.01) 50%, rgba(255,255,255,.06)),
+        var(--ri-card);
+    box-shadow: var(--m-lift);
+    overflow: hidden;
+}
+html.is-mobile .ri-kpi::before {
+    content: ""; position: absolute; inset: auto -30% -60% -30%; height: 80%;
+    background: radial-gradient(50% 60% at 50% 100%, color-mix(in srgb, var(--tone) 22%, transparent), transparent 70%);
+    pointer-events: none;
+}
+html.is-mobile .ri-kpi-i {
+    width: 30px; height: 30px; border-radius: 9px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: color-mix(in srgb, var(--tone) 16%, transparent);
+    color: var(--tone); font-size: 12px;
+    margin-bottom: 4px;
+}
+html.is-mobile .ri-kpi-l { font-size: 11px; font-weight: 800; color: var(--m-muted); }
+html.is-mobile .ri-kpi-v {
+    font-size: 22px; font-weight: 900; color: var(--m-text);
+    font-variant-numeric: tabular-nums; letter-spacing: -.3px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+html.is-mobile .ri-kpi-s { font-size: 9.5px; font-weight: 700; color: var(--m-faint); }
+html.is-mobile body.rg-light .ri-kpi-v { color: #0e2138; }
+html.is-mobile body.rg-light .ri-kpi { background: linear-gradient(150deg, rgba(255,255,255,.98), rgba(255,255,255,.66)), var(--ri-card); }
+
+html.is-mobile .ri-money {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;
+    margin-bottom: 12px;
+}
+html.is-mobile .ri-money-i {
+    padding: 11px 10px;
+    border-radius: 15px;
+    border: 1px solid var(--m-edge);
+    background: var(--ri-card);
+    box-shadow: var(--m-lift);
+    display: flex; flex-direction: column; gap: 3px;
+    min-width: 0;
+}
+html.is-mobile .ri-money-i span { font-size: 9.5px; font-weight: 800; color: var(--m-muted); }
+html.is-mobile .ri-money-i strong {
+    font-size: 12.5px; font-weight: 900; color: var(--m-text);
+    font-variant-numeric: tabular-nums; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis;
+}
+html.is-mobile .ri-money-i small { font-size: 8.5px; font-weight: 700; color: var(--m-faint); }
+html.is-mobile .ri-money-i.warn strong { color: #ff8f99; }
+html.is-mobile body.rg-light .ri-money-i strong { color: #0e2138; }
+html.is-mobile body.rg-light .ri-money-i span { color: #33507a; }
+html.is-mobile body.rg-light .ri-money-i small { color: #5b7191; }
+html.is-mobile body.rg-light .ri-money-i.warn strong { color: #b32b3a; }
+
+html.is-mobile .ri-card {
+    position: relative;
+    border-radius: var(--m-radius-card);
+    border: 1px solid var(--m-edge);
+    background:
+        linear-gradient(150deg, rgba(255,255,255,.10), rgba(255,255,255,.012) 46%, rgba(255,255,255,.055)),
+        var(--ri-card);
+    box-shadow: var(--m-lift);
+    padding: 15px 14px 14px;
+    margin-bottom: 12px;
+    overflow: hidden;
+}
+html.is-mobile body.rg-light .ri-card { background: linear-gradient(150deg, rgba(255,255,255,.98), rgba(255,255,255,.7)), var(--ri-card); }
+html.is-mobile .ri-card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+html.is-mobile .ri-card-head h3 { margin: 0; font-size: 13.5px; font-weight: 900; color: var(--m-text); display: flex; align-items: center; gap: 7px; }
+html.is-mobile .ri-card-head h3 i { color: var(--m-accent2); font-size: 11.5px; }
+html.is-mobile .ri-card-head > span { font-size: 10px; font-weight: 800; color: var(--m-faint); }
+
+html.is-mobile .ri-chart-wrap { position: relative; padding-top: 6px; }
+html.is-mobile .ri-chart-max {
+    position: absolute; inset-inline-start: 4px; top: 0;
+    font-size: 9.5px; font-weight: 800; color: var(--m-faint); direction: ltr;
+}
+html.is-mobile .ri-area { display: block; width: 100%; height: 118px; overflow: visible; }
+html.is-mobile .ri-area-fill { opacity: .9; }
+html.is-mobile .ri-area-line {
+    fill: none; stroke: var(--rg-accent); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round;
+    stroke-dasharray: 1; stroke-dashoffset: 1;
+    animation: riDraw 1.2s var(--m-ease-out) .15s forwards;
+    vector-effect: non-scaling-stroke;
+    filter: drop-shadow(0 3px 8px rgba(var(--rg-accent-rgb), .45));
+}
+html.is-mobile .ri-dot { fill: #fff; stroke: var(--rg-accent); stroke-width: 1.6; }
+html.is-mobile .ri-chart-days { display: flex; justify-content: space-between; margin-top: 4px; font-size: 9px; font-weight: 700; color: var(--m-faint); }
+@keyframes riDraw { to { stroke-dashoffset: 0; } }
+
+html.is-mobile .ri-donut-wrap { display: flex; align-items: center; gap: 16px; }
+html.is-mobile .ri-donut { position: relative; width: 132px; height: 132px; flex: none; }
+html.is-mobile .ri-donut svg { width: 100%; height: 100%; display: block; }
+html.is-mobile .ri-dseg { transition: stroke-dasharray 1s var(--m-ease-out); }
+html.is-mobile .ri-donut-mid {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    pointer-events: none;
+}
+html.is-mobile .ri-donut-mid strong { font-size: 25px; font-weight: 900; color: var(--m-text); line-height: 1; font-variant-numeric: tabular-nums; }
+html.is-mobile .ri-donut-mid span { font-size: 9.5px; font-weight: 800; color: var(--m-muted); margin-top: 3px; }
+html.is-mobile .ri-legend { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 7px; }
+html.is-mobile .ri-leg { display: grid; grid-template-columns: 8px 1fr auto auto; align-items: center; gap: 6px; font-size: 10.5px; }
+html.is-mobile .ri-leg-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--c); box-shadow: 0 0 8px var(--c); }
+html.is-mobile .ri-leg-l { font-weight: 800; color: var(--m-muted); }
+html.is-mobile .ri-leg-n { font-weight: 900; color: var(--m-text); font-variant-numeric: tabular-nums; }
+html.is-mobile .ri-leg small { font-size: 9px; font-weight: 700; color: var(--m-faint); direction: ltr; }
+
+html.is-mobile .ri-bars { display: flex; flex-direction: column; gap: 11px; }
+html.is-mobile .ri-bar-row { display: flex; flex-direction: column; gap: 5px; }
+html.is-mobile .ri-bar-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+html.is-mobile .ri-bar-name { font-size: 11.5px; font-weight: 800; color: var(--m-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html.is-mobile .ri-bar-val { font-size: 10.5px; font-weight: 900; color: var(--m-accent2); direction: ltr; font-variant-numeric: tabular-nums; }
+html.is-mobile body.rg-light .ri-bar-val { color: #1b5aa8; }
+html.is-mobile body.rg-light .ri-kicker { color: #1e5aa8; }
+html.is-mobile .ri-bar-track { height: 7px; border-radius: 99px; background: rgba(255,255,255,.06); overflow: hidden; box-shadow: inset 0 1px 2px rgba(0,0,0,.28); }
+html.is-mobile body.rg-light .ri-bar-track { background: rgba(30,70,120,.09); box-shadow: none; }
+html.is-mobile .ri-bar-track i {
+    display: block; height: 100%; width: var(--w); border-radius: 99px;
+    background: linear-gradient(90deg, color-mix(in srgb, var(--c) 58%, transparent), var(--c));
+    box-shadow: 0 0 10px color-mix(in srgb, var(--c) 42%, transparent);
+    transform-origin: right center;
+}
+html.is-mobile .ri-bar-sub { font-size: 9px; font-weight: 700; color: var(--m-faint); }
+
+html.is-mobile .ri-heat { display: flex; flex-direction: column; gap: 4px; }
+html.is-mobile .ri-heat-row { display: grid; grid-template-columns: 54px repeat(4, 1fr); gap: 4px; align-items: center; }
+html.is-mobile .ri-heat-head span { font-size: 8.5px; font-weight: 800; color: var(--m-faint); text-align: center; }
+html.is-mobile .ri-heat-day { font-size: 9.5px; font-weight: 800; color: var(--m-muted); white-space: nowrap; }
+html.is-mobile .ri-heat-cell {
+    height: 25px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9.5px; font-weight: 900; color: var(--m-text);
+    background: rgba(var(--rg-accent-rgb), var(--a));
+    border: 1px solid rgba(255,255,255,.04);
+}
+html.is-mobile .ri-heat-cell.strong { color: #fff; text-shadow: 0 1px 2px rgba(0,10,30,.5); }
+html.is-mobile body.rg-light .ri-heat-cell { color: #0e2138; }
+html.is-mobile body.rg-light .ri-heat-cell.strong { color: #fff; }
+
+html.is-mobile .ri-ladder { display: flex; flex-direction: column; gap: 9px; }
+html.is-mobile .ri-lad-row { display: grid; grid-template-columns: 64px 1fr 28px; align-items: center; gap: 8px; }
+html.is-mobile .ri-lad-l { font-size: 10px; font-weight: 800; color: var(--m-muted); }
+html.is-mobile .ri-lad-track { height: 8px; border-radius: 99px; background: rgba(255,255,255,.06); overflow: hidden; }
+html.is-mobile body.rg-light .ri-lad-track { background: rgba(30,70,120,.09); }
+html.is-mobile .ri-lad-track i {
+    display: block; height: 100%; width: var(--w); border-radius: 99px;
+    background: linear-gradient(90deg, color-mix(in srgb, var(--c) 45%, transparent), var(--c));
+}
+html.is-mobile .ri-lad-n { font-size: 11px; font-weight: 900; color: var(--m-text); text-align: end; font-variant-numeric: tabular-nums; }
+
+html.is-mobile .ri-ranks { display: flex; flex-direction: column; gap: 6px; }
+html.is-mobile .ri-rank {
+    display: flex; align-items: center; gap: 9px;
+    width: 100%; text-align: start;
+    padding: 9px 8px;
+    border-radius: 13px;
+    border: 1px solid transparent;
+    background: rgba(255,255,255,.035);
+    color: var(--m-text);
+    transition: background .2s var(--m-ease), transform .15s var(--m-ease), border-color .2s;
+}
+html.is-mobile body.rg-light .ri-rank { background: rgba(30,70,120,.05); }
+html.is-mobile .ri-rank:active { transform: scale(.985); background: rgba(var(--rg-accent-rgb), .10); }
+html.is-mobile .ri-rank-n {
+    width: 20px; height: 20px; flex: none;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 7px;
+    font-size: 10px; font-weight: 900;
+    background: rgba(255,255,255,.07); color: var(--m-muted);
+}
+html.is-mobile .ri-rank:nth-child(1) .ri-rank-n { background: linear-gradient(140deg, #ffd166, #e0a52a); color: #3a2a00; }
+html.is-mobile .ri-rank:nth-child(2) .ri-rank-n { background: linear-gradient(140deg, #dfe9f5, #a9bdd4); color: #24344a; }
+html.is-mobile .ri-rank:nth-child(3) .ri-rank-n { background: linear-gradient(140deg, #e3b48a, #b97b4a); color: #3a2109; }
+html.is-mobile .ri-av {
+    width: 32px; height: 32px; flex: none;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 11px;
+    background: linear-gradient(150deg, rgba(var(--rg-accent-rgb), .38), rgba(var(--rg-accent-rgb), .10));
+    border: 1px solid rgba(var(--rg-accent-rgb), .28);
+    color: var(--m-text);
+    font-size: 13px; font-weight: 900;
+}
+html.is-mobile .ri-av.big { width: 52px; height: 52px; border-radius: 17px; font-size: 21px; }
+html.is-mobile .ri-rank-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+html.is-mobile .ri-rank-body strong { font-size: 11.5px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html.is-mobile .ri-rank-body small { font-size: 9px; font-weight: 700; color: var(--m-faint); }
+html.is-mobile .ri-rank-v { font-size: 10.5px; font-weight: 900; color: var(--m-accent2); direction: ltr; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+html.is-mobile .ri-search { position: relative; margin-bottom: 8px; }
+html.is-mobile .ri-search i { position: absolute; inset-inline-start: 12px; top: 50%; transform: translateY(-50%); font-size: 11px; color: var(--m-faint); }
+html.is-mobile .ri-search input {
+    width: 100%; height: 40px;
+    border-radius: 13px;
+    border: 1px solid var(--ri-line);
+    background: rgba(0,0,0,.18);
+    color: var(--m-text);
+    padding: 0 34px 0 12px;
+    font-family: inherit; font-size: 12px; font-weight: 600;
+    outline: none;
+}
+html.is-mobile body.rg-light .ri-search input { background: rgba(255,255,255,.8); }
+html.is-mobile .ri-search input::placeholder { color: var(--m-faint); }
+html.is-mobile .ri-search input:focus { border-color: rgba(var(--rg-accent-rgb), .5); box-shadow: 0 0 0 3px rgba(var(--rg-accent-rgb), .12); }
+html.is-mobile .ri-filters { display: flex; gap: 5px; margin-bottom: 9px; flex-wrap: wrap; }
+html.is-mobile .ri-filters button {
+    min-height: 28px; padding: 0 10px;
+    border-radius: 99px;
+    border: 1px solid var(--ri-line);
+    background: transparent;
+    color: var(--m-muted);
+    font-size: 10px; font-weight: 800;
+}
+html.is-mobile .ri-filters button.on {
+    background: rgba(var(--rg-accent-rgb), .16);
+    border-color: rgba(var(--rg-accent-rgb), .38);
+    color: var(--m-accent2);
+}
+html.is-mobile .ri-dir { display: flex; flex-direction: column; gap: 5px; }
+html.is-mobile .ri-dir-row {
+    display: flex; align-items: center; gap: 9px;
+    width: 100%; text-align: start;
+    padding: 9px 8px;
+    border-radius: 13px;
+    border: 1px solid transparent;
+    background: rgba(255,255,255,.03);
+    color: var(--m-text);
+}
+html.is-mobile body.rg-light .ri-dir-row { background: rgba(30,70,120,.045); }
+html.is-mobile .ri-dir-row:active { background: rgba(var(--rg-accent-rgb), .10); }
+html.is-mobile .ri-dir-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+html.is-mobile .ri-dir-body strong { display: flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html.is-mobile .ri-dir-body small { font-size: 9px; font-weight: 700; color: var(--m-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html.is-mobile .ri-badge-new {
+    font-style: normal; font-size: 8px; font-weight: 900;
+    padding: 2px 5px; border-radius: 5px;
+    background: rgba(61,220,151,.16); color: #3ddc97;
+    border: 1px solid rgba(61,220,151,.3);
+}
+html.is-mobile body.rg-light .ri-badge-new { color: #0d7a52; }
+html.is-mobile .ri-dir-end { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; flex: none; max-width: 42%; }
+html.is-mobile .ri-dir-end strong { font-size: 10.5px; font-weight: 900; color: var(--m-text); direction: ltr; font-variant-numeric: tabular-nums; }
+html.is-mobile .ri-dir-end small { font-size: 8.5px; font-weight: 700; color: var(--m-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+html.is-mobile .ri-dir-end .ri-debt { color: #ff8f99; }
+html.is-mobile body.rg-light .ri-dir-end .ri-debt { color: #b32b3a; }
+html.is-mobile .ri-more-note { text-align: center; font-size: 9.5px; font-weight: 700; color: var(--m-faint); padding: 8px 0 2px; }
+
+html.is-mobile .ri-empty-mini {
+    display: flex; flex-direction: column; align-items: center; gap: 7px;
+    padding: 18px 10px;
+    color: var(--m-faint);
+    font-size: 10.5px; font-weight: 700;
+    text-align: center;
+}
+html.is-mobile .ri-empty-mini i { font-size: 18px; opacity: .5; }
+html.is-mobile .ri-foot {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    font-size: 9.5px; font-weight: 700; color: var(--m-faint);
+    padding: 8px 0 16px; text-align: center;
+}
+html.is-mobile .ri-foot i { color: var(--m-accent2); }
+
+/* الدخول المتدرج */
+html.is-mobile .ri-in { animation: riRise .62s var(--m-ease-out) both; animation-delay: calc(min(var(--ri-k, 0), 9) * 46ms); }
+html.is-mobile .ri-root.ri-no-motion .ri-in { animation: none; }
+@keyframes riRise { from { opacity: 0; transform: translate3d(0, 16px, 0); } to { opacity: 1; transform: none; } }
+
+/* ورقة الزبون */
+html.is-mobile .ri-sheet { position: fixed; inset: 0; z-index: 9700; display: flex; align-items: flex-end; }
+html.is-mobile .ri-sheet-scrim { position: absolute; inset: 0; background: radial-gradient(90% 60% at 50% 100%, rgba(6,14,28,.55), rgba(2,6,14,.78)); opacity: 0; transition: opacity .3s var(--m-ease); }
+html.is-mobile .ri-sheet.on .ri-sheet-scrim { opacity: 1; }
+html.is-mobile .ri-sheet-card {
+    position: relative;
+    width: 100%;
+    max-height: 88vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    border-radius: 26px 26px 0 0;
+    border: 1px solid var(--m-edge);
+    border-bottom: none;
+    background:
+        linear-gradient(160deg, rgba(255,255,255,.16), rgba(255,255,255,.02) 46%, rgba(255,255,255,.08)),
+        rgba(var(--rg-glass-rgb), .988);
+    box-shadow: 0 -24px 60px rgba(0,4,14,.55), inset 0 1px 0 rgba(255,255,255,.35);
+    padding: 8px 16px calc(20px + env(safe-area-inset-bottom, 0px));
+    transform: translate3d(0, 104%, 0);
+    transition: transform .42s var(--m-ease-out);
+    color: var(--m-text);
+}
+html.is-mobile body.rg-light .ri-sheet-card { background: linear-gradient(160deg, rgba(255,255,255,.98), rgba(255,255,255,.9)); }
+html.is-mobile .ri-sheet.on .ri-sheet-card { transform: none; }
+html.is-mobile .ri-sheet.out .ri-sheet-card { transform: translate3d(0, 104%, 0); }
+html.is-mobile .ri-sheet.out .ri-sheet-scrim { opacity: 0; }
+html.is-mobile .ri-sheet-grip { width: 42px; height: 5px; border-radius: 99px; background: rgba(255,255,255,.25); margin: 2px auto 12px; }
+html.is-mobile body.rg-light .ri-sheet-grip { background: rgba(20,60,110,.2); }
+html.is-mobile .ri-sheet-x {
+    position: absolute; top: 12px; inset-inline-end: 14px; z-index: 2;
+    width: 32px; height: 32px; border-radius: 10px;
+    border: 1px solid var(--m-edge);
+    background: rgba(255,255,255,.12);
+    color: var(--m-muted); font-size: 13px;
+}
+html.is-mobile .ri-cust-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+html.is-mobile .ri-cust-head h3 { margin: 0 0 3px; font-size: 19px; font-weight: 900; color: var(--m-text); }
+html.is-mobile .ri-cust-head p { margin: 0; font-size: 11px; font-weight: 700; color: var(--m-muted); }
+html.is-mobile .ri-cust-head a { color: var(--m-accent2); text-decoration: none; }
+html.is-mobile .ri-cust-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+html.is-mobile .ri-cust-stats > div {
+    padding: 10px 12px; border-radius: 14px;
+    border: 1px solid var(--m-edge);
+    background: rgba(255,255,255,.05);
+    display: flex; flex-direction: column; gap: 2px;
+}
+html.is-mobile body.rg-light .ri-cust-stats > div { background: rgba(30,70,120,.05); }
+html.is-mobile .ri-cust-stats strong { font-size: 14px; font-weight: 900; color: var(--m-text); direction: ltr; }
+html.is-mobile .ri-cust-stats span { font-size: 9px; font-weight: 800; color: var(--m-muted); }
+html.is-mobile body.rg-light .ri-sheet-x { background: rgba(20,60,110,.07); color: #33507a; }
+html.is-mobile .ri-cust-debt {
+    display: flex; align-items: center; gap: 7px;
+    padding: 10px 12px; border-radius: 13px; margin-bottom: 10px;
+    background: rgba(255,93,108,.10);
+    border: 1px solid rgba(255,93,108,.25);
+    color: #ff8f99; font-size: 11px; font-weight: 700;
+}
+html.is-mobile body.rg-light .ri-cust-debt { color: #b32b3a; }
+html.is-mobile .ri-cust-meta { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+html.is-mobile .ri-cust-meta span { display: flex; align-items: center; gap: 8px; font-size: 10.5px; font-weight: 700; color: var(--m-muted); }
+html.is-mobile .ri-cust-meta i { color: var(--m-accent2); font-size: 10px; width: 14px; text-align: center; }
+html.is-mobile .ri-cust-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 14px; }
+html.is-mobile .ri-chip { padding: 5px 9px; border-radius: 99px; font-size: 9.5px; font-weight: 800; color: var(--m-muted); background: rgba(255,255,255,.06); border: 1px solid var(--ri-line); }
+html.is-mobile .ri-cust-inv h4 { margin: 4px 0 8px; font-size: 12px; font-weight: 900; color: var(--m-text); }
+html.is-mobile .ri-inv {
+    display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; gap: 8px;
+    padding: 8px 10px; border-radius: 11px; margin-bottom: 5px;
+    background: rgba(255,255,255,.04);
+    font-size: 10px; font-weight: 700; color: var(--m-muted);
+}
+html.is-mobile body.rg-light .ri-inv { background: rgba(30,70,120,.05); }
+html.is-mobile .ri-inv-n { font-weight: 900; color: var(--m-accent2); direction: ltr; }
+html.is-mobile .ri-inv-t { font-weight: 900; color: var(--m-text); direction: ltr; }
+html.is-mobile .ri-inv-s { font-size: 8.5px; padding: 2px 6px; border-radius: 6px; background: rgba(255,255,255,.06); }
+body.ri-sheet-open #admin-screen .admin-section { pointer-events: none; }
+body.ri-sheet-open #mobile-bottom-nav { opacity: .35; pointer-events: none; transition: opacity .3s; }
+
+@media (prefers-reduced-motion: reduce) {
+    html.is-mobile .ri-in { animation: none !important; }
+    html.is-mobile .ri-area-line { animation: none !important; stroke-dashoffset: 0 !important; }
+    html.is-mobile .ri-sheet-card { transition: none !important; }
+}
+`;
+
+    const style = document.createElement('style');
+    style.id = 'royal-insight-style';
+    style.textContent = CSS;
+    document.head.appendChild(style);
+})();

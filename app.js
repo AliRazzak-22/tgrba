@@ -4537,3 +4537,5 @@ window.royalTodayOrdersValue = () => {
     return (localData.invoices || []).filter((i) => i && i.date === today)
         .reduce((s, i) => s + (Number(i.total) || 0), 0);
 };
+/* مرجع حيّ للقراءة فقط: محرك الإحصاءات على الجوال يقرأ منه ولا يكتب أبداً. */
+window.royalDataRead = () => localData;
