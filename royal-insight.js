@@ -510,6 +510,23 @@
         return '<div class="ri-heat">' + cells + '</div>';
     }
 
+    const PEAK_BUCKETS = ['قبل ٩ صباحاً', '٩ صباحاً – ١ ظهراً', '١ – ٥ عصراً', 'بعد ٥ مساءً'];
+    function peakLine(heat) {
+        let total = 0, max = 0;
+        heat.forEach((row) => row.forEach((n) => { total += n; if (n > max) max = n; }));
+        if (!total || !max) return '';
+        let ties = 0, pd = 0, pb = 0, found = false;
+        heat.forEach((row, d) => row.forEach((n, b) => {
+            if (n !== max) return;
+            ties += 1;
+            if (!found) { found = true; pd = d; pb = b; }
+        }));
+        const share = Math.round((max / total) * 100);
+        return '<div class="ri-heat-peak"><i class="fa-solid fa-bullseye"></i><span>أكثر الأوقات ازدحاماً: <b>' +
+            esc(WEEKDAYS[pd] + ' · ' + PEAK_BUCKETS[pb]) + '</b> — <b>' + fmt(max) + '</b> طلباً (' + share + '% من طلبات الفترة)' +
+            (ties > 1 ? ' · بالتساوي مع ' + fmt(ties - 1) + ' وقت آخر' : '') + '</span></div>';
+    }
+
     /* ترتيب الخدمات: بالقيمة أو بعدد القطع («أكثر القطع سحباً») — نفس
        البطاقة، والتبديل يعيد الرسم من نفس اللقطة بلا قراءة بيانات جديدة. */
     function bars(list, mode) {
@@ -770,6 +787,7 @@
             '<div class="ri-card">' +
                 '<div class="ri-card-head"><h3><i class="fa-solid fa-fire"></i> أوقات الذروة</h3><span>عدد الطلبات</span></div>' +
                 heatmap(vm.heat, vm.heatMax) +
+                peakLine(vm.heat) +
             '</div>' +
 
             '<div class="ri-card">' +
@@ -1619,6 +1637,17 @@ html.is-mobile .ri-heat-cell {
 html.is-mobile .ri-heat-cell.strong { color: #fff; text-shadow: 0 1px 2px rgba(0,10,30,.5); }
 html.is-mobile body.rg-light .ri-heat-cell { color: #0e2138; }
 html.is-mobile body.rg-light .ri-heat-cell.strong { color: #fff; }
+html.is-mobile .ri-heat-peak {
+    display: flex; align-items: flex-start; gap: 7px;
+    margin-top: 9px; padding-top: 9px;
+    border-top: 1px solid var(--ri-line);
+    font-size: 10px; font-weight: 700; line-height: 1.65;
+    color: var(--m-muted);
+}
+html.is-mobile .ri-heat-peak i { font-size: 9.5px; color: var(--m-accent2); margin-top: 4px; flex: none; }
+html.is-mobile .ri-heat-peak b { color: var(--m-text); font-weight: 900; }
+html.is-mobile body.rg-light .ri-heat-peak { color: #4c5d75; }
+html.is-mobile body.rg-light .ri-heat-peak b { color: #0e2138; }
 
 html.is-mobile .ri-ladder { display: flex; flex-direction: column; gap: 9px; }
 html.is-mobile .ri-lad-row { display: grid; grid-template-columns: 64px 1fr 28px; align-items: center; gap: 8px; }
