@@ -3199,11 +3199,20 @@ html.is-mobile .modal-footer-sticky {
        أسوأ من أن تُنتج تمريراً فعلياً. ولا تُمسّ حركة السحب الأفقي بين التبويبات. */
     function bindBounceGuard() {
         let sy = 0, sx = 0, sc = null, armed = false;
+        /* صندوق التمرير الفعلي في النوافذ ذات الرأس/التذييل الثابت هو جسم النافذة
+           لا إطارها: الإطار مثبّت بلا تمرير، وقياسه كان يمنع كل سحب رأسي. */
+        const scrollBoxOf = (t) => {
+            if (!t || !t.closest) return null;
+            const sticky = t.closest('.modal-content.mobile-sticky-modal');
+            const sheetBody = sticky ? sticky.querySelector('.modal-body-scrollable') : null;
+            if (sheetBody) return sheetBody;
+            return t.closest('.modal-body-scrollable') || t.closest('.admin-section, .modal-content');
+        };
         document.addEventListener('touchstart', (e) => {
             armed = false;
             if (!e.touches || e.touches.length !== 1) return;
             const t = e.target;
-            const box = t && t.closest ? t.closest('.admin-section, .modal-content') : null;
+            const box = scrollBoxOf(t);
             if (!box) return;
             sy = e.touches[0].clientY; sx = e.touches[0].clientX;
             sc = box; armed = true;
