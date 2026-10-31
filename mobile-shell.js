@@ -4053,22 +4053,43 @@ html.is-mobile .m-splash {
     align-items: center;
     justify-content: center;
     overflow: hidden;
-    background:
+    --m-spl-bg:
         radial-gradient(58% 42% at 50% 38%, rgba(var(--rg-accent-rgb), .20), transparent 70%),
         radial-gradient(80% 60% at 50% 115%, rgba(90,168,255,.10), transparent 66%),
         linear-gradient(180deg, #050a13, #03060b);
+    background: var(--m-spl-bg);
     opacity: 1;
     transition: opacity .5s var(--m-ease-out, ease);
 }
-html.is-mobile .m-splash.m-off2 { opacity: 0; pointer-events: none; }
+/* خروج كتفكّك زجاجي: نصفان يحملان الخلفية نفسها ينزلقان عن المركز
+   فيظهر التطبيق من الشقّ، بينما القرص والاسم يرتفعان ويتلاشيان. */
+html.is-mobile .m-splash::before,
+html.is-mobile .m-splash::after {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    z-index: 0;
+    background: var(--m-spl-bg);
+    transition: transform .62s cubic-bezier(.6,.05,.7,.2), opacity .6s ease;
+    will-change: transform;
+    pointer-events: none;
+}
+html.is-mobile .m-splash::before { clip-path: inset(0 0 50% 0); }
+html.is-mobile .m-splash::after { clip-path: inset(50% 0 0 0); }
+html.is-mobile .m-splash.m-off2 { opacity: 1; pointer-events: none; background: transparent; }
+html.is-mobile .m-splash.m-off2::before { transform: translate3d(0, -104%, 0); }
+html.is-mobile .m-splash.m-off2::after { transform: translate3d(0, 104%, 0); }
 html.is-mobile .m-splash-orb {
     position: absolute;
     width: 270px; height: 270px;
     border-radius: 50%;
     background: radial-gradient(circle, rgba(var(--rg-accent-rgb), .30), transparent 68%);
     filter: blur(18px);
+    z-index: 1;
     animation: mSplOrb 3.4s ease-in-out infinite alternate;
+    transition: opacity .38s ease;
 }
+html.is-mobile .m-splash.m-off2 .m-splash-orb { opacity: 0; }
 @keyframes mSplOrb { from { transform: scale(.86); opacity: .45; } to { transform: scale(1.12); opacity: .82; } }
 html.is-mobile .m-splash-core {
     position: relative;
@@ -4181,13 +4202,15 @@ html.is-mobile .m-splash-grain {
     inset: 0;
     pointer-events: none;
     opacity: .5;
+    z-index: 1;
+    transition: opacity .34s ease;
     background-image: radial-gradient(rgba(255,255,255,.05) 1px, transparent 1px);
     background-size: 3px 3px;
     -webkit-mask-image: radial-gradient(70% 60% at 50% 45%, #000, transparent 78%);
     mask-image: radial-gradient(70% 60% at 50% 45%, #000, transparent 78%);
 }
 html.is-mobile .m-splash.is-light {
-    background:
+    --m-spl-bg:
         radial-gradient(58% 42% at 50% 38%, rgba(var(--rg-accent-rgb), .16), transparent 70%),
         radial-gradient(80% 60% at 50% 115%, rgba(90,168,255,.14), transparent 66%),
         linear-gradient(180deg, #f4f8fd, #e7eff8);
