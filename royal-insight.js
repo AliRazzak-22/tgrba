@@ -1335,6 +1335,35 @@
         const cmNow = dateOfMs(baseDay.getTime()).slice(0, 7);
         const cmVisits = cMonths.reduce((s, m) => s + m.visits, 0);
         const cmSpent = cMonths.reduce((s, m) => s + m.spent, 0);
+        /* إيقاع الزبون: وسيط الفجوات بين زياراته كلها، لا متوسطها، لأن زيارة
+           واحدة متأخرة تجرّ المتوسط. يحتاج فجوتين على الأقل ليُقال شيء. */
+        const mineTs = mine.map(tsOf).filter((t) => t > 0).sort((a, b) => a - b);
+        const myGaps = [];
+        for (let i = 1; i < mineTs.length; i++) myGaps.push((mineTs[i] - mineTs[i - 1]) / 86400000);
+        myGaps.sort((a, b) => a - b);
+        const myGapN = myGaps.length;
+        const myGapMed = myGapN
+            ? (myGapN % 2 ? myGaps[(myGapN - 1) / 2] : (myGaps[myGapN / 2 - 1] + myGaps[myGapN / 2]) / 2)
+            : 0;
+        const dayStartOf = (ms) => { const d = new Date(ms); return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime(); };
+        const sinceDays = mineTs.length ? Math.round((dayStartOf(baseDay.getTime()) - dayStartOf(mineTs[mineTs.length - 1])) / 86400000) : 0;
+        let rhythmHTML = '';
+        if (myGapN >= 2) {
+            const rmed = Math.max(1, Math.round(myGapMed));
+            const rhythmGap = myGapMed < 1 ? 'أقل من يوم' : rmed === 1 ? 'يوم' : rmed === 2 ? 'يومين' : rmed + ' أيام';
+            const gapsTxt = myGapN === 2 ? 'فجوتين' : myGapN <= 10 ? fmt(myGapN) + ' فجوات' : fmt(myGapN) + ' فجوة';
+            const late = sinceDays - rmed;
+            const lateTxt = late > 0
+                ? (late === 1 ? 'تجاوز موعده بيوم' : late === 2 ? 'تجاوز موعده بيومين' : 'تجاوز موعده بـ ' + late + ' أيام')
+                : late === 0 ? 'يتوقع عودته اليوم'
+                    : -late === 1 ? 'يتوقع عودته غداً'
+                        : -late === 2 ? 'يتوقع عودته بعد يومين'
+                            : 'يتوقع عودته بعد ' + (-late) + ' أيام';
+            rhythmHTML = '<div class="ri-cust-rhythm' + (late > 0 ? ' late' : '') + '">' +
+                '<span class="ri-cust-rhythm-main"><i class="fa-solid fa-arrows-rotate"></i> عادته: زيارة كل <b>' + rhythmGap + '</b><small>من ' + gapsTxt + ' بين زياراته</small></span>' +
+                '<em class="ri-cust-rhythm-state">' + lateTxt + '</em>' +
+            '</div>';
+        }
         const monthsHTML = cmVisits
             ? '<div class="ri-cm-bars">' + cMonths.map((m, k) =>
                 '<span class="ri-cm' + (m.key === cmNow ? ' on' : '') + '">' +
@@ -1395,6 +1424,7 @@
                     '<span><i class="fa-solid fa-clock-rotate-left"></i> آخر زيارة: ' + (c.lastTs ? esc(prettyDay(c.lastTs)) : '—') + '</span>' +
                     '<span><i class="fa-solid fa-star"></i> الأكثر طلباً: ' + esc(c.fav || '—') + '</span>' +
                 '</div>' +
+                rhythmHTML +
                 (favs ? '<div class="ri-cust-chips">' + favs + '</div>' : '') +
                 '<div class="ri-cust-inv"><h4>آخر الفواتير</h4>' + rows + '</div>' +
             '</div>';
@@ -2474,6 +2504,28 @@ html.is-mobile body.rg-light .ri-cm-empty { background: rgba(30,70,120,.04); col
 html.is-mobile .ri-cust-meta { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
 html.is-mobile .ri-cust-meta span { display: flex; align-items: center; gap: 8px; font-size: 10.5px; font-weight: 700; color: var(--m-muted); }
 html.is-mobile .ri-cust-meta i { color: var(--m-accent2); font-size: 10px; width: 14px; text-align: center; }
+html.is-mobile .ri-cust-rhythm {
+    display: flex; flex-direction: column; gap: 3px;
+    padding: 9px 12px; border-radius: 13px; margin-bottom: 10px;
+    background: rgba(61,220,151,.07);
+    border: 1px solid rgba(61,220,151,.22);
+}
+html.is-mobile .ri-cust-rhythm-main { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; font-size: 9.5px; font-weight: 700; color: var(--m-muted); }
+html.is-mobile .ri-cust-rhythm-main i { color: #3ddc97; font-size: 10px; }
+html.is-mobile .ri-cust-rhythm-main b { color: var(--m-text); font-weight: 900; }
+html.is-mobile .ri-cust-rhythm-main small { font-size: 8.5px; font-weight: 700; color: var(--m-faint); }
+html.is-mobile .ri-cust-rhythm-state { font-style: normal; font-size: 10px; font-weight: 900; color: #3ddc97; }
+html.is-mobile .ri-cust-rhythm.late { background: rgba(255,209,102,.08); border-color: rgba(255,209,102,.26); }
+html.is-mobile .ri-cust-rhythm.late .ri-cust-rhythm-main i,
+html.is-mobile .ri-cust-rhythm.late .ri-cust-rhythm-state { color: #ffd166; }
+html.is-mobile body.rg-light .ri-cust-rhythm { background: rgba(20,120,80,.06); border-color: rgba(20,120,80,.18); }
+html.is-mobile body.rg-light .ri-cust-rhythm-main { color: #4c5d75; }
+html.is-mobile body.rg-light .ri-cust-rhythm-main b { color: #0e2138; }
+html.is-mobile body.rg-light .ri-cust-rhythm-main i,
+html.is-mobile body.rg-light .ri-cust-rhythm-state { color: #137a52; }
+html.is-mobile body.rg-light .ri-cust-rhythm.late { background: rgba(160,110,10,.07); border-color: rgba(160,110,10,.22); }
+html.is-mobile body.rg-light .ri-cust-rhythm.late .ri-cust-rhythm-main i,
+html.is-mobile body.rg-light .ri-cust-rhythm.late .ri-cust-rhythm-state { color: #8a6a1f; }
 html.is-mobile .ri-cust-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 14px; }
 html.is-mobile .ri-chip { padding: 5px 9px; border-radius: 99px; font-size: 9.5px; font-weight: 800; color: var(--m-muted); background: rgba(255,255,255,.06); border: 1px solid var(--ri-line); }
 html.is-mobile .ri-cust-inv h4 { margin: 4px 0 8px; font-size: 12px; font-weight: 900; color: var(--m-text); }
