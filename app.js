@@ -1534,12 +1534,16 @@ window.openPreviousInvoices = () => {
 
     const startTimestamp = new Date(dateFilter + 'T00:00:00').getTime();
     const endTimestamp = new Date(dateFilter + 'T23:59:59').getTime();
+    /* البحث نصّي عبر كل الأيام: العنوان يوعد بالبحث بالاسم أو الرقم، وكان
+       محصوراً في يوم واحد فيخفي فواتير الزبون القديمة بلا أن يدري أحد */
+    const searchAll = !!filterText;
 
     const sorted = (localData.invoices || []).sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0));
-    
+
+    let rowsHTML = '';
     sorted.forEach(inv => {
-        // حماية الذاكرة: استثناء فواتير الأيام الأخرى
-        if (inv.timestamp < startTimestamp || inv.timestamp > endTimestamp) return;
+        // حماية الذاكرة: استثناء فواتير الأيام الأخرى (إلا أثناء البحث)
+        if (!searchAll && (inv.timestamp < startTimestamp || inv.timestamp > endTimestamp)) return;
         
         // إخفاء الطلبات قيد الانتظار (Active) من هذه القائمة لتبقى في المستودع فقط
         if (inv.type === 'active') return;
@@ -1548,7 +1552,7 @@ window.openPreviousInvoices = () => {
         if (filterText && !inv.id.toLowerCase().includes(filterText) && !customerName.includes(filterText)) return;
 
         let typeStr = inv.type === 'cash' ? 'نقدي (كاش)' : (inv.type === 'electronic' ? 'إلكتروني' : 'آجل');
-        tbody.innerHTML += `
+        rowsHTML += `
             <tr>
                 <td>${inv.date}</td>
                 <td>${inv.id}</td>
@@ -1562,6 +1566,7 @@ window.openPreviousInvoices = () => {
             </tr>
         `;
     });
+    tbody.innerHTML = rowsHTML;
     document.getElementById('modal-invoices').style.display = 'flex';
 };
 

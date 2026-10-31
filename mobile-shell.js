@@ -1301,6 +1301,17 @@ html.is-mobile .m-wb-empty-go {
    مستودع الاستلام، المشتركون) وليس السجل وحده، فيبقى الإصلاح عاماً. */
 html.is-mobile .admin-filters > input[style*="flex: 2"] { flex: 1 1 100% !important; }
 html.is-mobile #modal-invoices .admin-filters > input[type="date"] { flex: 1 1 100% !important; }
+/* أثناء البحث يتجاهل app.js تاريخ اليوم ويتجاوز الأيام: نُخفت التاريخ ونشرح
+   ذلك بسطر صغير، فلا يبدو التناقض (تاريخ اليوم ونتائج من أيام أخرى) خطأً. */
+html.is-mobile #modal-invoices .admin-filters.m-search-on > #inv-date-filter { opacity: .5; }
+html.is-mobile #modal-invoices .m-inv-hint {
+    display: none; width: 100%;
+    font-size: 10px; font-weight: 800; letter-spacing: .2px;
+    color: var(--m-faint);
+    margin-top: -2px;
+}
+html.is-mobile #modal-invoices .m-inv-hint.on { display: block; }
+html.is-mobile body.rg-light #modal-invoices .m-inv-hint { color: #6f8bab; }
 
 /* صفا التاريخ بعنوانيهما ثم البحث صفاً كاملاً بزر مسح: «من» و«إلى» يمنعان
    قراءة الحقلين بالمقلوب، والمسح يوفّر حذف النص حرفاً حرفاً على الجوال. */
@@ -8129,10 +8140,31 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
         }, { passive: true });
     }
 
+    /* سطر يشرح أن البحث في سجل الفواتير يتجاوز تاريخ اليوم المختار */
+    function bindInvoiceSearchHint() {
+        const input = document.getElementById('inv-search-text');
+        const filters = document.querySelector('#modal-invoices .admin-filters');
+        if (!input || !filters || filters.dataset.mInvHint === '1') return;
+        filters.dataset.mInvHint = '1';
+        const hint = document.createElement('small');
+        hint.className = 'm-inv-hint';
+        hint.textContent = 'البحث يشمل كل الأيام';
+        filters.appendChild(hint);
+        const sync = () => {
+            const on = !!input.value;
+            hint.classList.toggle('on', on);
+            filters.classList.toggle('m-search-on', on);
+        };
+        input.addEventListener('input', sync);
+        input.addEventListener('keyup', sync);
+        sync();
+    }
+
     function initLogsChrome() {
         buildLogsFilters();
         buildLogsRanges();
         bindLogsAuto();
+        bindInvoiceSearchHint();
         const from = document.getElementById('log-date-from');
         const to = document.getElementById('log-date-to');
         if (from && to && !from.value && !to.value) {
@@ -10021,6 +10053,10 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
             if (wbEmpty) wbEmpty.remove();
             closeWalletSheet();
             unwrapLogsFilters();
+            const invHint = document.querySelector('#modal-invoices .m-inv-hint');
+            if (invHint) invHint.remove();
+            const invFilters = document.querySelector('#modal-invoices .admin-filters');
+            if (invFilters) { invFilters.classList.remove('m-search-on'); delete invFilters.dataset.mInvHint; }
             ['#admin-logs .m-logs-ranges', '#admin-logs .m-logs-foot', '#admin-logs .m-logs-empty'].forEach((sel) => {
                 const el = document.querySelector(sel);
                 if (el) el.remove();

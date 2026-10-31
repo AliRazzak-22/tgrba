@@ -76,7 +76,7 @@
     if (document.documentElement.classList.contains('is-mobile')) {
         var royalMobileLayer = document.createElement('script');
         royalMobileLayer.type = 'module';
-        royalMobileLayer.src = 'mobile-shell.js?v=20261031ag';
+        royalMobileLayer.src = 'mobile-shell.js?v=20261031ah';
         document.head.appendChild(royalMobileLayer);
         var royalGlassLayer = document.createElement('script');
         royalGlassLayer.type = 'module';
@@ -1412,7 +1412,7 @@
             <div class="modal-title">سجل الفواتير (بحث وتعديل)</div>
             <div class="admin-filters" style="margin-bottom:20px;">
     <input type="date" id="inv-date-filter" class="note-input" onchange="window.openPreviousInvoices()" title="تاريخ الفواتير">
-    <input type="text" id="inv-search-text" class="note-input" style="flex: 2;" placeholder="ابحث برقم الفاتورة أو اسم الزبون..." onkeyup="window.openPreviousInvoices()">
+    <input type="text" id="inv-search-text" class="note-input" style="flex: 2;" placeholder="ابحث برقم الفاتورة أو اسم الزبون في كل الأيام..." onkeyup="window.openPreviousInvoices()">
 </div>
             <table class="invoices-table">
                 <thead><tr><th>الوقت</th><th>رقم الفاتورة</th><th>النوع</th><th>المبلغ</th><th>إجراءات</th></tr></thead>
@@ -1959,6 +1959,6 @@
     <script defer src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.7/Sortable.min.js"></script>
     
     <!-- استدعاء ملف الجافاسكريبت كـ Module لدعم Firebase -->
-    <script type="module" src="app.js?v=20261031m"></script>
+    <script type="module" src="app.js?v=20261031n"></script>
 </body>
 </html>
