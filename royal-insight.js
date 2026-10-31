@@ -205,11 +205,13 @@
             'تسديد دين': 1, 'اشتراك VIP': 1, 'تجديد VIP': 1, 'ترقية VIP': 1,
             'دفع كاش (متبقي طلب)': 1, 'دفع مختلط (VIP + كاش)': 1
         };
+        /* المتبقي عند التسليم يُحتسب من سجل الدفعات وحده (وسم «دفع كاش (متبقي
+           طلب)») كما في صندوق اليوم والتقرير الشهري. جمعه هنا أيضاً كان
+           يضاعف الكاش المسلَّم بعد أن صار للتسليم دفعة مستقلة. */
         let cash = 0, electronic = 0;
         inPeriod.forEach((inv) => {
             const c = inv.customer || {};
             if (inv.type === 'active' || inv.type === 'archived') cash += num(c.paid);
-            if (inv.type === 'archived' && inv.paymentType === 'credit') cash += num(c.remainingPaid);
             if (inv.type === 'cash') cash += num(inv.total);
             if (inv.type === 'electronic') electronic += num(inv.total);
         });
