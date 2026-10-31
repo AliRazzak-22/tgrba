@@ -982,7 +982,7 @@
             el.style.setProperty('--ri-k', String(i));
             el.classList.add('ri-in');
         });
-        if (motionOff()) host.classList.add('ri-no-motion');
+        host.classList.toggle('ri-no-motion', motionOff());
         countUpAll(host);
         bindRoot(host);
     }
@@ -1588,6 +1588,24 @@ html.is-mobile body.rg-light .ri-cmp-bar.was i { background: rgba(30,70,120,.30)
 html.is-mobile body.rg-light .ri-cmp-d.up { background: rgba(13,122,82,.10); color: #0d7a52; border-color: rgba(13,122,82,.2); }
 html.is-mobile body.rg-light .ri-cmp-d.down { color: #b32b3a; }
 html.is-mobile body.rg-light .ri-cmp-d.flat { background: rgba(30,70,120,.06); color: #5b7191; border-color: rgba(30,70,120,.12); }
+
+/* بناء مركز الزبائن: البطاقة تدخل واحدة بعد الأخرى بدل ظهور اللوحة دفعة
+   واحدة. فقط أول ست بطاقات تتحرك (ما يظهر عادة فوق الطية)؛ الباقي يبقى
+   ساكناً فالتحريك تحت الشاشة يكلف بلا أن يراه أحد. */
+@keyframes riIn {
+    from { opacity: 0; transform: translate3d(0, 22px, 0) scale(.985); }
+    to   { opacity: 1; transform: none; }
+}
+html.is-mobile .ri-root:not(.ri-no-motion) .ri-sheet-top.ri-in > * {
+    animation: riIn .8s var(--m-ease-out) both;
+}
+html.is-mobile .ri-root:not(.ri-no-motion) .ri-sheet-top.ri-in > *:nth-child(1) { animation-delay: 70ms; }
+html.is-mobile .ri-root:not(.ri-no-motion) .ri-sheet-top.ri-in > *:nth-child(2) { animation-delay: 150ms; }
+html.is-mobile .ri-root:not(.ri-no-motion) .ri-sheet-top.ri-in > *:nth-child(3) { animation-delay: 230ms; }
+html.is-mobile .ri-root:not(.ri-no-motion) .ri-sheet-top.ri-in > *:nth-child(4) { animation-delay: 310ms; }
+html.is-mobile .ri-root:not(.ri-no-motion) .ri-sheet-top.ri-in > *:nth-child(5) { animation-delay: 390ms; }
+html.is-mobile .ri-root:not(.ri-no-motion) .ri-sheet-top.ri-in > *:nth-child(6) { animation-delay: 470ms; }
+html.is-mobile .ri-root:not(.ri-no-motion) .ri-sheet-top.ri-in > *:nth-child(n+7) { animation: none; }
 
 html.is-mobile .ri-cmp-ret { margin-top: 15px; padding-top: 13px; border-top: 1px solid var(--ri-line); display: flex; flex-direction: column; gap: 7px; }
 html.is-mobile .ri-cmp-ret-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
