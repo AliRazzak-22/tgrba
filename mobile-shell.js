@@ -1297,8 +1297,35 @@ html.is-mobile .m-wb-empty-go {
    993 حركة تُبنى كبطاقات زجاجية = تمرير ثقيل وفراغ طويل. البحث كان ينضغط إلى
    55px لأن نمطاً سطرياً يفرض flex:2. الآن الفلاتر صفوف واضحة، ونطاقات سريعة،
    والسجل يعرض ٤٠ بطاقة ثم زر «عرض المزيد» من عقد محفوظة بلا إعادة قراءة. */
-html.is-mobile .admin-filters > input[style*="flex: 2"] { flex: 1 1 100% !important; }
-html.is-mobile #admin-logs .admin-filters > input[type="date"] { flex: 1 1 0 !important; }
+/* صفا التاريخ بعنوانيهما ثم البحث صفاً كاملاً بزر مسح: «من» و«إلى» يمنعان
+   قراءة الحقلين بالمقلوب، والمسح يوفّر حذف النص حرفاً حرفاً على الجوال. */
+html.is-mobile #admin-logs .m-logs-dates { display: flex; gap: 8px; flex: 1 1 100% !important; min-width: 0; }
+html.is-mobile #admin-logs .m-logs-field { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+html.is-mobile #admin-logs .m-logs-field > span { padding: 0 3px; font-size: 10px; font-weight: 900; letter-spacing: .3px; color: var(--m-faint); }
+html.is-mobile #admin-logs .m-logs-field > input { width: 100%; min-width: 0; }
+html.is-mobile #admin-logs .m-logs-search { position: relative; flex: 1 1 100% !important; min-width: 0; }
+html.is-mobile #admin-logs .m-logs-search > input { width: 100%; padding-left: 40px !important; }
+html.is-mobile #admin-logs .m-logs-clear {
+    position: absolute; left: 7px; top: 50%;
+    transform: translateY(-50%);
+    display: none; align-items: center; justify-content: center;
+    width: 28px; min-width: 0; max-width: 28px; height: 28px; padding: 0;
+    flex: none;
+    border-radius: 50%;
+    border: 1px solid var(--m-edge);
+    background: rgba(var(--rg-glass-rgb), .72);
+    color: var(--m-muted);
+    font-size: 12px; line-height: 1;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform .15s var(--m-ease), color .2s var(--m-ease);
+}
+html.is-mobile #admin-logs .m-logs-clear.on { display: flex; }
+html.is-mobile #admin-logs .m-logs-clear:active { transform: translateY(-50%) scale(.9); }
+html.is-mobile body.rg-light #admin-logs .m-logs-clear {
+    background: rgba(255,255,255,.85);
+    border-color: rgba(47,127,208,.22);
+    color: #4a6a8d;
+}
 
 html.is-mobile .m-logs-ranges {
     display: flex; gap: 7px;
@@ -8010,8 +8037,97 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
         syncLogsRanges();
     }
 
+    /* الحقول تُغلَّف مرة واحدة فقط؛ التفكيك في dispose يعيدها لأبويها الأصلي
+       كي لا تفقد شاشة سطح المكتب فلاترها إن أُزيلت طبقة الجوال */
+    function buildLogsFilters() {
+        const filters = document.querySelector('#admin-logs .admin-filters');
+        if (!filters || filters.dataset.mLogsFilters === '1') return;
+        const from = document.getElementById('log-date-from');
+        const to = document.getElementById('log-date-to');
+        const search = document.getElementById('log-search-text');
+        if (!from || !to || !search) return;
+        const dates = document.createElement('div');
+        dates.className = 'm-logs-dates';
+        const field = (input, label) => {
+            const box = document.createElement('label');
+            box.className = 'm-logs-field';
+            const tag = document.createElement('span');
+            tag.textContent = label;
+            box.appendChild(tag);
+            box.appendChild(input);
+            return box;
+        };
+        dates.appendChild(field(from, 'من'));
+        dates.appendChild(field(to, 'إلى'));
+        filters.insertBefore(dates, search);
+        const wrap = document.createElement('div');
+        wrap.className = 'm-logs-search';
+        filters.insertBefore(wrap, search);
+        wrap.appendChild(search);
+        const clear = document.createElement('button');
+        clear.type = 'button';
+        clear.className = 'm-logs-clear';
+        clear.setAttribute('aria-label', 'مسح البحث');
+        clear.innerHTML = '<i class="fa-solid fa-xmark" aria-hidden="true"></i>';
+        wrap.appendChild(clear);
+        const syncClear = () => clear.classList.toggle('on', !!search.value);
+        search.addEventListener('input', syncClear);
+        search.addEventListener('keyup', syncClear);
+        clear.addEventListener('click', () => {
+            search.value = '';
+            syncClear();
+            try { if (typeof haptic === 'function') haptic(6); } catch (e) {}
+            if (typeof window.renderLogs === 'function') window.renderLogs();
+            try { search.focus({ preventScroll: true }); } catch (e) {}
+        });
+        filters.dataset.mLogsFilters = '1';
+        syncClear();
+    }
+
+    function unwrapLogsFilters() {
+        const filters = document.querySelector('#admin-logs .admin-filters');
+        if (!filters || filters.dataset.mLogsFilters !== '1') return;
+        const from = document.getElementById('log-date-from');
+        const to = document.getElementById('log-date-to');
+        const search = document.getElementById('log-search-text');
+        const dates = filters.querySelector('.m-logs-dates');
+        const wrap = filters.querySelector('.m-logs-search');
+        if (dates) {
+            if (from) filters.insertBefore(from, dates);
+            if (to) filters.insertBefore(to, dates);
+            dates.remove();
+        }
+        if (wrap) {
+            if (search) filters.insertBefore(search, wrap);
+            wrap.remove();
+        }
+        delete filters.dataset.mLogsFilters;
+    }
+
+    /* الوصول لآخر القائمة يحمّل الدفعة التالية بلا لمسة إضافية. الزر يبقى
+       للوصولية ولمن يريد التحكم، والتحميل التلقائي يستدعيه نفسه. */
+    function bindLogsAuto() {
+        const sec = document.getElementById('admin-logs');
+        if (!sec || sec.dataset.mLogsAuto === '1') return;
+        sec.dataset.mLogsAuto = '1';
+        let raf = 0;
+        sec.addEventListener('scroll', () => {
+            if (raf) return;
+            raf = requestAnimationFrame(() => {
+                raf = 0;
+                if (!document.body.classList.contains('m-admin')) return;
+                if (state.busy || phys.touching) return;
+                if (sec.scrollHeight - sec.scrollTop - sec.clientHeight > 380) return;
+                const btn = sec.querySelector('.m-logs-more');
+                if (btn && btn.style.display !== 'none' && logsStash.length) btn.click();
+            });
+        }, { passive: true });
+    }
+
     function initLogsChrome() {
+        buildLogsFilters();
         buildLogsRanges();
+        bindLogsAuto();
         const from = document.getElementById('log-date-from');
         const to = document.getElementById('log-date-to');
         if (from && to && !from.value && !to.value) {
@@ -9899,6 +10015,7 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
             const wbEmpty = document.querySelector('#admin-wallet .m-wb-empty');
             if (wbEmpty) wbEmpty.remove();
             closeWalletSheet();
+            unwrapLogsFilters();
             ['#admin-logs .m-logs-ranges', '#admin-logs .m-logs-foot', '#admin-logs .m-logs-empty'].forEach((sel) => {
                 const el = document.querySelector(sel);
                 if (el) el.remove();
