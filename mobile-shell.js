@@ -1502,6 +1502,16 @@ html.is-mobile body.rg-light .m-idle-warn-b { border-color: rgba(190,150,60,.36)
     html.is-mobile .m-idle-seg button { transition: none; }
 }
 
+/* إمكانية الوصول: حلقة تركيز ظاهرة للمفاتيح والأجهزة المساعدة */
+html.is-mobile :focus-visible {
+    outline: 2px solid rgba(255,222,150,.9);
+    outline-offset: 2px;
+    border-radius: 10px;
+}
+html.is-mobile body.rg-light :focus-visible {
+    outline-color: rgba(150,100,20,.9);
+}
+
 /* ------------------------- اللوحاتControl والفلاتر ------------------------- */
 html.is-mobile .admin-control-panel { display: flex !important; flex-direction: column !important; align-items: stretch !important; gap: 10px !important; margin-bottom: 14px !important; }
 html.is-mobile .admin-control-panel h2 { margin: 0 2px !important; }
