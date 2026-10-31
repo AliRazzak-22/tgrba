@@ -323,6 +323,41 @@
         });
         const heatMax = Math.max(1, ...heat.reduce((a, r) => a.concat(r), []));
 
+        /* إيقاع الأسبوع: متوسط قيمة الطلبات لكل يوم أسبوع. نجمع ثم نقسم على
+           عدد مرات ظهور اليوم في النافذة لا على عدد الفواتير، كي لا يُظلم يوم
+           تكرر أربع مرات مقابل يوم تكرر خمساً. واليوم الجاري يُستثنى كلياً:
+           نصف يوم لا يمثّل يوم عمل كامل، واحتسابه يخفض متوسط يومه بلا سبب. */
+        const todayStartMs = new Date(new Date(todayMs).getFullYear(), new Date(todayMs).getMonth(), new Date(todayMs).getDate()).getTime();
+        const wdDone = inPeriod.filter((inv) => { const t = tsOf(inv); return t > 0 && t < todayStartMs; });
+        const wd = WEEKDAYS.map((label, i) => ({ i, label, total: 0, bills: 0, days: 0, avg: 0 }));
+        wdDone.forEach((inv) => {
+            const d = wd[weekdayIdx(tsOf(inv))];
+            d.total += num(inv.total);
+            d.bills += 1;
+        });
+        let wdStart = start;
+        if (!wdStart) {
+            all.forEach((inv) => { const t = tsOf(inv); if (t && t < todayStartMs && (!wdStart || t < wdStart)) wdStart = t; });
+            if (wdStart) { const f = new Date(wdStart); wdStart = new Date(f.getFullYear(), f.getMonth(), f.getDate()).getTime(); }
+        }
+        if (wdStart && wdStart < todayStartMs) {
+            const cur = new Date(wdStart);
+            const lastDay = new Date(todayStartMs - 1);
+            let guard = 0;
+            while (cur.getTime() <= lastDay.getTime() && guard < 4200) {
+                wd[cur.getDay()].days += 1;
+                cur.setDate(cur.getDate() + 1);
+                guard += 1;
+            }
+        }
+        let wdBest = -1, wdWorst = -1;
+        wd.forEach((d) => {
+            d.avg = d.days ? d.total / d.days : 0;
+            if (!d.days) return;
+            if (wdBest < 0 || d.avg > wd[wdBest].avg) wdBest = d.i;
+            if (wdWorst < 0 || d.avg < wd[wdWorst].avg) wdWorst = d.i;
+        });
+
         /* غائب = زبون زار مرتين فأكثر ولم تُسجَّل له فاتورة منذ ٢١ يوماً.
            نُفرّق من تجاوز الشهر عن الذي ما زال في مهلة العودة. */
         const absent = Object.values(life)
@@ -396,6 +431,7 @@
             servicesByQty: topServicesQty,
             heat,
             heatMax,
+            weekday: { list: wd, best: wdBest, worst: wdWorst },
             ladder,
             absent,
             absentWarn,
@@ -525,6 +561,34 @@
         return '<div class="ri-heat-peak"><i class="fa-solid fa-bullseye"></i><span>أكثر الأوقات ازدحاماً: <b>' +
             esc(WEEKDAYS[pd] + ' · ' + PEAK_BUCKETS[pb]) + '</b> — <b>' + fmt(max) + '</b> طلباً (' + share + '% من طلبات الفترة)' +
             (ties > 1 ? ' · بالتساوي مع ' + fmt(ties - 1) + ' وقت آخر' : '') + '</span></div>';
+    }
+
+    /* أعمدة أيام الأسبوع: متوسط قيمة الطلبات في اليوم الواحد، لا مجموعها،
+       لأن بعض الأيام تكرر في الفترة أكثر من غيره. الأفضل مميز بلون واحد. */
+    function weekdayChart(wd) {
+        if (!wd || !wd.list || !wd.list.some((d) => d.bills)) return emptyMini('لا فواتير مكتملة في هذه الفترة بعد');
+        if (!wd.list.some((d) => d.days)) return emptyMini('نحتاج يوماً مكتملاً واحداً على الأقل لرسم إيقاع الأسبوع');
+        const max = Math.max(1, ...wd.list.map((d) => d.avg));
+        const cols = wd.list.map((d) => {
+            const h = d.avg > 0 ? clamp((d.avg / max) * 100, 5, 100) : 0;
+            const tip = d.label + ': متوسط ' + money(d.avg) + ' · ' + fmt(d.bills) + ' فاتورة على ' + fmt(d.days) + (d.days === 1 ? ' يوم' : ' أيام');
+            return '<div class="ri-wd' + (d.i === wd.best ? ' best' : '') + '" style="--i:' + d.i + '" title="' + esc(tip) + '">' +
+                '<div class="ri-wd-col"><i style="--h:' + h.toFixed(1) + '%"></i></div>' +
+                '<span class="ri-wd-l">' + esc(d.label) + '</span>' +
+            '</div>';
+        }).join('');
+        const best = wd.best >= 0 ? wd.list[wd.best] : null;
+        const worst = wd.worst >= 0 ? wd.list[wd.worst] : null;
+        return '<div class="ri-wd-plot" role="img" aria-label="متوسط قيمة الطلبات حسب أيام الأسبوع">' + cols + '</div>' +
+            (best
+                ? '<div class="ri-wd-foot">' +
+                    '<span class="ri-wd-best"><i class="fa-solid fa-crown"></i> أفضل يوم: <b>' + esc(best.label) + '</b> — متوسط <b>' + money(best.avg) + '</b></span>' +
+                    (worst && worst.i !== best.i
+                        ? '<span class="ri-wd-worst"><i class="fa-solid fa-arrow-down-long"></i> أضعف يوم: <b>' + esc(worst.label) + '</b> — <b>' + money(worst.avg) + '</b></span>'
+                        : '') +
+                    '<small class="ri-wd-note">الأيام المكتملة فقط — اليوم الجاري لا يُحتسب</small>' +
+                  '</div>'
+                : '');
     }
 
     /* ترتيب الخدمات: بالقيمة أو بعدد القطع («أكثر القطع سحباً») — نفس
@@ -789,6 +853,13 @@
                 heatmap(vm.heat, vm.heatMax) +
                 peakLine(vm.heat) +
             '</div>' +
+
+            (period.days !== 1
+                ? '<div class="ri-card">' +
+                    '<div class="ri-card-head"><h3><i class="fa-solid fa-calendar-week"></i> إيقاع الأسبوع</h3><span>متوسط اليوم</span></div>' +
+                    weekdayChart(vm.weekday) +
+                  '</div>'
+                : '') +
 
             '<div class="ri-card">' +
                 '<div class="ri-card-head"><h3><i class="fa-solid fa-stairs"></i> مدرّج الولاء</h3><span>عدد الزيارات</span></div>' +
@@ -1648,6 +1719,56 @@ html.is-mobile .ri-heat-peak i { font-size: 9.5px; color: var(--m-accent2); marg
 html.is-mobile .ri-heat-peak b { color: var(--m-text); font-weight: 900; }
 html.is-mobile body.rg-light .ri-heat-peak { color: #4c5d75; }
 html.is-mobile body.rg-light .ri-heat-peak b { color: #0e2138; }
+
+html.is-mobile .ri-wd-plot {
+    display: flex; align-items: flex-end; gap: 5px;
+    height: 118px; padding-top: 4px;
+}
+html.is-mobile .ri-wd { flex: 1 1 0; min-width: 0; height: 100%; display: flex; flex-direction: column; align-items: center; }
+html.is-mobile .ri-wd-col {
+    flex: 1; width: 100%;
+    display: flex; align-items: flex-end; justify-content: center;
+    padding-bottom: 1px;
+    border-bottom: 1px solid var(--ri-line);
+}
+html.is-mobile .ri-wd-col i {
+    display: block; width: 74%; max-width: 26px; height: var(--h, 0%);
+    border-radius: 5px 5px 2px 2px;
+    background: linear-gradient(180deg, rgba(255,255,255,.34), rgba(255,255,255,.10));
+    border: 1px solid rgba(255,255,255,.11);
+    transform: scaleY(0); transform-origin: bottom center;
+    animation: riGrow .72s var(--m-ease-out) forwards;
+    animation-delay: calc(180ms + var(--i, 0) * 55ms);
+}
+html.is-mobile .ri-wd.best .ri-wd-col i {
+    background: linear-gradient(180deg, color-mix(in srgb, var(--rg-accent) 72%, #fff), var(--rg-accent));
+    border-color: transparent;
+    box-shadow: 0 0 12px rgba(var(--rg-accent-rgb), .34);
+}
+html.is-mobile .ri-wd-l { margin-top: 5px; font-size: 8.5px; font-weight: 800; color: var(--m-faint); white-space: nowrap; }
+html.is-mobile .ri-wd.best .ri-wd-l { color: var(--m-accent2); }
+html.is-mobile body.rg-light .ri-wd-col { border-bottom-color: rgba(30,70,120,.12); }
+html.is-mobile body.rg-light .ri-wd-col i { background: linear-gradient(180deg, #cfe0f5, #aac6e8); border-color: rgba(30,70,120,.12); }
+html.is-mobile body.rg-light .ri-wd.best .ri-wd-col i { background: linear-gradient(180deg, #74adf2, #2f6fd0); border-color: transparent; }
+html.is-mobile body.rg-light .ri-wd-l { color: #5b7191; }
+html.is-mobile body.rg-light .ri-wd.best .ri-wd-l { color: #1b5aa8; }
+html.is-mobile .ri-wd-foot {
+    display: flex; flex-direction: column; gap: 5px;
+    margin-top: 10px; padding-top: 9px;
+    border-top: 1px solid var(--ri-line);
+    font-size: 10px; font-weight: 700; line-height: 1.55;
+    color: var(--m-muted);
+}
+html.is-mobile .ri-wd-foot b { color: var(--m-text); font-weight: 900; }
+html.is-mobile .ri-wd-best i { color: var(--m-accent2); margin-inline-end: 3px; }
+html.is-mobile .ri-wd-worst { color: var(--m-faint); }
+html.is-mobile .ri-wd-worst i { margin-inline-end: 3px; }
+html.is-mobile .ri-wd-note { font-size: 9px; font-weight: 700; color: var(--m-faint); }
+html.is-mobile body.rg-light .ri-wd-foot { color: #4c5d75; border-top-color: rgba(30,70,120,.10); }
+html.is-mobile body.rg-light .ri-wd-foot b { color: #0e2138; }
+html.is-mobile body.rg-light .ri-wd-best i { color: #1b5aa8; }
+html.is-mobile body.rg-light .ri-wd-worst,
+html.is-mobile body.rg-light .ri-wd-note { color: #5b7191; }
 
 html.is-mobile .ri-ladder { display: flex; flex-direction: column; gap: 9px; }
 html.is-mobile .ri-lad-row { display: grid; grid-template-columns: 64px 1fr 28px; align-items: center; gap: 8px; }
