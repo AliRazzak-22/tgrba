@@ -25,6 +25,20 @@ const auth = getAuth(app);
 // =========================================================
 const pathMap = new WeakMap();
 
+/* جسر الشفافية للواجهة: عدّاد الصندوق الأسود وحالة الاتصال الحقيقية بقناة
+   فايربيس — لا مجرد navigator.onLine الذي يبقى صادقاً والشبكة منقطعة عن الخادم. */
+window.royalQueueLen = () => {
+    try {
+        const q = JSON.parse(localStorage.getItem('royal_offline_queue'));
+        return Array.isArray(q) ? q.length : 0;
+    } catch (e) { return 0; }
+};
+const announceQueue = () => {
+    window.royalQueue = window.royalQueueLen();
+    window.dispatchEvent(new CustomEvent('royal-queue', { detail: window.royalQueue }));
+};
+window.royalQueue = window.royalQueueLen();
+
 // 1. اعتراض مسارات فايربيس
 const ref = (db, pathStr) => {
     const r = fbRef(db, pathStr);
@@ -37,42 +51,57 @@ const addToBlackBox = (method, pathStr, payload) => {
     let queue = JSON.parse(localStorage.getItem('royal_offline_queue')) || [];
     queue.push({ method, pathStr, payload, id: Date.now() + Math.random() });
     localStorage.setItem('royal_offline_queue', JSON.stringify(queue));
+    announceQueue();
     
     if (queue.length === 1) window.showAlert('انقطع الإنترنت! 📴 سيتم حفظ عملك محلياً ورفعه تلقائياً لاحقاً.', 'warning');
     updateSyncStatus();
 };
 
 // 3. محرك تفريغ الصندوق ورفع البيانات عند عودة الإنترنت
+let drainingBlackBox = false;
 window.processBlackBox = async () => {
-    if (!navigator.onLine) return;
+    /* حارس ضد تفريغين متوازيين: عودة الشبكة وحدث فايربيس قد يصلان معاً،
+       وتكرار رفع نفس الحركات يفسد ترتيبها في السحابة. */
+    if (drainingBlackBox || !navigator.onLine) return;
     let queue = JSON.parse(localStorage.getItem('royal_offline_queue')) || [];
     if (queue.length === 0) return;
 
-    window.showAlert(`عودة الاتصال! جاري مزامنة ${queue.length} حركات من الصندوق الأسود... ⏳`, 'warning');
-    
-    let newQueue = [...queue];
-    let successCount = 0;
+    drainingBlackBox = true;
+    try {
+        window.dispatchEvent(new CustomEvent('royal-drain-start', { detail: queue.length }));
 
-    for (let i = 0; i < queue.length; i++) {
-        let task = queue[i];
-        try {
-            let r = fbRef(database, task.pathStr === '/' ? undefined : task.pathStr);
-            if (task.method === 'set') await fbSet(r, task.payload);
-            if (task.method === 'update') await fbUpdate(r, task.payload);
-            if (task.method === 'remove') await fbRemove(r);
-            
-            newQueue = newQueue.filter(t => t.id !== task.id);
-            localStorage.setItem('royal_offline_queue', JSON.stringify(newQueue));
-            successCount++;
-        } catch (err) {
-            console.error('خطأ مزامنة (سيتم المحاولة لاحقاً):', err);
-            break; // التوقف لعدم تخريب تسلسل الحركات
+        window.showAlert(`عودة الاتصال! جاري مزامنة ${queue.length} حركات من الصندوق الأسود... ⏳`, 'warning');
+
+        let newQueue = [...queue];
+        let successCount = 0;
+
+        for (let i = 0; i < queue.length; i++) {
+            let task = queue[i];
+            try {
+                let r = fbRef(database, task.pathStr === '/' ? undefined : task.pathStr);
+                if (task.method === 'set') await fbSet(r, task.payload);
+                if (task.method === 'update') await fbUpdate(r, task.payload);
+                if (task.method === 'remove') await fbRemove(r);
+
+                newQueue = newQueue.filter(t => t.id !== task.id);
+                localStorage.setItem('royal_offline_queue', JSON.stringify(newQueue));
+                announceQueue();
+                successCount++;
+            } catch (err) {
+                console.error('خطأ مزامنة (سيتم المحاولة لاحقاً):', err);
+                break; // التوقف لعدم تخريب تسلسل الحركات
+            }
         }
-    }
-    
-    if (successCount > 0 && newQueue.length === 0) {
-        window.showAlert('✅ تمت المزامنة! جميع بيانات الأوفلاين الآن في السحابة.', 'success');
-        updateSyncStatus();
+
+        if (successCount > 0 && newQueue.length === 0) {
+            window.royalLastSync = Date.now();
+            window.dispatchEvent(new CustomEvent('royal-sync', { detail: { at: window.royalLastSync } }));
+            window.dispatchEvent(new CustomEvent('royal-drained', { detail: successCount }));
+            window.showAlert('✅ تمت المزامنة! جميع بيانات الأوفلاين الآن في السحابة.', 'success');
+            updateSyncStatus();
+        }
+    } finally {
+        drainingBlackBox = false;
     }
 };
 
@@ -227,6 +256,24 @@ async function initializeDB() {
     try {
         await signInAnonymously(auth);
 
+        // قناة الاتصال الحقيقية مع فايربيس: مصدر الحقيقة لشريط الشبكة في الجوال
+        try {
+            onValue(ref(database, '.info/connected'), (snap) => {
+                const live = snap.val() === true;
+                /* عودة القناة تعني أن فايربيس أعاد مزامنة الحالة: نسجّل لحظة تأكيد
+                   الاتصال كآخر مزامنة، لكن ليس قبل أول دفعة بيانات فعلية. */
+                if (live && window.royalLastSync) {
+                    window.royalLastSync = Date.now();
+                    window.dispatchEvent(new CustomEvent('royal-sync', { detail: { at: window.royalLastSync } }));
+                }
+                window.royalNet = { online: navigator.onLine !== false && live, live, at: Date.now() };
+                window.dispatchEvent(new CustomEvent('royal-net', { detail: window.royalNet }));
+                /* عودة القناة قد تحدث دون تغيّر navigator.onLine (تجديد توكن أو
+                   تحوّل شبكة)، فنفرّغ الصندوق الأسود هنا أيضاً وليس على حدث online وحده. */
+                if (live) window.processBlackBox();
+            });
+        } catch (e) { console.warn('net bridge:', e); }
+
        // التدخل الجراحي المطور: تشغيل محرك المزامنة الحية اللحظية (Realtime Engine)
         let isFirstLoad = true;
         onValue(ref(database, 'royal_data'), (snapshot) => {
@@ -280,6 +327,9 @@ async function initializeDB() {
                 saveDataToCloud();
             }
             
+            window.royalLastSync = Date.now();
+            window.dispatchEvent(new CustomEvent('royal-sync', { detail: { at: window.royalLastSync } }));
+            announceQueue();
             updateSyncStatus();
             
             // في أول تشغيل للنظام فقط

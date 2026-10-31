@@ -273,6 +273,141 @@ html.is-mobile body.rg-light .m-head-prog {
     background: linear-gradient(90deg, rgba(47,127,208,.30), rgba(24,102,180,.92));
 }
 
+/* ------------------- شريط الشبكة: حجز مساحة لا تغطية -------------------
+   مصدره قناة فايربيس الحقيقية وعدّاد الصندوق الأسود، فيسرد آخر مزامنة فعلية
+   وكم حركة تنتظر الرفع. يوضع بين الترويسة والمحتوى فيدفع الصفحة بدل أن يغطيها. */
+html.is-mobile .m-conn {
+    cursor: pointer; user-select: none; -webkit-user-select: none;
+    padding: 3px 8px; margin-inline-start: auto; margin-inline-end: -2px;
+    border-radius: 99px; transition: color .3s var(--m-ease), background .3s var(--m-ease);
+}
+html.is-mobile .m-conn:active { opacity: .6; }
+html.is-mobile .m-conn[data-net="offline"] { color: #ffb3bd; }
+html.is-mobile .m-conn[data-net="pending"] { color: #f3cd86; }
+html.is-mobile body.rg-light .m-conn[data-net="offline"] { color: #a11f34; }
+html.is-mobile body.rg-light .m-conn[data-net="pending"] { color: #8a5a10; }
+.m-dot.sync {
+    background: #f2b33d;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.45), 0 0 0 3px rgba(242,179,61,.18);
+    animation: mDotWait 1.5s var(--m-ease) infinite;
+}
+@keyframes mDotWait {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: .5; transform: scale(.68); }
+}
+
+html.is-mobile .m-netbar {
+    flex: none;
+    display: flex; align-items: center; gap: 10px;
+    max-height: 0; opacity: 0; overflow: hidden;
+    margin: 0 12px; padding: 0 12px;
+    border: 0 solid transparent; border-radius: 16px;
+    transform: translateY(-6px);
+    transition: max-height .4s var(--m-ease), opacity .32s var(--m-ease),
+                margin .4s var(--m-ease), padding .4s var(--m-ease),
+                transform .4s var(--m-ease), background .3s var(--m-ease),
+                border-color .3s var(--m-ease), box-shadow .3s var(--m-ease);
+    pointer-events: none;
+}
+html.is-mobile .m-netbar.m-show {
+    max-height: 112px; opacity: 1;
+    margin: 8px 12px 2px; padding: 9px 11px;
+    border-width: 1px;
+    transform: none;
+    pointer-events: auto;
+}
+html.is-mobile .m-netbar-ico {
+    flex: none; width: 30px; height: 30px; border-radius: 50%;
+    display: grid; place-items: center; font-size: 13px;
+    background: rgba(255,255,255,.10); border: 1px solid rgba(255,255,255,.16);
+}
+html.is-mobile .m-netbar-body { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 2px; }
+html.is-mobile .m-netbar-body b { font-size: 12.5px; font-weight: 800; line-height: 1.3; }
+html.is-mobile .m-netbar-body small {
+    font-size: 11px; opacity: .86; line-height: 1.35;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    font-variant-numeric: tabular-nums;
+}
+html.is-mobile .m-netbar-act {
+    flex: none; font-family: inherit; font-size: 11.5px; font-weight: 800;
+    color: inherit; background: rgba(255,255,255,.12);
+    border: 1px solid rgba(255,255,255,.22); border-radius: 11px;
+    padding: 7px 10px; cursor: pointer;
+    transition: transform .2s var(--m-ease), background .3s var(--m-ease);
+}
+html.is-mobile .m-netbar-act:active { transform: scale(.93); }
+html.is-mobile .m-netbar-act[hidden] { display: none; }
+
+html.is-mobile .m-netbar[data-state="offline"] {
+    color: #ffe1e5;
+    background: linear-gradient(160deg, rgba(255,93,108,.20), rgba(255,93,108,.05) 62%), rgba(16,10,20,.80);
+    border-color: rgba(255,93,108,.36);
+    box-shadow: 0 12px 26px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.10);
+}
+html.is-mobile .m-netbar[data-state="pending"] {
+    color: #ffe6bd;
+    background: linear-gradient(160deg, rgba(242,179,61,.20), rgba(242,179,61,.05) 62%), rgba(20,14,6,.80);
+    border-color: rgba(242,179,61,.34);
+    box-shadow: 0 12px 26px rgba(0,0,0,.30), inset 0 1px 0 rgba(255,255,255,.10);
+}
+html.is-mobile .m-netbar[data-state="syncing"] {
+    color: #d6ebff;
+    background: linear-gradient(160deg, rgba(96,166,255,.22), rgba(96,166,255,.05) 62%), rgba(8,16,30,.82);
+    border-color: rgba(120,190,255,.34);
+    box-shadow: 0 12px 26px rgba(0,0,0,.32), inset 0 1px 0 rgba(255,255,255,.10);
+}
+html.is-mobile .m-netbar[data-state="back"] {
+    color: #d3ffe9;
+    background: linear-gradient(160deg, rgba(61,220,151,.18), rgba(61,220,151,.04) 62%), rgba(6,18,14,.80);
+    border-color: rgba(61,220,151,.32);
+    box-shadow: 0 12px 26px rgba(0,0,0,.30), inset 0 1px 0 rgba(255,255,255,.10);
+}
+html.is-mobile .m-netbar[data-state="info"] {
+    color: #e3f1ff;
+    background: linear-gradient(160deg, rgba(120,190,255,.16), rgba(120,190,255,.04) 62%), rgba(9,17,31,.78);
+    border-color: rgba(150,205,255,.28);
+    box-shadow: 0 12px 26px rgba(0,0,0,.30), inset 0 1px 0 rgba(255,255,255,.10);
+}
+html.is-mobile .m-netbar[data-state="syncing"] .m-netbar-ico i { animation: mNetSpin 1s linear infinite; }
+@keyframes mNetSpin { to { transform: rotate(360deg); } }
+
+html.is-mobile body.rg-light .m-netbar-ico { background: rgba(255,255,255,.74); border-color: rgba(28,62,110,.14); }
+html.is-mobile body.rg-light .m-netbar-act { background: rgba(255,255,255,.86); border-color: rgba(28,62,110,.18); }
+html.is-mobile body.rg-light .m-netbar[data-state="offline"] {
+    color: #7c1f2c;
+    background: linear-gradient(160deg, rgba(255,255,255,.98), rgba(255,240,242,.92));
+    border-color: rgba(190,35,60,.28);
+    box-shadow: 0 12px 26px rgba(28,62,110,.12), inset 0 1px 0 #fff;
+}
+html.is-mobile body.rg-light .m-netbar[data-state="pending"] {
+    color: #7a4b06;
+    background: linear-gradient(160deg, rgba(255,255,255,.98), rgba(255,247,231,.94));
+    border-color: rgba(190,132,26,.30);
+    box-shadow: 0 12px 26px rgba(28,62,110,.12), inset 0 1px 0 #fff;
+}
+html.is-mobile body.rg-light .m-netbar[data-state="syncing"] {
+    color: #17457c;
+    background: linear-gradient(160deg, rgba(255,255,255,.98), rgba(238,246,255,.94));
+    border-color: rgba(42,95,158,.26);
+    box-shadow: 0 12px 26px rgba(28,62,110,.12), inset 0 1px 0 #fff;
+}
+html.is-mobile body.rg-light .m-netbar[data-state="back"] {
+    color: #0b5c3f;
+    background: linear-gradient(160deg, rgba(255,255,255,.98), rgba(236,252,245,.94));
+    border-color: rgba(13,107,73,.26);
+    box-shadow: 0 12px 26px rgba(28,62,110,.12), inset 0 1px 0 #fff;
+}
+html.is-mobile body.rg-light .m-netbar[data-state="info"] {
+    color: #1c4a7e;
+    background: linear-gradient(160deg, rgba(255,255,255,.98), rgba(241,247,255,.94));
+    border-color: rgba(42,95,158,.22);
+    box-shadow: 0 12px 26px rgba(28,62,110,.12), inset 0 1px 0 #fff;
+}
+@media (prefers-reduced-motion: reduce) {
+    html.is-mobile .m-netbar { transition: none; }
+    .m-dot.sync, html.is-mobile .m-netbar[data-state="syncing"] .m-netbar-ico i { animation: none; }
+}
+
 /* ------------------------- اللوحات (كاروسيل هندسي) -------------------------
    الموضع أثناء الحركة وحدها: الإصبع والنابض يكتبان transform سطرياً، وعند
    السكون يُمسح تماماً. لوحة التمرير المتحوّلة دائماً هي أشهر سببين في WebKit:
@@ -4185,6 +4320,28 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
         admin.insertBefore(head, admin.firstChild);
         headRef = head;
 
+        const netbar = document.createElement('div');
+        netbar.className = 'm-netbar';
+        netbar.setAttribute('role', 'status');
+        netbar.setAttribute('aria-live', 'polite');
+        netbar.innerHTML =
+            '<span class="m-netbar-ico"><i class="fa-solid fa-wifi"></i></span>' +
+            '<span class="m-netbar-body"><b class="m-netbar-title"></b><small class="m-netbar-sub"></small></span>' +
+            '<button class="m-netbar-act" type="button" hidden></button>';
+        head.insertAdjacentElement('afterend', netbar);
+        netRef = netbar;
+        netbar.querySelector('.m-netbar-act').addEventListener('click', netAction);
+
+        const conn = head.querySelector('.m-conn');
+        if (conn) {
+            conn.setAttribute('role', 'button');
+            conn.setAttribute('tabindex', '0');
+            conn.addEventListener('click', netPillTap);
+            conn.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); netPillTap(); }
+            });
+        }
+
         const indicator = document.createElement('div');
         indicator.className = 'm-ind';
         const bar = document.querySelector(BAR_SELECTOR);
@@ -4197,14 +4354,161 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
         return t || 'إدارة رويال';
     }
 
-    /* ================== حالة الاتصال وآخر مزامنة ================== */
-    function mirrorConnection() {
+    /* ================== حالة الاتصال وآخر مزامنة ==================
+       app.js يبثّ royal-net (قناة فايربيس)، royal-queue (عدّاد الصندوق الأسود)،
+       royal-sync (آخر دفعة وصلت). هنا نعرضها بوضوح بدل تخمين navigator.onLine. */
+    const NET_ICON = {
+        offline: 'fa-wifi',
+        pending: 'fa-cloud-arrow-up',
+        syncing: 'fa-circle-notch',
+        back: 'fa-circle-check',
+        info: 'fa-signal'
+    };
+    let netRef = null;
+    let netManual = false;
+    let netTimer = 0;
+    let netPrevOnline = null;
+    let netBootAt = 0;
+    let netSeenLive = false;
+    let netBootOffline = false;
+    let netSawOffline = false;
+
+    function netReadout() {
+        const n = window.royalNet || {};
+        const online = (typeof n.online === 'boolean') ? n.online : (navigator.onLine !== false);
+        let queue = 0;
+        try {
+            queue = typeof window.royalQueueLen === 'function' ? window.royalQueueLen() : (window.royalQueue || 0);
+        } catch (e) { queue = 0; }
+        return { online, queue, last: window.royalLastSync || 0 };
+    }
+
+    function hm(ts) {
+        const d = new Date(ts);
+        const p = (v) => (v < 10 ? '0' + v : '' + v);
+        return p(d.getHours()) + ':' + p(d.getMinutes());
+    }
+
+    function lastLine(st) {
+        return st.last ? 'آخر مزامنة ' + hm(st.last) : 'لم تتم مزامنة بعد';
+    }
+
+    function netSummary(st) {
+        return lastLine(st) + ' · ' + (st.queue > 0 ? moves(st.queue) + ' بانتظار الرفع' : 'كل الحركات مرفوعة');
+    }
+
+    function moves(n) {
+        return (n >= 3 && n <= 10) ? n + ' حركات' : n + ' حركة';
+    }
+
+    function paintPill(st, connecting) {
         if (!headRef) return;
+        const conn = headRef.querySelector('.m-conn');
         const dot = headRef.querySelector('.m-dot');
         const txt = headRef.querySelector('.m-conn-text');
-        const online = navigator.onLine !== false;
-        dot.classList.toggle('off', !online);
-        txt.textContent = online ? 'متصل' : 'أوفلاين';
+        if (!conn || !dot || !txt) return;
+        dot.classList.toggle('off', !st.online && !connecting);
+        dot.classList.toggle('sync', connecting || (st.online && st.queue > 0));
+        txt.textContent = connecting ? 'اتصال…' : (!st.online ? 'أوفلاين' : (st.queue > 0 ? 'مزامنة ' + st.queue : 'متصل'));
+        conn.dataset.net = connecting ? 'pending' : (!st.online ? 'offline' : (st.queue > 0 ? 'pending' : 'ok'));
+        conn.setAttribute('aria-label', 'حالة الاتصال: ' + txt.textContent + ' — ' + netSummary(st));
+        conn.setAttribute('title', 'اضغط لتفاصيل الاتصال والمزامنة');
+    }
+
+    function paintNet(state, title, sub, actLabel) {
+        const bar = netRef;
+        if (!bar) return;
+        bar.dataset.state = state;
+        const ico = bar.querySelector('.m-netbar-ico i');
+        const t = bar.querySelector('.m-netbar-title');
+        const s = bar.querySelector('.m-netbar-sub');
+        const btn = bar.querySelector('.m-netbar-act');
+        if (ico) ico.className = 'fa-solid ' + (NET_ICON[state] || 'fa-circle-info');
+        if (t) t.textContent = title;
+        if (s) s.textContent = sub || '';
+        if (btn) {
+            btn.hidden = !actLabel;
+            if (actLabel) btn.textContent = actLabel;
+        }
+        bar.classList.add('m-show');
+    }
+
+    function hideNet() {
+        if (netRef) netRef.classList.remove('m-show');
+    }
+
+    function netFlash(state, title, sub, ms, actLabel) {
+        netManual = true;
+        paintNet(state, title, sub, actLabel);
+        clearTimeout(netTimer);
+        if (ms) netTimer = setTimeout(() => { netManual = false; renderNet(); }, ms);
+    }
+
+    function renderNet() {
+        if (!headRef || !netRef) return;
+        const st = netReadout();
+        const liveNow = !!(window.royalNet && window.royalNet.live);
+        /* أول ثوان بعد الإقلاع ليست انقطاعاً: قناة فايربيس لم تُفتح بعد.
+           نعرضها «جارٍ الاتصال» لا شريطاً أحمر يُفزع بلا سبب، وبعد مهلة
+           قصيرة نصدُق ونعلن الانقطاع بدل التظاهر الأبدي بالانتظار. */
+        const connecting = (navigator.onLine !== false) && !liveNow && !netSeenLive &&
+            (Date.now() - netBootAt < 12000);
+        paintPill(st, connecting);
+        if (netManual) return;
+        if (connecting) {
+            paintNet('syncing', 'جارٍ الاتصال بالسحابة…', 'التحقق من قناة المزامنة', '');
+        } else if (!st.online) {
+            netSawOffline = true;
+            paintNet('offline', 'لا يوجد اتصال', netSummary(st), 'إعادة المحاولة');
+        } else if (st.queue > 0) {
+            paintNet('pending', 'بانتظار الرفع — ' + moves(st.queue), lastLine(st), 'مزامنة الآن');
+        } else {
+            hideNet();
+        }
+    }
+
+    function netChanged() {
+        const st = netReadout();
+        const liveNow = !!(window.royalNet && window.royalNet.live);
+        /* لا نعلن «عاد الاتصال» في أول اتصال طبيعي بعد فتح التطبيق،
+           بل فقط بعد انقطاع رآه المستخدم أو إقلاع بلا شبكة. */
+        if (netPrevOnline === false && st.online && (netSeenLive || netBootOffline || netSawOffline)) {
+            if (st.queue > 0) {
+                netFlash('syncing', 'عاد الاتصال — جاري رفع ' + moves(st.queue), lastLine(st), 15000);
+            } else {
+                netFlash('back', 'عاد الاتصال', 'كل شيء متزامن · ' + lastLine(st), 4200);
+            }
+        }
+        if (liveNow) {
+            netSeenLive = true;
+            netSawOffline = false;
+        }
+        netPrevOnline = st.online;
+        renderNet();
+    }
+
+    function mirrorConnection() { netChanged(); }
+
+    function netAction() {
+        if (!navigator.onLine) {
+            if (window.showAlert) window.showAlert('لا يزال الاتصال منقطعاً — حركاتك محفوظة وستُرفع تلقائياً عند عودته.', 'warning');
+            return;
+        }
+        if (typeof window.processBlackBox !== 'function') {
+            if (window.showAlert) window.showAlert('محرك المزامنة لم يكتمل تحميله بعد.', 'warning');
+            return;
+        }
+        const n = netReadout().queue;
+        if (!n) { netManual = false; renderNet(); return; }
+        netFlash('syncing', 'جاري رفع ' + moves(n) + ' إلى السحابة…', 'اترك التطبيق مفتوحاً لحظات', 0);
+        window.processBlackBox();
+    }
+
+    function netPillTap() {
+        const st = netReadout();
+        if (!st.online) netFlash('offline', 'لا يوجد اتصال', netSummary(st), 4600, 'إعادة المحاولة');
+        else if (st.queue > 0) netFlash('pending', 'بانتظار الرفع — ' + moves(st.queue), lastLine(st), 4600, 'مزامنة الآن');
+        else netFlash('back', 'الاتصال سليم', netSummary(st), 4200);
     }
 
     function markSyncTime() {
@@ -8227,18 +8531,26 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
         window.addEventListener('resize', onResize, { passive: true });
         window.addEventListener('orientationchange', () => setTimeout(onResize, 260), { passive: true });
         window.addEventListener('online', mirrorConnection, { passive: true });
-        window.addEventListener('offline', () => {
-            mirrorConnection();
-            const page = state.pages[state.index];
-            if (page && !page.querySelector('.m-offline')) {
-                const warn = document.createElement('div');
-                warn.className = 'm-offline';
-                warn.innerHTML = '<i class="fa-solid fa-wifi"></i><span>لا يوجد اتصال — تُحفظ الحركات محلياً وتُرسل تلقائياً</span>' +
-                    '<button class="top-bar-btn" style="margin-inline-start:auto" type="button">إعادة المحاولة</button>';
-                warn.querySelector('button').addEventListener('click', () => window.location.reload());
-                page.insertBefore(warn, page.firstChild);
-            }
-        }, { passive: true });
+        window.addEventListener('offline', mirrorConnection, { passive: true });
+        window.addEventListener('royal-net', netChanged);
+        window.addEventListener('royal-queue', renderNet);
+        window.addEventListener('royal-sync', renderNet);
+        window.addEventListener('royal-drain-start', (e) => {
+            const n = e && typeof e.detail === 'number' ? e.detail : netReadout().queue;
+            netFlash('syncing', 'جاري رفع ' + moves(n) + ' إلى السحابة…', 'اترك التطبيق مفتوحاً لحظات', 15000);
+        });
+        window.addEventListener('royal-drained', (e) => {
+            netManual = false;
+            const n = e && typeof e.detail === 'number' ? e.detail : 0;
+            netFlash('back', n > 0 ? 'تمت مزامنة ' + moves(n) : 'تمت المزامنة', 'وصلت إلى السحابة · ' + lastLine(netReadout()), 4200);
+        });
+        window.addEventListener('storage', (e) => { if (e.key === 'royal_offline_queue') renderNet(); });
+        netBootAt = Date.now();
+        netBootOffline = navigator.onLine === false;
+        netSeenLive = !!(window.royalNet && window.royalNet.live);
+        netPrevOnline = netReadout().online;
+        renderNet();
+        setTimeout(() => { if (!netSeenLive) renderNet(); }, 12500);
         const syncText = document.getElementById('sync-text');
         if (syncText && window.MutationObserver) {
             new MutationObserver(mirrorConnection).observe(syncText, { childList: true, characterData: true, subtree: true });
