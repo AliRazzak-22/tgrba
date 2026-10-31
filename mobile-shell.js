@@ -240,6 +240,38 @@ html.is-mobile .m-head::after {
     font-size: 12px; color: var(--m-muted); font-variant-numeric: tabular-nums; min-width: 46px; text-align: end;
     padding: 3px 8px; border-radius: 99px; border: 1px solid var(--m-hair); background: rgba(255,255,255,.04);
 }
+/* خيط تقدّم أسفل الترويسة: يمتلئ من جهة القراءة مع تمرير اللوحة الطويلة،
+   فتعرف أين أنت بلا شريط تمرير يقتحم الزجاج. transform فقط، بلا تخطيط. */
+html.is-mobile .m-head-prog {
+    position: absolute;
+    left: 0; right: 0; bottom: -1px;
+    height: 2px;
+    pointer-events: none;
+    background: linear-gradient(90deg, rgba(120,190,255,.30), rgba(150,222,255,.95));
+    transform: scaleX(var(--m-prog, 0));
+    transform-origin: right center;
+    opacity: 0;
+    transition: opacity .28s var(--m-ease);
+}
+html.is-mobile .m-head.m-scrolled .m-head-prog { opacity: 1; }
+/* بعد أول تمرير يعمق الزجاج قليلاً: فصل بصري بين الترويسة والمحتوى المتحرك */
+html.is-mobile .m-head { transition: background .3s var(--m-ease), box-shadow .3s var(--m-ease); }
+html.is-mobile .m-head.m-scrolled {
+    background:
+        linear-gradient(180deg, rgba(160,208,255,.24), rgba(132,186,255,.04) 70%),
+        radial-gradient(120% 160% at 50% -60%, rgba(70,130,235,.40), transparent 64%),
+        rgba(6,14,30,.66);
+    box-shadow: 0 16px 34px rgba(0,4,12,.46), inset 0 1px 0 rgba(208,236,255,.18);
+}
+html.is-mobile body.rg-light .m-head.m-scrolled {
+    background:
+        linear-gradient(180deg, rgba(255,255,255,.98), rgba(255,255,255,.72) 70%),
+        radial-gradient(120% 160% at 50% -60%, rgba(var(--rg-accent-rgb), .20), transparent 64%);
+    box-shadow: 0 16px 34px rgba(28,62,110,.14), inset 0 1px 0 rgba(255,255,255,.98);
+}
+html.is-mobile body.rg-light .m-head-prog {
+    background: linear-gradient(90deg, rgba(47,127,208,.30), rgba(24,102,180,.92));
+}
 
 /* ------------------------- اللوحات (كاروسيل هندسي) -------------------------
    الموضع أثناء الحركة وحدها: الإصبع والنابض يكتبان transform سطرياً، وعند
@@ -870,6 +902,14 @@ html.is-mobile .bottom-nav-btn:active {
 }
 html.is-mobile .bottom-nav-btn:active i { transform: translateY(0) scale(.90); }
 html.is-mobile a:active, html.is-mobile .stat-card:active { opacity: .94; }
+/* بطاقات البيانات القابلة للفتح: تنضغط ككتلة واحدة تحت الإصبع، فتأكيد ملموس
+   أن اللمسة وصلت قبل أن تنزلق النافذة */
+html.is-mobile #admin-screen .cart-table tr[onclick]:active,
+html.is-mobile #admin-screen .invoices-table tr[onclick]:active,
+html.is-mobile #admin-screen tr[data-inv-id]:active {
+    transform: scale(.982);
+    filter: brightness(1.07);
+}
 /* الشارات: رقاقة زجاجية بحافة شعرية وحفر داخلي — بلا هالة */
 html.is-mobile .badge, html.is-mobile .stat-badge, html.is-mobile .pill {
     border: 1px solid rgba(160,210,255,.24) !important;
@@ -3097,7 +3137,8 @@ html.is-mobile .modal-footer-sticky {
         head.innerHTML =
             '<span class="m-brand">' + esc(brandName()) + '</span>' +
             '<span class="m-conn"><i class="m-dot"></i><span class="m-conn-text">متصل</span></span>' +
-            '<span class="m-time">--:--</span>';
+            '<span class="m-time">--:--</span>' +
+            '<i class="m-head-prog" aria-hidden="true"></i>';
         admin.insertBefore(head, admin.firstChild);
         headRef = head;
 
@@ -3795,6 +3836,31 @@ html.is-mobile .modal-footer-sticky {
         document.addEventListener('touchcancel', end, { passive: true });
     }
 
+    /* ================== خيط تقدّم التمرير ==================
+       القراءة مرة واحدة في كل إطار تمرير فقط، والكتابة متغيّر واحد على الترويسة.
+       لا يلمس التخطيط: scaleX على عنصر مطلق. */
+    let syncProgress = () => {};
+    function bindScrollProgress() {
+        if (!headRef) return;
+        let queued = 0;
+        const update = () => {
+            const page = state.pages[state.index];
+            if (!page || !headRef) return;
+            const max = page.scrollHeight - page.clientHeight;
+            const p = max > 1 ? clamp(page.scrollTop / max, 0, 1) : 0;
+            headRef.style.setProperty('--m-prog', p.toFixed(4));
+            headRef.classList.toggle('m-scrolled', page.scrollTop > 6);
+        };
+        syncProgress = update;
+        const schedule = () => {
+            if (queued) return;
+            queued = requestAnimationFrame(() => { queued = 0; update(); });
+        };
+        state.pages.forEach((p) => { if (p) p.addEventListener('scroll', schedule, { passive: true }); });
+        window.addEventListener('resize', schedule, { passive: true });
+        update();
+    }
+
     /* ================= إعادة الرسم المنظمة (debounce + إرجاء) ================= */
     const RENDERERS = ['updateAdminDashboard', 'renderLogs', 'renderAdminSubs'];
     const originals = {};
@@ -3840,6 +3906,7 @@ html.is-mobile .modal-footer-sticky {
         } catch (err) { console.warn('mobile repaint:', err); }
         markSyncTime();
         paintToday();
+        syncProgress();
         if (page && Math.abs(page.scrollTop - top) > 2) page.scrollTop = top;
         openSheets.forEach((c, i) => { if (Math.abs(c.scrollTop - sheetTops[i]) > 2) c.scrollTop = sheetTops[i]; });
         syncFlow();
@@ -6069,6 +6136,7 @@ html.is-mobile .modal-footer-sticky {
             paintTransforms();
             resetPageTop(dst);
             syncA11y();
+            syncProgress();
             setBusy(false);
             resetOtherEntrances(dst);
             setTimeout(() => { flushRepaint(); syncFlow(); }, 520);
@@ -6107,6 +6175,7 @@ html.is-mobile .modal-footer-sticky {
             paintTransforms();
             resetPageTop(dst);
             syncA11y();
+            syncProgress();
             resetOtherEntrances(dst);
             /* ما استجد أثناء الحركة يُرسم بعد اكتمال الدخول، لا فوقه */
             setTimeout(() => { flushRepaint(); syncFlow(); }, 520);
@@ -6243,6 +6312,7 @@ html.is-mobile .modal-footer-sticky {
         bindBounceGuard();
         bindQuickPeek();
         bindPullRefresh();
+        bindScrollProgress();
         observeSheets();
         bindKeyboard();
         bindTodayPanel();
