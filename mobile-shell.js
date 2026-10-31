@@ -4317,6 +4317,72 @@ html.is-mobile body.rg-light #modal-invoices .invoices-table td:last-child {
     padding-top: 8px !important;
     border-top: 1px solid rgba(28,62,110,.10) !important;
 }
+/* النسخة الليلية من الشبكة نفسها: كانت مواضع الخلايا تأتي من بطاقات أقسام
+   الإدارة العامة، فتنزل «النوع» فوق رقم الفاتورة. المواضع هنا صريحة. */
+html.is-mobile body:not(.rg-light) #modal-invoices .invoices-table tr {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    grid-template-rows: auto auto auto !important;
+    column-gap: 12px !important;
+    row-gap: 5px !important;
+    align-items: center !important;
+}
+html.is-mobile body:not(.rg-light) #modal-invoices .invoices-table td {
+    display: block !important;
+    grid-column: auto !important;
+    grid-row: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    background: transparent !important;
+    text-align: start !important;
+    align-self: center !important;
+    justify-content: flex-start !important;
+    white-space: normal !important;
+}
+html.is-mobile body:not(.rg-light) #modal-invoices .invoices-table td:nth-child(1) {
+    grid-area: 1 / 1 / 2 / 2 !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    color: var(--m-muted) !important;
+    letter-spacing: .2px;
+}
+html.is-mobile body:not(.rg-light) #modal-invoices .invoices-table td:nth-child(2) {
+    grid-area: 2 / 1 / 3 / 2 !important;
+    font-size: 14px !important;
+    font-weight: 800 !important;
+    color: #eaf4ff !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,.5);
+    white-space: nowrap !important;
+}
+html.is-mobile body:not(.rg-light) #modal-invoices .invoices-table td:nth-child(3) {
+    grid-area: 1 / 2 / 2 / 3 !important;
+    justify-self: end !important;
+    text-align: end !important;
+    font-size: 11.5px !important;
+    font-weight: 700 !important;
+    color: var(--m-muted) !important;
+}
+html.is-mobile body:not(.rg-light) #modal-invoices .invoices-table td:nth-last-child(2) {
+    grid-area: 2 / 2 / 3 / 3 !important;
+    justify-self: end !important;
+    text-align: end !important;
+    font-size: 16px !important;
+    font-weight: 900 !important;
+    color: #d9ecff !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,.5);
+    white-space: nowrap !important;
+}
+html.is-mobile body:not(.rg-light) #modal-invoices .invoices-table td:last-child {
+    grid-area: 3 / 1 / 4 / 3 !important;
+    display: flex !important;
+    justify-content: flex-end !important;
+    align-items: center !important;
+    gap: 10px !important;
+    margin-top: 2px !important;
+    padding-top: 8px !important;
+    border-top: 1px solid rgba(255,255,255,.10) !important;
+}
 /* كشف اليوم: خلاياه تستمد ألوانها من قواعده الخاصة، فتُصحَّح وحدها هنا */
 html.is-mobile body.rg-light #modal-daily-transactions .invoices-table td:nth-child(1) {
     background: rgba(var(--rg-accent-rgb), .12) !important;
