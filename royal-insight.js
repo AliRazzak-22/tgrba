@@ -42,6 +42,12 @@
     function num(v) { const n = Number(v); return isFinite(n) ? n : 0; }
     function fmt(n) { return Math.round(num(n)).toLocaleString('en-US'); }
     function money(n) { return fmt(n) + ' د.ع'; }
+    function visitsWord(n) {
+        const v = Math.round(num(n));
+        if (v === 2) return 'زيارتان';
+        if (v >= 3 && v <= 10) return fmt(v) + ' زيارات';
+        return fmt(v) + ' زيارة';
+    }
     function pct(v, total) { return total > 0 ? Math.round((v / total) * 100) : 0; }
     function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
     function motionOff() {
@@ -135,11 +141,18 @@
         const prevStart = previousStart(periodDays);
         const all = data.invoices.filter((i) => i && i.id);
         const firstSeen = {};
+        /* سجل حياة الزبون عبر كل الفواتير لا الفترة المختارة: سؤال «من غاب؟»
+           يخص الزبون نفسه، فلا يتغير بتغيير الفلتر. */
+        const life = {};
         all.forEach((inv) => {
             const name = isNamed(inv) ? String(inv.customer.name).trim() : '';
             if (!name) return;
             const t = tsOf(inv);
             if (!firstSeen[name] || t < firstSeen[name]) firstSeen[name] = t;
+            const lc = life[name] || (life[name] = { name, visits: 0, spent: 0, lastTs: 0 });
+            lc.visits += 1;
+            lc.spent += num(inv.total);
+            if (t > lc.lastTs) lc.lastTs = t;
         });
 
         const inPeriod = all.filter((i) => !start || tsOf(i) >= start);
@@ -291,6 +304,16 @@
         });
         const heatMax = Math.max(1, ...heat.reduce((a, r) => a.concat(r), []));
 
+        /* غائب = زبون زار مرتين فأكثر ولم تُسجَّل له فاتورة منذ ٢١ يوماً.
+           نُفرّق من تجاوز الشهر عن الذي ما زال في مهلة العودة. */
+        const absent = Object.values(life)
+            .filter((c) => c.visits >= 2 && c.lastTs)
+            .map((c) => Object.assign({}, c, { days: Math.floor((todayMs - c.lastTs) / 86400000) }))
+            .filter((c) => c.days >= 21)
+            .sort((a, b) => b.spent - a.spent);
+        const absentWarn = absent.filter((c) => c.days < 30).length;
+        const absentSpend = absent.reduce((s, c) => s + c.spent, 0);
+
         /* جدد مقابل عائدين شهرياً: آخر ستة أشهر من كل الفواتير لا من الفترة،
            والزبون يُحسب في الشهر مرة واحدة؛ «جديد» إذا كانت أول فاتورة له في
            ذلك الشهر نفسه. قراءة فقط. */
@@ -355,6 +378,9 @@
             heat,
             heatMax,
             ladder,
+            absent,
+            absentWarn,
+            absentSpend,
             days,
             months,
             billed,
@@ -542,6 +568,17 @@
         }).join('') + '</div>';
     }
 
+    function absentRows(list) {
+        return '<div class="ri-absent-list">' + list.slice(0, 5).map((c) =>
+            '<button type="button" class="ri-absent-row" data-customer="' + esc(c.name) + '" data-alltime="1">' +
+                '<span class="ri-av">' + esc(initial(c.name)) + '</span>' +
+                '<span class="ri-absent-body"><strong>' + esc(c.name) + '</strong>' +
+                    '<small><i class="fa-solid fa-hourglass-half"></i> غاب ' + fmt(c.days) + ' يوماً · ' + visitsWord(c.visits) + '</small></span>' +
+                '<span class="ri-absent-v">' + money(c.spent) + '</span>' +
+            '</button>'
+        ).join('') + '</div>';
+    }
+
     function initial(name) {
         const s = String(name || '').trim();
         return s ? s.slice(0, 1) : '؟';
@@ -660,6 +697,19 @@
             '</div>' +
 
             '<div class="ri-card">' +
+                '<div class="ri-card-head"><h3><i class="fa-solid fa-user-clock"></i> زبائن غائبون</h3><span>٢١ يوماً بلا زيارة</span></div>' +
+                (vm.absent.length
+                    ? '<div class="ri-absent-note">' +
+                        '<span><b>' + fmt(vm.absent.length) + '</b> من الزبائن غابوا ٢١ يوماً أو أكثر' +
+                            (vm.absent.length - vm.absentWarn > 0 ? ' — <b>' + fmt(vm.absent.length - vm.absentWarn) + '</b> غيابهم تجاوز الشهر' : '') +
+                            ' · إنفاقهم التاريخي <b>' + money(vm.absentSpend) + '</b></span>' +
+                        '<span class="ri-absent-meter" aria-hidden="true"><i class="hot" style="width:' + pct(vm.absent.length - vm.absentWarn, vm.absent.length) + '%"></i><i class="warm"></i></span>' +
+                      '</div>' + absentRows(vm.absent)
+                    : emptyMini('لا غائبين — كل من زار مرتين عاد خلال ٢١ يوماً')) +
+                (vm.absent.length > 5 ? '<div class="ri-absent-more">و' + fmt(vm.absent.length - 5) + ' آخرون — افتح دليل الزبائن للبحث بالاسم</div>' : '') +
+            '</div>' +
+
+            '<div class="ri-card">' +
                 '<div class="ri-card-head"><h3><i class="fa-solid fa-sack-dollar"></i> قائمة النخبة</h3><span>أعلى إنفاقاً</span></div>' +
                 rankRows(vm.sortedBySpend, 'spend') +
             '</div>' +
@@ -759,7 +809,7 @@
                 return;
             }
             const cust = e.target.closest('[data-customer]');
-            if (cust) openCustomer(cust.getAttribute('data-customer'));
+            if (cust) openCustomer(cust.getAttribute('data-customer'), cust.getAttribute('data-alltime') === '1');
         });
 
         host.addEventListener('input', (e) => {
@@ -1323,6 +1373,44 @@ html.is-mobile .ri-rank-body { flex: 1; min-width: 0; display: flex; flex-direct
 html.is-mobile .ri-rank-body strong { font-size: 11.5px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 html.is-mobile .ri-rank-body small { font-size: 9px; font-weight: 700; color: var(--m-faint); }
 html.is-mobile .ri-rank-v { font-size: 10.5px; font-weight: 900; color: var(--m-accent2); direction: ltr; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+html.is-mobile .ri-absent-note {
+    display: flex; flex-direction: column; gap: 7px;
+    padding: 10px 11px; margin-bottom: 9px;
+    border-radius: 13px;
+    border: 1px solid rgba(255,209,102,.20);
+    background: linear-gradient(150deg, rgba(255,209,102,.12), rgba(255,209,102,.03));
+    font-size: 10px; line-height: 1.7; font-weight: 700; color: var(--m-muted);
+}
+html.is-mobile .ri-absent-note b { color: #ffd166; font-weight: 900; font-variant-numeric: tabular-nums; }
+html.is-mobile .ri-absent-meter { display: flex; height: 6px; border-radius: 99px; overflow: hidden; background: rgba(255,255,255,.07); }
+html.is-mobile .ri-absent-meter i { display: block; height: 100%; }
+html.is-mobile .ri-absent-meter i.hot { background: linear-gradient(90deg, #ff5d6c, #ff8a9a); }
+html.is-mobile .ri-absent-meter i.warm { flex: 1; background: linear-gradient(90deg, #e0a52a, #ffd166); }
+html.is-mobile .ri-absent-list { display: flex; flex-direction: column; gap: 6px; }
+html.is-mobile .ri-absent-row {
+    display: flex; align-items: center; gap: 9px;
+    width: 100%; text-align: start;
+    padding: 9px 8px;
+    border-radius: 13px;
+    border: 1px solid rgba(255,209,102,.10);
+    background: rgba(255,255,255,.035);
+    color: var(--m-text);
+    font-family: inherit;
+    transition: background .2s var(--m-ease), transform .15s var(--m-ease), border-color .2s;
+}
+html.is-mobile .ri-absent-row:active { transform: scale(.985); background: rgba(255,209,102,.10); border-color: rgba(255,209,102,.24); }
+html.is-mobile .ri-absent-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+html.is-mobile .ri-absent-body strong { font-size: 11.5px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html.is-mobile .ri-absent-body small { display: flex; align-items: center; gap: 5px; font-size: 9px; font-weight: 700; color: var(--m-faint); }
+html.is-mobile .ri-absent-body small i { font-size: 9px; color: #e0a52a; }
+html.is-mobile .ri-absent-v { font-size: 10.5px; font-weight: 900; color: #ffd166; direction: ltr; font-variant-numeric: tabular-nums; white-space: nowrap; }
+html.is-mobile .ri-absent-more { text-align: center; font-size: 9.5px; font-weight: 800; color: var(--m-faint); padding: 8px 0 2px; }
+html.is-mobile body.rg-light .ri-absent-note { background: linear-gradient(150deg, rgba(160,110,10,.10), rgba(160,110,10,.02)); border-color: rgba(160,110,10,.20); color: #4c5d75; }
+html.is-mobile body.rg-light .ri-absent-note b { color: #8a6a1f; }
+html.is-mobile body.rg-light .ri-absent-row { background: rgba(30,70,120,.05); border-color: rgba(160,110,10,.10); }
+html.is-mobile body.rg-light .ri-absent-v { color: #8a6a1f; }
+html.is-mobile body.rg-light .ri-absent-meter { background: rgba(30,70,120,.10); }
 
 html.is-mobile .ri-search { position: relative; margin-bottom: 8px; }
 html.is-mobile .ri-search i { position: absolute; inset-inline-start: 12px; top: 50%; transform: translateY(-50%); font-size: 11px; color: var(--m-faint); }
