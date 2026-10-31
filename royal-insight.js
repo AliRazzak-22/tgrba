@@ -584,7 +584,7 @@
         return s ? s.slice(0, 1) : '؟';
     }
 
-    function directory(customers, filter, query) {
+    function directory(customers, filter, query, allTime) {
         let list = customers.slice().sort((a, b) => b.spent - a.spent);
         if (filter === 'elite') list = list.filter((c) => c.visits >= 3 || c.spent > 0).slice(0, Math.max(3, Math.ceil(list.length * 0.2)));
         if (filter === 'debt') list = list.filter((c) => c.debt > 0);
@@ -593,8 +593,9 @@
         if (q) list = list.filter((c) => c.name.toLowerCase().includes(q) || (c.phone || '').toLowerCase().includes(q));
         if (!list.length) return emptyMini(q ? 'لا نتائج لهذا البحث' : 'لا يوجد زبائن في هذه الفئة');
         const shown = list.slice(0, 40);
+        const scope = allTime ? ' data-alltime="1"' : '';
         return '<div class="ri-dir">' + shown.map((c) =>
-            '<button type="button" class="ri-dir-row" data-customer="' + esc(c.name) + '">' +
+            '<button type="button" class="ri-dir-row" data-customer="' + esc(c.name) + '"' + scope + '>' +
                 '<span class="ri-av">' + esc(initial(c.name)) + '</span>' +
                 '<span class="ri-dir-body"><strong>' + esc(c.name) + (c.isNew ? '<i class="ri-badge-new">جديد</i>' : '') + '</strong>' +
                 '<small>' + (c.phone ? esc(c.phone) : 'بلا رقم') + ' · ' + c.visits + ' زيارة · ' + fmt(c.pieces) + ' قطعة</small></span>' +
@@ -624,6 +625,10 @@
         const deltaTxt = delta == null ? 'لا مقارنة' : (delta >= 0 ? '+' + delta + '%' : delta + '%');
         const topShare = vm.topSpender && vm.billed > 0 ? Math.round((vm.topSpender.spent / vm.billed) * 100) : 0;
         const maxSpender = vm.sortedBySpend[0] || null;
+        /* البحث في الدليل يتجاوز الفترة المختارة: من يبحث عن زبون قديم يجب أن
+           يجده ولو لم يزر هذا الشهر؛ الافتراضي بلا بحث يبقى زبائن الفترة. */
+        const searchAll = !!String(state.query || '').trim();
+        const dirSeed = searchAll ? build(0) : null;
 
         root.innerHTML =
         '<div class="ri-sheet-top">' +
@@ -722,13 +727,14 @@
             '<div class="ri-card ri-card-dir">' +
                 '<div class="ri-card-head"><h3><i class="fa-solid fa-address-book"></i> دليل الزبائن</h3><span>' + vm.customers.length + '</span></div>' +
                 '<div class="ri-search"><i class="fa-solid fa-magnifying-glass"></i><input type="search" id="ri-search" placeholder="ابحث باسم الزبون أو رقمه…" value="' + esc(state.query) + '"></div>' +
+                '<div class="ri-search-scope" id="ri-search-scope"' + (searchAll ? '' : ' hidden') + '><i class="fa-solid fa-clock-rotate-left"></i> البحث يشمل كل الفترات</div>' +
                 '<div class="ri-filters">' +
                     '<button type="button" data-filter="all" class="' + (state.filter === 'all' ? 'on' : '') + '">الكل</button>' +
                     '<button type="button" data-filter="elite" class="' + (state.filter === 'elite' ? 'on' : '') + '">النخبة</button>' +
                     '<button type="button" data-filter="debt" class="' + (state.filter === 'debt' ? 'on' : '') + '">مدينون</button>' +
                     '<button type="button" data-filter="new" class="' + (state.filter === 'new' ? 'on' : '') + '">جدد</button>' +
                 '</div>' +
-                '<div id="ri-dir-host">' + directory(vm.customers, state.filter, state.query) + '</div>' +
+                '<div id="ri-dir-host">' + directory((dirSeed || vm).customers, state.filter, state.query, searchAll) + '</div>' +
             '</div>' +
 
             '<div class="ri-foot"><i class="fa-solid fa-shield-halved"></i> أرقام من الفواتير المسجلة فقط — قراءة لا تعديل · آخر تحديث ' + nowLabel() + '</div>' +
@@ -780,10 +786,11 @@
             const filter = e.target.closest('[data-filter]');
             if (filter) {
                 state.filter = filter.getAttribute('data-filter');
-                const vm = build(periodDays());
+                const searching = !!String(state.query || '').trim();
+                const vm = build(searching ? 0 : periodDays());
                 if (vm) {
                     const dirHost = document.getElementById('ri-dir-host');
-                    if (dirHost) dirHost.innerHTML = directory(vm.customers, state.filter, state.query);
+                    if (dirHost) dirHost.innerHTML = directory(vm.customers, state.filter, state.query, searching);
                     host.querySelectorAll('[data-filter]').forEach((b) => b.classList.toggle('on', b.getAttribute('data-filter') === state.filter));
                 }
                 return;
@@ -815,11 +822,14 @@
         host.addEventListener('input', (e) => {
             if (!e.target || e.target.id !== 'ri-search') return;
             state.query = e.target.value;
-            const vm = build(periodDays());
+            const searching = !!state.query.trim();
+            const vm = build(searching ? 0 : periodDays());
             if (vm) {
                 const dirHost = document.getElementById('ri-dir-host');
-                if (dirHost) dirHost.innerHTML = directory(vm.customers, state.filter, state.query);
+                if (dirHost) dirHost.innerHTML = directory(vm.customers, state.filter, state.query, searching);
             }
+            const scope = document.getElementById('ri-search-scope');
+            if (scope) scope.hidden = !searching;
         });
     }
 
@@ -1426,6 +1436,14 @@ html.is-mobile .ri-search input {
 }
 html.is-mobile body.rg-light .ri-search input { background: rgba(255,255,255,.8); }
 html.is-mobile .ri-search input::placeholder { color: var(--m-faint); }
+html.is-mobile .ri-search-scope {
+    display: flex; align-items: center; gap: 6px;
+    margin: -2px 2px 8px;
+    font-size: 9.5px; font-weight: 800; color: var(--m-accent2);
+}
+html.is-mobile .ri-search-scope[hidden] { display: none; }
+html.is-mobile .ri-search-scope i { font-size: 9px; }
+html.is-mobile body.rg-light .ri-search-scope { color: #24466f; }
 html.is-mobile .ri-search input:focus { border-color: rgba(var(--rg-accent-rgb), .5); box-shadow: 0 0 0 3px rgba(var(--rg-accent-rgb), .12); }
 html.is-mobile .ri-filters { display: flex; gap: 5px; margin-bottom: 9px; flex-wrap: wrap; }
 html.is-mobile .ri-filters button {
