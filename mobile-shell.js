@@ -231,6 +231,7 @@ html.is-mobile .m-head::after {
     -webkit-text-fill-color: #eaf4ff;
     background: none;
     text-shadow: 0 1px 0 rgba(0,0,0,.45), 0 0 14px rgba(90,168,255,.20);
+    transition: font-size .26s var(--m-ease), letter-spacing .26s var(--m-ease);
 }
 .m-conn { margin-inline-start: auto; display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--m-muted); }
 /* نقطة الاتصال: قرينة صلبة بحلقة ضوئية رفيعة بدل الهالة */
@@ -239,6 +240,7 @@ html.is-mobile .m-head::after {
 .m-time {
     font-size: 12px; color: var(--m-muted); font-variant-numeric: tabular-nums; min-width: 46px; text-align: end;
     padding: 3px 8px; border-radius: 99px; border: 1px solid var(--m-hair); background: rgba(255,255,255,.04);
+    transition: font-size .26s var(--m-ease);
 }
 /* خيط تقدّم أسفل الترويسة: يمتلئ من جهة القراءة مع تمرير اللوحة الطويلة،
    فتعرف أين أنت بلا شريط تمرير يقتحم الزجاج. transform فقط، بلا تخطيط. */
@@ -255,7 +257,23 @@ html.is-mobile .m-head-prog {
 }
 html.is-mobile .m-head.m-scrolled .m-head-prog { opacity: 1; }
 /* بعد أول تمرير يعمق الزجاج قليلاً: فصل بصري بين الترويسة والمحتوى المتحرك */
-html.is-mobile .m-head { transition: background .3s var(--m-ease), box-shadow .3s var(--m-ease); }
+html.is-mobile .m-head { transition: background .3s var(--m-ease), box-shadow .3s var(--m-ease), padding .26s var(--m-ease); }
+/* انكماش الترويسة عند النزول: شريط أرفع للقراءة الطويلة، يعود كاملاً عند
+   الرجوع لبداية اللوحة. عتبة الانكماش (110) أعلى من عتبة العودة (40) فتمنع
+   الرفرفة عند الحد. تغيير واحد لكل إطار، والارتفاع وحده يتغيّر. */
+html.is-mobile .m-head.m-compact {
+    padding: 5px 14px 5px;
+}
+html.is-mobile .m-head.m-compact .m-brand {
+    font-size: 16px;
+    letter-spacing: .2px;
+}
+html.is-mobile .m-head.m-compact .m-time { font-size: 11px; }
+@media (prefers-reduced-motion: reduce) {
+    html.is-mobile .m-head,
+    html.is-mobile .m-brand,
+    html.is-mobile .m-time { transition: none; }
+}
 html.is-mobile .m-head.m-scrolled {
     background:
         linear-gradient(180deg, rgba(160,208,255,.24), rgba(132,186,255,.04) 70%),
@@ -4587,12 +4605,36 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
         else netFlash('back', 'الاتصال سليم', netSummary(st), 4200);
     }
 
+    /* وقت بغداد الحيّ للترويسة. كانت الخانة تبقى «--:--» حتى أول تحديث بيانات
+       ثم تتجمد على لحظته، وكانت تقرأ منطقة الجهاز لا منطقة العمل. */
+    function headClockText() {
+        try {
+            const d = (typeof window.getRealTime === 'function' ? window.getRealTime().obj : null) || new Date();
+            const s = d.toLocaleTimeString('en-GB', { timeZone: 'Asia/Baghdad', hour: '2-digit', minute: '2-digit', hour12: false });
+            if (s) return s;
+        } catch (e) { /* احتياط محلي أدناه */ }
+        const d = new Date();
+        const p = (v) => (v < 10 ? '0' + v : '' + v);
+        return p(d.getHours()) + ':' + p(d.getMinutes());
+    }
     function markSyncTime() {
         if (!headRef) return;
         const el = headRef.querySelector('.m-time');
-        const d = new Date();
-        const p = (v) => (v < 10 ? '0' + v : '' + v);
-        el.textContent = p(d.getHours()) + ':' + p(d.getMinutes());
+        if (el) el.textContent = headClockText();
+    }
+    function bindHeadClock() {
+        if (!headRef) return;
+        const el = headRef.querySelector('.m-time');
+        if (!el) return;
+        const tick = () => {
+            const s = headClockText();
+            if (s && s !== el.textContent) el.textContent = s;
+        };
+        tick();
+        setInterval(tick, 20000);
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) tick();
+        });
     }
 
     /* ==================== مواضع التمرير والحركات ==================== */
@@ -5272,7 +5314,9 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
             const max = page.scrollHeight - page.clientHeight;
             const p = max > 1 ? clamp(page.scrollTop / max, 0, 1) : 0;
             headRef.style.setProperty('--m-prog', p.toFixed(4));
-            headRef.classList.toggle('m-scrolled', page.scrollTop > 6);
+            const y = page.scrollTop;
+            headRef.classList.toggle('m-scrolled', y > 6);
+            headRef.classList.toggle('m-compact', headRef.classList.contains('m-compact') ? y > 40 : y > 110);
             syncFab();
         };
         syncProgress = update;
@@ -8557,6 +8601,7 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
         bindQuickPeek();
         bindPullRefresh();
         bindScrollProgress();
+        bindHeadClock();
         bindCommandPalette();
         bindActivity();
         bindIdleLock();
