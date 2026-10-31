@@ -670,7 +670,7 @@
         const d = Math.round(((now - was) / was) * 100);
         const cls = d > 0 ? 'up' : (d < 0 ? 'down' : 'flat');
         return '<span class="ri-cmp-d ' + cls + '"><i class="fa-solid fa-arrow-trend-' + (d < 0 ? 'down' : 'up') + '"></i> ' +
-            (d > 0 ? '+' : '') + d + '%</span>';
+            '<span dir="ltr">' + (d > 0 ? '+' : '') + d + '%</span></span>';
     }
 
     function cmpRow(label, now, was, isMoney) {

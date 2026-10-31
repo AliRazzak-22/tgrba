@@ -929,6 +929,39 @@ html.is-mobile .m-today-row.up .m-today-val { color: #d6ffe9; text-shadow: 0 1px
 html.is-mobile .m-today-row.neg .m-today-val { color: #ffc9d0; }
 html.is-mobile .m-today-row.sum { background: linear-gradient(90deg, rgba(198,226,250,.10), transparent); }
 html.is-mobile .m-today-row.sum .m-today-val { font-size: 17px; color: #ffffff; }
+html.is-mobile .m-today-cmp[hidden] { display: none; }
+html.is-mobile .m-today-cmp { margin-top: 2px; padding: 10px 0 11px; border-top: 1px solid rgba(255,255,255,.045); }
+html.is-mobile body.rg-light .m-today-cmp { border-top-color: rgba(30,80,140,.10); }
+html.is-mobile .m-today-cmp-h {
+    display: flex; align-items: center; gap: 6px;
+    margin-bottom: 7px;
+    font-size: 9.5px; font-weight: 900; color: var(--m-faint);
+}
+html.is-mobile .m-today-cmp-h i { font-size: 8.5px; color: var(--m-accent2); }
+html.is-mobile .m-today-cmp-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+html.is-mobile .m-today-cmp-grid > span {
+    display: flex; flex-direction: column; gap: 3px;
+    min-width: 0; padding: 7px 8px;
+    border-radius: 10px;
+    background: rgba(255,255,255,.035);
+    border: 1px solid rgba(255,255,255,.045);
+}
+html.is-mobile .m-today-cmp-grid small { font-size: 9px; font-weight: 800; color: var(--m-muted); }
+html.is-mobile .m-today-cmp-grid b {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 11.5px; font-weight: 900; color: #e8f1fb;
+    font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+html.is-mobile .m-today-cmp-grid b i { font-size: 8.5px; }
+html.is-mobile .m-today-cmp-grid .good b { color: #9ff0c4; }
+html.is-mobile .m-today-cmp-grid .bad b { color: #ffaab4; }
+html.is-mobile .m-today-cmp-grid .flat b { color: rgba(232,241,251,.62); }
+html.is-mobile body.rg-light .m-today-cmp-grid > span { background: rgba(30,70,120,.045); border-color: rgba(30,70,120,.08); }
+html.is-mobile body.rg-light .m-today-cmp-grid small { color: #4d6a8a; }
+html.is-mobile body.rg-light .m-today-cmp-grid b { color: #16324f; }
+html.is-mobile body.rg-light .m-today-cmp-grid .good b { color: #167348; }
+html.is-mobile body.rg-light .m-today-cmp-grid .bad b { color: #b32b3a; }
+html.is-mobile body.rg-light .m-today-cmp-grid .flat b { color: #7e93a8; }
 /* نبض التشغيل: ثلاثة عدّادات حيّة للطلبات المفتوحة — قيد التنفيذ، موعد
    استلام اليوم، والمتأخرة عن موعدها. قراءة فقط من الفواتير نفسها. */
 html.is-mobile .m-pulse {
@@ -982,6 +1015,11 @@ html.is-mobile .admin-section .m-anim .m-today .m-pulse,
 html.is-mobile .m-today.m-anim .m-pulse {
     animation: mWipe .82s var(--m-ease-out) both;
     animation-delay: calc(330ms + min(var(--m-k, 0), 11) * 88ms + 500ms);
+}
+html.is-mobile .admin-section .m-anim .m-today .m-today-cmp,
+html.is-mobile .m-today.m-anim .m-today-cmp {
+    animation: mWipe .82s var(--m-ease-out) both;
+    animation-delay: calc(330ms + min(var(--m-k, 0), 11) * 88ms + 430ms);
 }
 html.is-mobile .admin-section .m-anim.m-today .m-today-row,
 html.is-mobile .m-today.m-anim .m-today-row {
@@ -7835,6 +7873,7 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
                 '<div class="m-today-meta"><span>' + l[2] + '</span><em class="m-today-bar"><i></i></em></div>' +
                 '<b class="m-today-val">0</b></div>'
             ).join('') + '</div>' +
+            '<div class="m-today-cmp" hidden></div>' +
             '<div class="m-pulse">' +
                 '<button type="button" class="m-pulse-i" data-p="active" aria-haspopup="dialog"><b class="m-pulse-n" data-p="active">0</b><small><i class="fa-solid fa-shirt"></i> قيد التنفيذ</small></button>' +
                 '<button type="button" class="m-pulse-i due" data-p="due" aria-haspopup="dialog"><b class="m-pulse-n" data-p="due">0</b><small><i class="fa-solid fa-calendar-check"></i> موعدها اليوم</small></button>' +
@@ -7847,18 +7886,41 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
         });
     }
 
-    function todayRow() {
+    function dayRow(key) {
         const body = document.getElementById('admin-daily-reports-body');
-        if (!body) return null;
-        let key = '';
-        try { key = typeof window.royalTodayKey === 'function' ? String(window.royalTodayKey()) : ''; } catch (e) { key = ''; }
-        if (!key) return null;
+        if (!body || !key) return null;
         const rows = qsa('tr', body);
         for (let i = 0; i < rows.length; i++) {
             const td = qsa('td', rows[i]);
             if (td.length >= 6 && (td[0].textContent || '').trim() === key) return td;
         }
         return null;
+    }
+
+    function prevDayKey(key) {
+        const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(key || ''));
+        if (!m) return '';
+        const d = new Date(+m[1], +m[2] - 1, +m[3] - 1);
+        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+
+    /* فرق أمس: نسبة مئوية فقط عندما تكون قاعدة أمس موجبة، وإلا مبلغ صريح —
+       النسبة على قاعدة سالبة أو صفرية رقم كاذب. */
+    function cmpChip(label, now, was, inverse) {
+        const d = now - was;
+        const tone = d === 0 ? 'flat' : ((inverse ? d < 0 : d > 0) ? 'good' : 'bad');
+        const icon = d === 0 ? 'fa-minus' : (d > 0 ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down');
+        let txt;
+        if (!was && !now) txt = '—';
+        else if (was > 0) txt = '<span dir="ltr">' + (d > 0 ? '+' : '') + Math.round((d / was) * 100) + '%</span>';
+        else txt = '<span dir="ltr">' + (d > 0 ? '+' : '') + money(d) + '</span> د.ع';
+        return '<span class="' + tone + '"><small>' + label + '</small><b><i class="fa-solid ' + icon + '"></i> ' + txt + '</b></span>';
+    }
+
+    function todayRow() {
+        let key = '';
+        try { key = typeof window.royalTodayKey === 'function' ? String(window.royalTodayKey()) : ''; } catch (e) { key = ''; }
+        return dayRow(key);
     }
 
     /* الطلبات المفتوحة مرة واحدة للعدّ والقائمة معاً. قراءة فقط من الفواتير،
@@ -8568,6 +8630,28 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
             const w = pct + '%';
             if (fill.style.width !== w) fill.style.width = w;
         });
+        /* شريط «مقابل أمس» من صف أمس في نفس جدول التقارير — لا حساب جديد
+           ولا قراءة قاعدة، ويختفي إن لم يكن لأمس تقرير أصلاً. */
+        const cmp = todayEl.querySelector('.m-today-cmp');
+        if (cmp) {
+            const ytd = key ? dayRow(prevDayKey(key)) : null;
+            if (!ytd) {
+                cmp.hidden = true;
+                if (cmp.innerHTML) cmp.innerHTML = '';
+            } else {
+                const ySales = num(ytd[2].textContent);
+                const yExpenses = num(ytd[3].textContent);
+                const yNet = ytd.length > 5 ? num(ytd[5].textContent) : ySales - yExpenses;
+                const html = '<div class="m-today-cmp-h"><i class="fa-solid fa-arrow-right-arrow-left"></i><span>مقابل أمس</span></div>' +
+                    '<div class="m-today-cmp-grid">' +
+                        cmpChip('المبيعات', sales, ySales, false) +
+                        cmpChip('الصرفيات', expenses, yExpenses, true) +
+                        cmpChip('الصافي', net, yNet, false) +
+                    '</div>';
+                if (cmp.innerHTML !== html) cmp.innerHTML = html;
+                if (cmp.hidden) cmp.hidden = false;
+            }
+        }
         /* نبض التشغيل: قراءة فقط من الفواتير — الطلبات المفتوحة، منها ما موعده
            اليوم، وما تجاوز سبعة أيام بلا تسليم. لا يمسّ أي رقم مالي.
            العدّ والقائمة يقرآن من collectActiveOrders نفسها فلا يختلفان. */
