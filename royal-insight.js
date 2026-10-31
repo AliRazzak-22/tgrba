@@ -218,6 +218,20 @@
         const prevNames = {};
         inPrev.forEach((inv) => { if (isNamed(inv)) prevNames[String(inv.customer.name).trim()] = 1; });
         const prevCount = Object.keys(prevNames).length;
+        let prevBilled = 0;
+        inPrev.forEach((inv) => { prevBilled += num(inv.total); });
+        const prevNew = Object.keys(prevNames).filter((name) => {
+            const f = firstSeen[name];
+            return f && f >= prevStart && f < start;
+        }).length;
+        /* نافذة سابقة بنفس الطول تنتهي عند بداية الفترة — تُحسب من كل الفواتير
+           لا من الدفعات، تماماً مثل قيمة الطلبات الحالية. */
+        const prev = periodDays ? {
+            billed: prevBilled,
+            visits: inPrev.length,
+            customers: prevCount,
+            newCount: prevNew
+        } : null;
 
         /* المال: قيمة الطلبات + المستلَم وفق نفس مسارات النظام (بلا تكرار) */
         let billed = 0;
@@ -395,6 +409,7 @@
             avgTicket,
             topSpender,
             prevCount,
+            prev,
             debtByName: debtsByName
         };
     }
@@ -617,6 +632,47 @@
 
     let cachedVm = null;
 
+    function cmpDelta(now, was) {
+        if (!was) {
+            return now > 0
+                ? '<span class="ri-cmp-d up"><i class="fa-solid fa-arrow-trend-up"></i> جديد</span>'
+                : '<span class="ri-cmp-d flat">—</span>';
+        }
+        const d = Math.round(((now - was) / was) * 100);
+        const cls = d > 0 ? 'up' : (d < 0 ? 'down' : 'flat');
+        return '<span class="ri-cmp-d ' + cls + '"><i class="fa-solid fa-arrow-trend-' + (d < 0 ? 'down' : 'up') + '"></i> ' +
+            (d > 0 ? '+' : '') + d + '%</span>';
+    }
+
+    function cmpRow(label, now, was, isMoney) {
+        const max = Math.max(now, was, 1);
+        return '<div class="ri-cmp-row">' +
+            '<div class="ri-cmp-top"><span class="ri-cmp-l">' + label + '</span>' + cmpDelta(now, was) + '</div>' +
+            '<div class="ri-cmp-nums"><strong>' + (isMoney ? money(now) : fmt(now)) + '</strong>' +
+                '<small>سابقاً <b>' + (isMoney ? money(was) : fmt(was)) + '</b></small></div>' +
+            '<div class="ri-cmp-bars" aria-hidden="true">' +
+                '<span class="ri-cmp-bar was"><i style="--w:' + Math.round((was / max) * 100) + '%"></i></span>' +
+                '<span class="ri-cmp-bar now"><i style="--w:' + Math.round((now / max) * 100) + '%"></i></span>' +
+            '</div>' +
+        '</div>';
+    }
+
+    function compareCard(vm) {
+        if (!vm.prev) return '';
+        const period = PERIODS.find((p) => p.k === state.period) || PERIODS[2];
+        const span = period.days === 1 ? 'مقابل أمس' : 'مقابل ' + period.label + ' قبلها';
+        const was = vm.prev;
+        return '<div class="ri-card ri-card-cmp">' +
+            '<div class="ri-card-head"><h3><i class="fa-solid fa-code-compare"></i> مقارنة بالفترة السابقة</h3><span>' + span + '</span></div>' +
+            '<div class="ri-cmp">' +
+                cmpRow('قيمة الطلبات', vm.billed, was.billed, true) +
+                cmpRow('الفواتير', vm.visits, was.visits, false) +
+                cmpRow('الزبائن', vm.customers.length, was.customers, false) +
+                cmpRow('زبائن جدد', vm.newCount, was.newCount, false) +
+            '</div>' +
+        '</div>';
+    }
+
     function renderRoot(root, vm) {
         cachedVm = vm;
         const period = PERIODS.find((p) => p.k === state.period) || PERIODS[2];
@@ -665,6 +721,8 @@
                 '<div class="ri-money-i"><span>المستلَم</span><strong>' + money(vm.collected) + '</strong><small>عربون + دفعات</small></div>' +
                 '<div class="ri-money-i warn"><span>ذمم قائمة</span><strong>' + money(vm.debtsTotal) + '</strong><small>كل الفترات</small></div>' +
             '</div>' +
+
+            compareCard(vm) +
 
             '<div class="ri-card">' +
                 '<div class="ri-card-head"><h3><i class="fa-solid fa-wave-square"></i> حركة الإيراد</h3><span>آخر ١٤ يوماً</span></div>' +
@@ -1171,6 +1229,50 @@ html.is-mobile body.rg-light .ri-money-i strong { color: #0e2138; }
 html.is-mobile body.rg-light .ri-money-i span { color: #33507a; }
 html.is-mobile body.rg-light .ri-money-i small { color: #5b7191; }
 html.is-mobile body.rg-light .ri-money-i.warn strong { color: #b32b3a; }
+
+/* مقارنة بالفترة السابقة */
+html.is-mobile .ri-cmp { display: flex; flex-direction: column; gap: 15px; }
+html.is-mobile .ri-cmp-row { display: flex; flex-direction: column; gap: 6px; }
+html.is-mobile .ri-cmp-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+html.is-mobile .ri-cmp-l { font-size: 11px; font-weight: 800; color: var(--m-muted); }
+html.is-mobile .ri-cmp-d {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 9.5px; font-weight: 900; padding: 3px 8px; border-radius: 99px;
+    direction: ltr;
+    background: rgba(61,220,151,.12); color: #3ddc97;
+    border: 1px solid rgba(61,220,151,.25);
+    font-variant-numeric: tabular-nums;
+}
+html.is-mobile .ri-cmp-d i { font-size: 8.5px; }
+html.is-mobile .ri-cmp-d.down { background: rgba(255,93,108,.12); color: #ff7b87; border-color: rgba(255,93,108,.28); }
+html.is-mobile .ri-cmp-d.flat { background: rgba(255,255,255,.06); color: var(--m-muted); border-color: var(--ri-line); }
+html.is-mobile .ri-cmp-nums { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+html.is-mobile .ri-cmp-nums strong {
+    font-size: 16px; font-weight: 900; color: var(--m-text);
+    font-variant-numeric: tabular-nums; letter-spacing: -.2px;
+}
+html.is-mobile .ri-cmp-nums small { font-size: 9.5px; font-weight: 700; color: var(--m-faint); white-space: nowrap; }
+html.is-mobile .ri-cmp-nums small b { font-weight: 800; color: var(--m-muted); font-variant-numeric: tabular-nums; }
+html.is-mobile .ri-cmp-bars { display: flex; flex-direction: column; gap: 3px; }
+html.is-mobile .ri-cmp-bar { display: block; height: 4px; border-radius: 99px; background: rgba(255,255,255,.06); overflow: hidden; }
+html.is-mobile .ri-cmp-bar i { display: block; height: 100%; width: var(--w, 0%); border-radius: inherit; }
+html.is-mobile .ri-cmp-bar.was i { background: rgba(255,255,255,.22); }
+html.is-mobile .ri-cmp-bar.now i {
+    background: linear-gradient(90deg, var(--rg-accent), color-mix(in srgb, var(--rg-accent) 55%, #fff));
+    box-shadow: 0 0 10px rgba(var(--rg-accent-rgb), .35);
+}
+html.is-mobile .ri-in .ri-cmp-bar i { animation: riCmpGrow .8s var(--m-ease-out) both; animation-delay: calc(min(var(--ri-k, 0), 9) * 46ms + 160ms); }
+html.is-mobile .ri-root.ri-no-motion .ri-cmp-bar i { animation: none; }
+@keyframes riCmpGrow { from { width: 0; } to { width: var(--w, 0%); } }
+html.is-mobile body.rg-light .ri-cmp-l { color: #33507a; }
+html.is-mobile body.rg-light .ri-cmp-nums strong { color: #0e2138; }
+html.is-mobile body.rg-light .ri-cmp-nums small { color: #5b7191; }
+html.is-mobile body.rg-light .ri-cmp-nums small b { color: #33507a; }
+html.is-mobile body.rg-light .ri-cmp-bar { background: rgba(30,70,120,.10); }
+html.is-mobile body.rg-light .ri-cmp-bar.was i { background: rgba(30,70,120,.30); }
+html.is-mobile body.rg-light .ri-cmp-d.up { background: rgba(13,122,82,.10); color: #0d7a52; border-color: rgba(13,122,82,.2); }
+html.is-mobile body.rg-light .ri-cmp-d.down { color: #b32b3a; }
+html.is-mobile body.rg-light .ri-cmp-d.flat { background: rgba(30,70,120,.06); color: #5b7191; border-color: rgba(30,70,120,.12); }
 
 html.is-mobile .ri-card {
     position: relative;
