@@ -518,6 +518,11 @@
         const visits = customers.reduce((s, c) => s + c.visits, 0);
         const newCount = customers.filter((c) => c.isNew).length;
         const returning = customers.filter((c) => c.visits >= 2).length;
+        const repeatSpent = customers.filter((c) => c.visits >= 2).reduce((s, c) => s + c.spent, 0);
+        const repeatShare = billed ? Math.round((repeatSpent / billed) * 100) : 0;
+        const repeatAvg = returning ? repeatSpent / returning : 0;
+        const singleCount = customers.length - returning;
+        const singleAvg = singleCount ? (billed - repeatSpent) / singleCount : 0;
         const avgTicket = visits ? billed / visits : 0;
         const topSpender = sortedBySpend[0] || null;
 
@@ -551,6 +556,9 @@
             visits,
             newCount,
             returning,
+            repeatShare,
+            repeatAvg,
+            singleAvg,
             avgTicket,
             topSpender,
             prevCount,
@@ -814,11 +822,21 @@
         }).join('') + '</div>';
     }
 
-    function ladderHTML(ladder, returning, total, visits) {
+    function ladderHTML(vm) {
+        const ladder = vm.ladder;
         const max = Math.max(1, ...ladder.map((l) => l.n));
-        const rep = total ? Math.round((returning / total) * 100) : 0;
-        const per = total ? (visits / total).toFixed(1) : '0';
-        return '<div class="ri-lad-sum"><b dir="ltr">' + rep + '%</b> عادوا أكثر من مرة · متوسط <b dir="ltr">' + per + '</b> زيارة لكل زبون</div>' +
+        const total = vm.customers.length;
+        const rep = total ? Math.round((vm.returning / total) * 100) : 0;
+        const per = total ? (vm.visits / total).toFixed(1) : '0';
+        const repeatWho = vm.returning === 1 ? 'زبون واحد' : vm.returning === 2 ? 'زبونان'
+            : vm.returning <= 10 ? fmt(vm.returning) + ' زبائن' : fmt(vm.returning) + ' زبوناً';
+        const moneyLine = vm.returning && vm.billed
+            ? '<small class="ri-lad-money"><i class="fa-solid fa-coins"></i> حصّة المتكررين <b>' + vm.repeatShare + '%</b> من الإيراد (<b>' + repeatWho + '</b>) · معدل الزبون <b>' + fmt(vm.repeatAvg) + '</b> مقابل <b>' + fmt(vm.singleAvg) + '</b> د.ع لمن زار مرة.</small>'
+            : '';
+        return '<div class="ri-lad-sum">' +
+                '<span class="ri-lad-sum-l"><b dir="ltr">' + rep + '%</b> عادوا أكثر من مرة · متوسط <b dir="ltr">' + per + '</b> زيارة لكل زبون</span>' +
+                moneyLine +
+            '</div>' +
             '<div class="ri-ladder">' + ladder.map((l, i) => {
             const w = clamp((l.n / max) * 100, l.n ? 3 : 0, 100);
             return '<div class="ri-lad-row">' +
@@ -1126,7 +1144,7 @@
 
             '<div class="ri-card">' +
                 '<div class="ri-card-head"><h3><i class="fa-solid fa-stairs"></i> مدرّج الولاء</h3><span>عدد الزيارات</span></div>' +
-                ladderHTML(vm.ladder, vm.returning, vm.customers.length, vm.visits) +
+                ladderHTML(vm) +
             '</div>' +
 
             (vm.firstRepeat && vm.firstRepeat.mature >= 5
@@ -2245,7 +2263,7 @@ html.is-mobile body.rg-light .ri-gap-foot i { color: #1b5aa8; }
 html.is-mobile body.rg-light .ri-gap-foot small { color: #5b7191; }
 
 html.is-mobile .ri-lad-sum {
-    display: flex; align-items: center; flex-wrap: wrap; gap: 4px;
+    display: flex; flex-direction: column; gap: 6px;
     margin-bottom: 11px; padding: 9px 11px;
     border-radius: 12px;
     background: rgba(var(--rg-accent-rgb), .07);
@@ -2253,8 +2271,17 @@ html.is-mobile .ri-lad-sum {
     font-size: 10px; font-weight: 700; color: var(--m-muted);
 }
 html.is-mobile .ri-lad-sum b { color: var(--m-text); font-weight: 900; font-variant-numeric: tabular-nums; }
+html.is-mobile .ri-lad-sum-l { display: block; line-height: 1.65; }
+html.is-mobile .ri-lad-money {
+    display: block;
+    padding-top: 6px; border-top: 1px solid rgba(var(--rg-accent-rgb), .14);
+    font-size: 9.5px; font-weight: 700; color: var(--m-faint); line-height: 1.8;
+}
+html.is-mobile .ri-lad-money i { font-size: 9px; color: var(--m-accent2); margin-left: 4px; }
 html.is-mobile body.rg-light .ri-lad-sum { background: rgba(30,90,170,.05); border-color: rgba(30,90,170,.14); color: #4c5d75; }
 html.is-mobile body.rg-light .ri-lad-sum b { color: #0e2138; }
+html.is-mobile body.rg-light .ri-lad-money { color: #5b7191; border-top-color: rgba(30,90,170,.12); }
+html.is-mobile body.rg-light .ri-lad-money i { color: #1b5aa8; }
 html.is-mobile .ri-ladder { display: flex; flex-direction: column; gap: 9px; }
 html.is-mobile .ri-lad-row { display: grid; grid-template-columns: 64px 1fr 28px; align-items: center; gap: 8px; }
 html.is-mobile .ri-lad-l { font-size: 10px; font-weight: 800; color: var(--m-muted); }
