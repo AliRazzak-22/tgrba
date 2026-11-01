@@ -403,14 +403,16 @@
         }
 
         /* غائب = زبون زار مرتين فأكثر ولم تُسجَّل له فاتورة منذ ٢١ يوماً.
-           نُفرّق من تجاوز الشهر عن الذي ما زال في مهلة العودة. */
-        const absent = Object.values(life)
+           نُفرّق من تجاوز الشهر عن الذي ما زال في مهلة العودة.
+           «على وشك الغياب» = لم يبلغ الحد بعد (١٤–٢٠ يوماً) وما زال يمكن إنقاذه. */
+        const lapsed = Object.values(life)
             .filter((c) => c.visits >= 2 && c.lastTs)
-            .map((c) => Object.assign({}, c, { days: Math.floor((todayMs - c.lastTs) / 86400000) }))
-            .filter((c) => c.days >= 21)
-            .sort((a, b) => b.spent - a.spent);
+            .map((c) => Object.assign({}, c, { days: Math.floor((todayMs - c.lastTs) / 86400000) }));
+        const absent = lapsed.filter((c) => c.days >= 21).sort((a, b) => b.spent - a.spent);
+        const watch = lapsed.filter((c) => c.days >= 14 && c.days < 21).sort((a, b) => b.spent - a.spent);
         const absentWarn = absent.filter((c) => c.days < 30).length;
         const absentSpend = absent.reduce((s, c) => s + c.spent, 0);
+        const watchSpend = watch.reduce((s, c) => s + c.spent, 0);
 
         /* فجوة العودة: كم يوماً بين زيارة وأخرى لنفس الزبون، للزيارات التي
            وقعت داخل الفترة فقط. الزيارة الأولى لا فجوة لها، والوسيط أصدق
@@ -510,6 +512,8 @@
             absent,
             absentWarn,
             absentSpend,
+            watch,
+            watchSpend,
             gap,
             days,
             months,
@@ -1085,6 +1089,17 @@
                     : emptyMini('لا غائبين — كل من زار مرتين عاد خلال ٢١ يوماً')) +
                 (vm.absent.length > 5 ? '<div class="ri-absent-more">و' + fmt(vm.absent.length - 5) + ' آخرون — افتح دليل الزبائن للبحث بالاسم</div>' : '') +
             '</div>' +
+
+            (vm.watch.length
+                ? '<div class="ri-card">' +
+                    '<div class="ri-card-head"><h3><i class="fa-solid fa-bell"></i> على وشك الغياب</h3><span>١٤ – ٢٠ يوماً</span></div>' +
+                    '<div class="ri-watch-note"><i class="fa-solid fa-hourglass-half"></i><span><b>' + fmt(vm.watch.length) + '</b> ' +
+                        (vm.watch.length === 1 ? 'زبون' : vm.watch.length === 2 ? 'زبونان' : vm.watch.length <= 10 ? 'زبائن' : 'زبوناً') +
+                        ' لم يزوروا منذ ١٤–٢٠ يوماً — قبل بلوغ حدّ الغياب · إنفاقهم التاريخي <b>' + money(vm.watchSpend) + '</b></span></div>' +
+                    absentRows(vm.watch) +
+                    (vm.watch.length > 5 ? '<div class="ri-absent-more">و' + fmt(vm.watch.length - 5) + ' آخرون — افتح دليل الزبائن للبحث بالاسم</div>' : '') +
+                  '</div>'
+                : '') +
 
             '<div class="ri-card">' +
                 '<div class="ri-card-head"><h3><i class="fa-solid fa-sack-dollar"></i> قائمة النخبة</h3><span>أعلى إنفاقاً</span></div>' +
@@ -2256,6 +2271,20 @@ html.is-mobile body.rg-light .ri-absent-note b { color: #8a6a1f; }
 html.is-mobile body.rg-light .ri-absent-row { background: rgba(30,70,120,.05); border-color: rgba(160,110,10,.10); }
 html.is-mobile body.rg-light .ri-absent-v { color: #8a6a1f; }
 html.is-mobile body.rg-light .ri-absent-meter { background: rgba(30,70,120,.10); }
+
+html.is-mobile .ri-watch-note {
+    display: flex; align-items: flex-start; gap: 8px;
+    padding: 10px 11px; margin-bottom: 9px;
+    border-radius: 13px;
+    border: 1px solid rgba(255,209,102,.16);
+    background: linear-gradient(150deg, rgba(255,209,102,.07), rgba(255,209,102,.015));
+    font-size: 10px; line-height: 1.7; font-weight: 700; color: var(--m-muted);
+}
+html.is-mobile .ri-watch-note > i { margin-top: 3px; color: #ffd166; font-size: 10px; }
+html.is-mobile .ri-watch-note b { color: #ffd166; font-weight: 900; font-variant-numeric: tabular-nums; }
+html.is-mobile body.rg-light .ri-watch-note { background: linear-gradient(150deg, rgba(160,110,10,.07), rgba(160,110,10,.015)); border-color: rgba(160,110,10,.16); color: #4c5d75; }
+html.is-mobile body.rg-light .ri-watch-note > i,
+html.is-mobile body.rg-light .ri-watch-note b { color: #8a6a1f; }
 
 html.is-mobile .ri-search { position: relative; margin-bottom: 8px; }
 html.is-mobile .ri-search i { position: absolute; inset-inline-start: 12px; top: 50%; transform: translateY(-50%); font-size: 11px; color: var(--m-faint); }
