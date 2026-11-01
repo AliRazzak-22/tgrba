@@ -50,6 +50,28 @@
         if (v >= 3 && v <= 10) return fmt(v) + ' زيارات';
         return fmt(v) + ' زيارة';
     }
+    function billsWord(n) {
+        const v = Math.round(num(n));
+        if (v === 1) return 'فاتورة واحدة';
+        if (v === 2) return 'فاتورتان';
+        if (v >= 3 && v <= 10) return fmt(v) + ' فواتير';
+        return fmt(v) + ' فاتورة';
+    }
+    /* البحث في الدليل يتسامح مع اختلاف رسم الاسم العربي (أ/ا، ة/ه، ى/ي)
+       ومع الأرقام الهندية، لأن الاسم مكتوب مرة واحدة لكن يُبحث عنه بأشكال. */
+    function normSearch(v) {
+        return String(v == null ? '' : v)
+            .replace(/[أإآٱ]/g, 'ا')
+            .replace(/ى/g, 'ي')
+            .replace(/ة/g, 'ه')
+            .replace(/[ؤئ]/g, 'ء')
+            .replace(/[\u064B-\u0652\u0670\u0640]/g, '')
+            .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+            .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 0x06F0))
+            .toLowerCase()
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
     function pct(v, total) { return total > 0 ? Math.round((v / total) * 100) : 0; }
     function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
     function motionOff() {
@@ -323,9 +345,11 @@
             (Array.isArray(inv.items) ? inv.items : []).forEach((it) => {
                 const key = String(it.serviceName || it.name || 'خدمة').trim();
                 const q = num(it.qty) || 1;
-                if (!services[key]) services[key] = { name: key, qty: 0, rev: 0 };
-                services[key].qty += q;
-                services[key].rev += num(it.price) * q;
+                if (!services[key]) services[key] = { name: key, qty: 0, rev: 0, bills: 0 };
+                const s = services[key];
+                s.qty += q;
+                s.rev += num(it.price) * q;
+                if (s.lastInv !== inv.id) { s.bills += 1; s.lastInv = inv.id; }
             });
         });
         const topServices = Object.values(services).sort((a, b) => b.rev - a.rev).slice(0, 6);
@@ -817,7 +841,7 @@
             return '<div class="ri-bar-row">' +
                 '<div class="ri-bar-top"><span class="ri-bar-name">' + esc(s.name) + '</span><span class="ri-bar-val">' + (qtyMode ? fmt(s.qty) + ' قطعة' : money(s.rev)) + '</span></div>' +
                 '<div class="ri-bar-track"><i style="--w:' + w.toFixed(1) + '%;--c:' + SERIES[i % SERIES.length] + '"></i></div>' +
-                '<div class="ri-bar-sub">' + (qtyMode ? money(s.rev) : fmt(s.qty) + ' قطعة') + '</div>' +
+                '<div class="ri-bar-sub">' + (qtyMode ? money(s.rev) : fmt(s.qty) + ' قطعة') + ' · ' + billsWord(s.bills) + '</div>' +
             '</div>';
         }).join('') + '</div>';
     }
@@ -941,8 +965,12 @@
         if (filter === 'elite') list = list.filter((c) => c.elite);
         if (filter === 'debt') list = list.filter((c) => c.debt > 0);
         if (filter === 'new') list = list.filter((c) => c.isNew);
-        const q = String(query || '').trim().toLowerCase();
-        if (q) list = list.filter((c) => c.name.toLowerCase().includes(q) || (c.phone || '').toLowerCase().includes(q));
+        const q = normSearch(query);
+        const qDigits = q.replace(/\D/g, '');
+        if (q) list = list.filter((c) => {
+            if (normSearch(c.name).includes(q)) return true;
+            return qDigits ? normSearch(c.phone).replace(/\D/g, '').includes(qDigits) : false;
+        });
         return list;
     }
 
