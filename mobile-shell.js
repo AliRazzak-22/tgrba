@@ -148,6 +148,22 @@ html.is-mobile body::after {
 }
 @keyframes mSilk { from { transform: translate3d(-13%, -7%, 0); } to { transform: translate3d(13%, 7%, 0); } }
 
+/* ====== عمق الخلفية ======
+   الحقل البعيد والحزام القريب ينزلقان مع التمرير بمقدارين مختلفين، فتطفو
+   البطاقات فوق مشهد يتأخر عنها بدل خلفية صمّاء ثابتة.
+   الانزلاق على خاصية translate المستقلة، لأن transform هاتين الطبقتين مشغول
+   أصلاً بحركة mFieldDrift/mSilk البطيئة؛ لو كتبناه على transform لبطلت حركة
+   المشهد أو بطل العمق. translate يُطبَّق قبل transform في المركّب، فلا صراع.
+   الطبقتان مثبّتتان ومرقّمتان سلفاً (will-change)، فالكتابة لا تلمس التخطيط. */
+html.is-mobile body::before { translate: 0 calc(var(--m-depth, 0px) * 1); }
+html.is-mobile body::after { translate: 0 calc(var(--m-depth, 0px) * 1.85); }
+html.is-mobile body.rm-motion-off::before,
+html.is-mobile body.rm-motion-off::after { translate: none; }
+@media (prefers-reduced-motion: reduce) {
+    html.is-mobile body::before,
+    html.is-mobile body::after { translate: none; }
+}
+
 html.is-mobile .screen { height: 100%; }
 html.is-mobile #pos-screen.active-screen,
 html.is-mobile #main-screen.active-screen {
@@ -6296,6 +6312,27 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
        القراءة مرة واحدة في كل إطار تمرير فقط، والكتابة متغيّر واحد على الترويسة.
        لا يلمس التخطيط: scaleX على عنصر مطلق. */
     let syncProgress = () => {};
+    /* ================== عمق الخلفية ==================
+       لا قراءة تخطيط إضافية هنا: يُستخدم scrollTop نفسه الذي قرأته الترويسة
+       في هذا الإطار. والمنحنى مُنتهٍ لا خطّي، لأن لوحة الزبائن أطول من تسع
+       شاشات — الخطّي كان يدفع المشهد خارج حوافه ثم يجمد عند السقف.
+       السقف يُشتق من ارتفاع الشاشة لا من رقم ثابت: طبقة الحقل البعيد ممدودة
+       خلف الشاشة بستة بالمئة من ارتفاعها، وعلى هاتف بقامة ٦٦٧ بكسل يكون ذلك
+       أربعين بكسل فقط — سقف ثابت ٤٦ كان يكشف لون الأساس شريطاً أسفل الشاشة.
+       نأخذ خمسة بالمئة إبقاءً لهامش فوق الهامش. الحزام القريب ممدود باثنين
+       وعشرين بالمئة، فيكفيه ضعف الحقل بأمان. */
+    const DEPTH_MAX = 46, DEPTH_K = 620;
+    let depthFrozen = false;
+    function setDepth(y) {
+        if (REDUCED || document.body.classList.contains('rm-motion-off')) {
+            if (!depthFrozen) { depthFrozen = true; root.style.setProperty('--m-depth', '0px'); }
+            return;
+        }
+        depthFrozen = false;
+        const max = Math.min(DEPTH_MAX, (window.innerHeight || 844) * 0.05);
+        const v = max * (1 - Math.exp(-(y > 0 ? y : 0) / DEPTH_K));
+        root.style.setProperty('--m-depth', '-' + v.toFixed(2) + 'px');
+    }
     function bindScrollProgress() {
         if (!headRef) return;
         let queued = 0;
@@ -6306,6 +6343,7 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
             const p = max > 1 ? clamp(page.scrollTop / max, 0, 1) : 0;
             headRef.style.setProperty('--m-prog', p.toFixed(4));
             const y = page.scrollTop;
+            setDepth(y);
             headRef.classList.toggle('m-scrolled', y > 6);
             headRef.classList.toggle('m-compact', headRef.classList.contains('m-compact') ? y > 40 : y > 110);
             syncFab();
@@ -6315,6 +6353,13 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
             if (queued) return;
             queued = requestAnimationFrame(() => { queued = 0; update(); });
         };
+        /* تبديل الحركة أو الوضع من الاستوديو لا يولّد حدث تمرير، فيبقى العمق
+           مجمّداً على آخر قيمة حتى يلمس الإصبع الشاشة. مراقبة أصناف body تُعيد
+           اشتقاقه في الإطار نفسه. لا حلقة تكرار: update يكتب على الترويسة وزر
+           الإضافة فقط، ولا يمس أصناف body. */
+        try {
+            new MutationObserver(schedule).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+        } catch (e) {}
         state.pages.forEach((p) => { if (p) p.addEventListener('scroll', schedule, { passive: true }); });
         window.addEventListener('resize', schedule, { passive: true });
         update();
