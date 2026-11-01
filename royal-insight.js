@@ -38,6 +38,9 @@
         lastReplay: 0,
         freshStage: true,
         stageEls: [],
+        visited: false,
+        enterUntil: 0,
+        deferTimer: 0,
         sheetCustomer: null
     };
 
@@ -1404,9 +1407,12 @@
         [...host.children].forEach((el, i) => {
             el.style.setProperty('--ri-k', String(i));
             el.classList.add('ri-in');
+            /* واللوحة معروضة أصلاً: تحديث البيانات يستبدل البطاقات في مكانها
+               بلا إعادة تدرّج الدخول — الصنف يبقى ليعيش حركة الأشرطة داخله. */
+            if (!state.freshStage) el.classList.add('ri-settled');
         });
         host.classList.toggle('ri-no-motion', motionOff());
-        countUpAll(host);
+        if (state.freshStage) countUpAll(host);
         bindRoot(host);
         stageScroll(host);
     }
@@ -1428,9 +1434,10 @@
         const sheet = host.querySelector('.ri-sheet-top');
         if (!sec || !sheet) return [];
         const kids = [...sheet.children];
-        if (keepSeen) {
-            /* إعادة رسم واللوحة في منتصفها: ما يراه المستخدم لا يُخفى ولا يومض،
-               وما هو في الانتظار يبقى في انتظاره ويُعاد مراقبته فقط. */
+        /* إعادة رسم واللوحة في منتصفها: ما يراه المستخدم لا يُخفى ولا يومض.
+           والبناء الجديد — بعد استبدال innerHTML — لا يحمل أصنافاً بعد، فلا
+           معنى للانتظار عليه: يُقاس من مواضعه الحقيقية من جديد. */
+        if (keepSeen && kids.some((el) => el.classList.contains('ri-io'))) {
             return kids.filter((el) => el.classList.contains('ri-io') && !el.classList.contains('ri-io-seen'));
         }
         if (!sec.getBoundingClientRect().height) {
@@ -1448,10 +1455,16 @@
         kids.forEach((el, i) => {
             el.classList.remove('ri-io', 'ri-io-seen', 'ri-pop');
             el.style.removeProperty('--ri-j');
-            const top = el.getBoundingClientRect().top - sr.top + sec.scrollTop;
-            if (i >= 2 && top > vh * 0.96) pending.push(el);
+            /* القياس من الشاشة لا من رأس اللوحة: المستخدم قد يكون واقفاً في
+               منتصفها، فما مرّ عنه أو ما يراه الآن يجب أن يبقى ظاهراً. */
+            const below = i >= 2 && el.getBoundingClientRect().top > sr.top + vh * 0.96;
+            if (!below) {
+                if (keepSeen) { el.classList.add('ri-io', 'ri-io-seen'); el.style.setProperty('--ri-j', '0'); }
+                return;
+            }
+            el.classList.add('ri-io');
+            pending.push(el);
         });
-        pending.forEach((el) => el.classList.add('ri-io'));
         return pending;
     }
 
@@ -2016,6 +2029,18 @@
         if (!host) return;
         const sig = signature();
         if (!force && state.rendered && sig === state.signature) return;
+        /* بناء الدخول جارٍ: إعادة رسم الآن تُلغي التدرّج من منتصفه، فيرى
+           المستخدم اللوحة تتكوّن ثم تختفي ثم تتكوّن. تُرجأ إلى أن يستقر.
+           وما جاء من فعل المستخدم (فترة/فلتر/تحديث) لا يُرجأ: ينتظر جواباً. */
+        if (!force && state.rendered && sec.classList.contains('active') && performance.now() < state.enterUntil) {
+            if (!state.deferTimer) {
+                state.deferTimer = setTimeout(() => {
+                    state.deferTimer = 0;
+                    draw(false);
+                }, Math.max(0, state.enterUntil - performance.now()) + 40);
+            }
+            return;
+        }
         const vm = build(periodDays());
         if (!vm) return;
         state.signature = sig;
@@ -2023,11 +2048,16 @@
         const active = document.activeElement;
         const focusSearch = active && active.id === 'ri-search';
         const caret = focusSearch ? active.selectionStart : null;
-        /* اللوحة عند أولها أو لم تُرسم بعد: تدرّج السحب يبدأ من الصفر.
-           وهي في منتصفها: ما يراه المستخدم الآن لا يُخفى ولا يومض. */
-        state.freshStage = !state.rendered || scroll < 4;
+        /* أول رسم أو دخول جديد أو فعل مستخدم (فترة/فلتر/تحديث): تدرّج السحب
+           يبدأ من الصفر. وما عداه — تحديث بيانات واللوحة معروضة — يستبدل
+           البطاقات في مكانها بلا تدرّج ولا عدّ من جديد. */
+        state.freshStage = !state.rendered || !state.visited || !!force;
         state.rendered = true;
+        if (state.freshStage) state.enterUntil = performance.now() + 1500;
         renderRoot(host, vm);
+        /* والرسم الذي جرى واللوحة معروضة هو بعينه بناء هذا الدخول: ليوشم
+           الزيارة، وإلا بقي كل تحديث بعدها يبني من الصفر كما يرى المستخدم. */
+        if (sec.classList.contains('active')) state.visited = true;
         if (scroll) sec.scrollTop = scroll;
         if (focusSearch) {
             const s = host.querySelector('#ri-search');
@@ -2044,11 +2074,20 @@
         const sheet = host && host.querySelector('.ri-sheet-top');
         if (!sheet) return;
         const t = performance.now();
-        if (t - state.lastReplay < 320) return;
+        /* بناء واحد لكل دخول: الدخول يستدعي هذه من مكانين — موجّه الجوال
+           ومراقب أصناف اللوحة — وكان الثاني يقطع التدرّج من منتصفه فيبدو
+           أنه تكوّن ثم اختفى ثم تكوّن. والفاصل عمرُ الحركة كلها لا أقل منها. */
+        if (t - state.lastReplay < 1500) return;
         state.lastReplay = t;
+        /* والبيانات أجدّ من المرسوم: الدخول يُبنى برسمٍ جديد لا بإعادة تشغيل
+           بناءٍ قديم، وإلا رأى المستخدم أرقاماً ثم تصحيحها بعده بلحظة. */
+        if (signature() !== state.signature) { state.visited = false; draw(false); return; }
+        state.visited = true;
+        state.enterUntil = t + 1500;
         if (motionOff()) { state.freshStage = false; stageScroll(host); return; }
         sec.scrollTop = 0;
         state.freshStage = true;
+        [...host.children].forEach((el) => el.classList.remove('ri-settled'));
         stageScroll(host);
         sheet.classList.remove('ri-in');
         void sheet.offsetHeight;
@@ -2063,10 +2102,20 @@
         if (sec.dataset.riObs === '1') return;
         sec.dataset.riObs = '1';
         let shown = sec.classList.contains('active');
+        if (shown) state.visited = true;
         new MutationObserver(() => {
-            if (!sec.classList.contains('active')) { shown = false; closeSheet(); return; }
+            if (!sec.classList.contains('active')) {
+                shown = false;
+                state.visited = false;
+                state.lastReplay = 0;
+                closeSheet();
+                return;
+            }
             const first = !shown;
             shown = true;
+            /* الدخول بناء واحد يتكفّل به replay: يعيد تشغيل الحركة على نفس
+               البناء، أو يرسم من جديد إن كانت البيانات أجدّ — لا الاثنان معاً،
+               فذلك ما كان يُكوّن اللوحة ثم يمحوها ثم يعيدها. */
             if (first && state.rendered) replay();
             draw(false);
         }).observe(sec, { attributes: true, attributeFilter: ['class'] });
@@ -2407,6 +2456,11 @@ html.is-mobile .ri-root:not(.ri-no-motion) .ri-sheet-top.ri-in > *:nth-child(4) 
 html.is-mobile .ri-root:not(.ri-no-motion) .ri-sheet-top.ri-in > *:nth-child(5) { animation-delay: 390ms; }
 html.is-mobile .ri-root:not(.ri-no-motion) .ri-sheet-top.ri-in > *:nth-child(6) { animation-delay: 470ms; }
 html.is-mobile .ri-root:not(.ri-no-motion) .ri-sheet-top.ri-in > *:nth-child(n+7) { animation: none; }
+/* تحديث البيانات واللوحة معروضة: البطاقات تُستبدل في مكانها. ri-settled يُبقي
+   حركة الأشرطة داخل ri-in ويعطّل تدرّج الدخول نفسه — فلا تمحو اللوحة نفسها
+   ثم تعود من الصفر كل ما تجددت فاتورة. */
+html.is-mobile .ri-root > .ri-in.ri-settled { animation: none; }
+html.is-mobile .ri-root:not(.ri-no-motion) .ri-sheet-top.ri-in.ri-settled > * { animation: none; }
 
 /* كشف بطاقات ما بعد الطية مع التمرير بدل السكون التام */
 html.is-mobile .ri-sheet-top > .ri-io {
@@ -3406,7 +3460,7 @@ html.is-mobile :is(.ri-money-i small, .ri-chart-days, .ri-donut-mid span, .ri-mo
     .ri-cust-stats span, .ri-cust-trend h4 small, .ri-cm small, .ri-cm-sum,
     .ri-cust-rhythm-main small, .ri-dir-body small, .ri-dir-end small, .ri-inv-s,
     .ri-search-scope, .ri-chart-max, .ri-open-age, .ri-cmp-nums small,
-    .ri-cmp-d) { font-size: 10px; }
+    .ri-cmp-d, .ri-heat-cell) { font-size: 10px; }
 html.is-mobile .ri-cmp-d i { font-size: 9px; }
 html.is-mobile .ri-badge-new { font-size: 10px; }
 html.is-mobile :is(.ri-filters button, .ri-svc-seg button) { min-height: 36px; }
