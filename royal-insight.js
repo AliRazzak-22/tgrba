@@ -1214,7 +1214,10 @@
                         '<h2 class="ri-title">مركز الزبائن</h2>' +
                         '<p class="ri-sub">قراءة بصرية لسلوك زبائن المكوى — من فواتيرك، بلا أي تعديل.</p>' +
                     '</div>' +
-                    '<button type="button" class="ri-export" id="ri-export" aria-label="تصدير الزبائن CSV"><i class="fa-solid fa-file-csv"></i></button>' +
+                    '<div class="ri-hero-acts">' +
+                        '<button type="button" class="ri-export" id="ri-share" aria-label="مشاركة ملخص الزبائن"><i class="fa-solid fa-share-nodes"></i></button>' +
+                        '<button type="button" class="ri-export" id="ri-export" aria-label="تصدير الزبائن CSV"><i class="fa-solid fa-file-csv"></i></button>' +
+                    '</div>' +
                 '</div>' +
                 '<div class="ri-chips" role="tablist">' +
                     PERIODS.map((p) => '<button type="button" role="tab" aria-selected="' + (p.k === state.period) + '" class="' + (p.k === state.period ? 'on' : '') + '" data-period="' + p.k + '">' + p.label + '</button>').join('') +
@@ -1503,6 +1506,7 @@
                 return;
             }
             if (e.target.closest('#ri-export')) { exportCSV(); return; }
+            if (e.target.closest('#ri-share')) { shareSummary(); return; }
             const svc = e.target.closest('[data-svc]');
             if (svc) {
                 const mode = svc.getAttribute('data-svc');
@@ -1785,6 +1789,75 @@
         } catch (e) {}
     }
 
+    /* ---------------- مشاركة الملخص ---------------- */
+    function periodNow() {
+        return PERIODS.find((x) => x.k === state.period) || PERIODS[2];
+    }
+
+    /* نص عادي بنفس أرقام اللوحة، جاهز للصق في واتساب بلا وسوم */
+    function summaryText(vm, period) {
+        if (!vm) return '';
+        const out = ['مكوى رويال — تحليل الزبائن (' + period.label + ')'];
+        const line = (s) => out.push('• ' + s);
+        line('زبائن الفترة: ' + fmt(vm.customers.length));
+        line('جدد: ' + fmt(vm.newCount) + ' · زاروا أكثر من مرة: ' + fmt(vm.returning));
+        line('الطلبات: ' + fmt(vm.visits) + ' بقيمة ' + money(vm.billed));
+        line('متوسط الفاتورة: ' + money(vm.avgTicket) + ' · القطع: ' + fmt(vm.pieces));
+        line('المستلَم (دفعات): ' + money(vm.collected));
+        line('ذمم قائمة: ' + money(vm.debtsTotal));
+        if (vm.openDue && vm.openDue.count) {
+            line('متبقٍ على ' + openOrdersWord(vm.openDue.count) + ': ' + money(vm.openDue.sum));
+        }
+        if (vm.services && vm.services[0]) {
+            line('أعلى خدمة: ' + String(vm.services[0].name || '').replace(/\s+/g, ' ').trim());
+        }
+        if (vm.absent && vm.absent.length) {
+            line('غائبون الآن: ' + fmt(vm.absent.length) +
+                (vm.watch && vm.watch.length ? ' · على وشك الغياب: ' + fmt(vm.watch.length) : ''));
+        }
+        if (vm.prev && vm.prev.billed > 0 && vm.billed !== vm.prev.billed) {
+            const d = Math.round(((vm.billed - vm.prev.billed) / vm.prev.billed) * 100);
+            line('قيمة الطلبات مقابل الفترة السابقة: ' + (d > 0 ? '+' : '') + d + '%');
+        }
+        return out.join('\n');
+    }
+
+    let toastTimer = 0;
+    function toast(text, tone) {
+        let el = document.querySelector('.ri-toast');
+        if (!el) {
+            el = document.createElement('div');
+            el.className = 'ri-toast';
+            document.body.appendChild(el);
+        }
+        el.textContent = text;
+        el.classList.toggle('bad', tone === 'bad');
+        requestAnimationFrame(() => el.classList.add('on'));
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => {
+            el.classList.remove('on');
+            setTimeout(() => { if (el.parentNode && !el.classList.contains('on')) el.remove(); }, 320);
+        }, 2100);
+    }
+
+    function shareSummary() {
+        const vm = cachedVm || build(periodDays());
+        const text = summaryText(vm, periodNow());
+        if (!text) return;
+        const copy = () => copyPlain(text)
+            .then(() => toast('تم نسخ الملخص'))
+            .catch(() => toast('تعذّر نسخ الملخص', 'bad'));
+        try {
+            if (navigator.share) {
+                navigator.share({ title: 'مركز الزبائن — مكوى رويال', text: text }).catch((err) => {
+                    if (!err || err.name !== 'AbortError') copy();
+                });
+                return;
+            }
+        } catch (e) {}
+        copy();
+    }
+
     /* ---------------- دورة الرسم ---------------- */
     function signature() {
         const d = readData();
@@ -1855,7 +1928,8 @@
         refresh: () => draw(true),
         state,
         /* البحث السريع يفتح ملف الزبون من أي فترة، لا من الفترة المعروضة وحدها */
-        openCustomer: (name) => openCustomer(String(name == null ? '' : name), true)
+        openCustomer: (name) => openCustomer(String(name == null ? '' : name), true),
+        summary: () => summaryText(cachedVm || build(periodDays()), periodNow())
     };
 
     /* ---------------- الأنماط ---------------- */
@@ -1920,6 +1994,33 @@ html.is-mobile .ri-export {
     box-shadow: inset 0 1px 0 rgba(255,255,255,.22);
 }
 html.is-mobile .ri-export:active { transform: scale(.94); }
+html.is-mobile .ri-hero-acts { display: flex; gap: 6px; flex: none; }
+
+/* إشعار قصير أعلى شريط التنقل بعد نسخ الملخص */
+html.is-mobile .ri-toast {
+    position: fixed; left: 50%; bottom: calc(86px + env(safe-area-inset-bottom, 0px));
+    transform: translate3d(-50%, 12px, 0);
+    z-index: 9800; pointer-events: none;
+    padding: 9px 16px; border-radius: 99px;
+    border: 1px solid var(--m-edge);
+    background: rgba(var(--rg-glass-rgb), .97);
+    color: var(--m-text); font-size: 11.5px; font-weight: 800;
+    box-shadow: 0 12px 30px rgba(0,4,14,.4);
+    opacity: 0;
+    transition: opacity .24s var(--m-ease), transform .24s var(--m-ease);
+}
+html.is-mobile .ri-toast.on { opacity: 1; transform: translate3d(-50%, 0, 0); }
+html.is-mobile .ri-toast.bad { color: #ff8f99; }
+html.is-mobile body.rg-light .ri-toast {
+    background: rgba(255,255,255,.98);
+    color: #16324f;
+    box-shadow: 0 12px 30px rgba(30,70,120,.18);
+}
+html.is-mobile body.rg-light .ri-toast.bad { color: #b32b3a; }
+html.is-mobile body.rm-motion-off .ri-toast { transition: none; }
+@media (prefers-reduced-motion: reduce) {
+    html.is-mobile .ri-toast { transition: none; }
+}
 html.is-mobile .ri-chips {
     display: flex; gap: 5px; margin: 14px 0 12px;
     padding: 4px; border-radius: 14px;
