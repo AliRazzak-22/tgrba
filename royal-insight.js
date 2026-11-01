@@ -358,6 +358,13 @@
         const topServices = Object.values(services).sort((a, b) => b.rev - a.rev).slice(0, 6);
         const topServicesQty = Object.values(services).sort((a, b) => b.qty - a.qty || b.rev - a.rev).slice(0, 6);
 
+        /* سعر القطعة: قيمة أصناف الخدمة ÷ قطعها. خدمة تقل عن ٢٠ قطعة في
+           الفترة لا تدخل المقارنة لأن متوسطها يتقلب بفاتورة واحدة. */
+        const unitValue = Object.values(services)
+            .filter((s) => s.qty >= 20 && s.rev > 0)
+            .map((s) => ({ name: s.name, per: s.rev / s.qty, pieces: s.qty, bills: s.bills, perBill: s.qty / s.bills }))
+            .sort((a, b) => b.per - a.per);
+
         /* خريطة الأوقات */
         const heat = [];
         for (let d = 0; d < 7; d++) heat.push([0, 0, 0, 0]);
@@ -600,6 +607,7 @@
             concentration: conc,
             services: topServices,
             servicesByQty: topServicesQty,
+            unitValue,
             heat,
             heatMax,
             weekday: { list: wd, best: wdBest, worst: wdWorst },
@@ -888,6 +896,24 @@
                 '<div class="ri-bar-sub">' + (qtyMode ? money(s.rev) : fmt(s.qty) + ' قطعة') + ' · ' + billsWord(s.bills) + '</div>' +
             '</div>';
         }).join('') + '</div>';
+    }
+
+    function unitValueHTML(uv) {
+        const cols = ['#3ddc97', '#8b9dff', '#ffd166', '#ff7a7a'];
+        const top = uv[0];
+        const low = uv[uv.length - 1];
+        const max = Math.max(1, ...uv.map((s) => s.per));
+        const diff = low.per > 0 ? Math.round(((top.per / low.per) - 1) * 100) : 0;
+        const lead = diff > 0
+            ? 'القطعة في <b>' + esc(top.name) + '</b> تجلب <b>' + money(Math.round(top.per)) + '</b> مقابل <b>' + money(Math.round(low.per)) + '</b> في <b>' + esc(low.name) + '</b> — أعلى بفارق <b dir="ltr">' + diff + '%</b>.'
+            : 'الخدمات متقاربة في سعر القطعة.';
+        return '<div class="ri-uv-lead">' + lead + '</div>' +
+            '<div class="ri-uv-rows">' + uv.map((s, i) => '<div class="ri-uv-row">' +
+                '<div class="ri-uv-top"><span class="ri-uv-l">' + esc(s.name) + '</span><strong>' + money(Math.round(s.per)) + '</strong></div>' +
+                '<div class="ri-uv-track"><i style="--w:' + clamp((s.per / max) * 100, 4, 100).toFixed(1) + '%;--c:' + cols[i % cols.length] + '"></i></div>' +
+                '<div class="ri-uv-sub">' + fmt(s.pieces) + ' قطعة · ' + billsWord(s.bills) + ' · ' + String(Math.round(s.perBill * 10) / 10) + ' قطعة للفاتورة</div>' +
+            '</div>').join('') + '</div>' +
+            '<div class="ri-uv-foot"><i class="fa-solid fa-circle-info"></i><span>من أسعار الأصناف في فواتير الفترة، ولا تُعرض خدمة أقل من ٢٠ قطعة كي لا يتقلب متوسطها بفاتورة واحدة.</span></div>';
     }
 
     function ladderHTML(vm) {
@@ -1225,6 +1251,13 @@
                 '</div>' +
                 '<div id="ri-svc-host">' + bars(state.svcMode === 'qty' ? vm.servicesByQty : vm.services, state.svcMode) + '</div>' +
             '</div>' +
+
+            (vm.unitValue && vm.unitValue.length >= 2
+                ? '<div class="ri-card">' +
+                    '<div class="ri-card-head"><h3><i class="fa-solid fa-tag"></i> سعر القطعة</h3><span>د.ع للقطعة</span></div>' +
+                    unitValueHTML(vm.unitValue) +
+                  '</div>'
+                : '') +
 
             '<div class="ri-card">' +
                 '<div class="ri-card-head"><h3><i class="fa-solid fa-fire"></i> أوقات الذروة</h3><span>عدد الطلبات</span></div>' +
@@ -2503,6 +2536,28 @@ html.is-mobile body.rg-light .ri-fs-sub b { color: #0e2138; }
 html.is-mobile body.rg-light .ri-fs-foot { color: #5b7191; border-top-color: rgba(30,70,120,.10); }
 html.is-mobile body.rg-light .ri-fs-foot i { color: #1b5aa8; }
 html.is-mobile body.rg-light .ri-fs-foot b { color: #0e2138; }
+
+html.is-mobile .ri-uv-lead { font-size: 10.5px; font-weight: 700; color: var(--m-muted); line-height: 1.85; }
+html.is-mobile .ri-uv-lead b { color: var(--m-text); font-weight: 900; }
+html.is-mobile .ri-uv-rows { margin-top: 13px; display: flex; flex-direction: column; gap: 15px; }
+html.is-mobile .ri-uv-row { display: flex; flex-direction: column; gap: 6px; }
+html.is-mobile .ri-uv-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+html.is-mobile .ri-uv-l { font-size: 11px; font-weight: 800; color: var(--m-text); }
+html.is-mobile .ri-uv-top strong { font-size: 12.5px; font-weight: 900; color: var(--m-text); font-variant-numeric: tabular-nums; }
+html.is-mobile .ri-uv-track { height: 7px; border-radius: 99px; background: rgba(255,255,255,.06); overflow: hidden; box-shadow: inset 0 1px 2px rgba(0,0,0,.28); }
+html.is-mobile .ri-uv-track i { display: block; height: 100%; width: var(--w); background: var(--c); border-radius: inherit; }
+html.is-mobile .ri-uv-sub { font-size: 9.5px; font-weight: 700; color: var(--m-faint); line-height: 1.75; }
+html.is-mobile .ri-uv-foot { margin-top: 13px; padding-top: 9px; border-top: 1px solid var(--ri-line); display: flex; align-items: flex-start; gap: 5px; font-size: 9.5px; font-weight: 700; color: var(--m-faint); line-height: 1.75; }
+html.is-mobile .ri-uv-foot i { font-size: 9px; color: var(--m-accent2); margin-top: 3px; }
+html.is-mobile .ri-uv-foot span { flex: 1; min-width: 0; }
+html.is-mobile body.rg-light .ri-uv-lead { color: #4c5d75; }
+html.is-mobile body.rg-light .ri-uv-lead b { color: #0e2138; }
+html.is-mobile body.rg-light .ri-uv-l,
+html.is-mobile body.rg-light .ri-uv-top strong { color: #0e2138; }
+html.is-mobile body.rg-light .ri-uv-track { background: rgba(30,70,120,.09); box-shadow: none; }
+html.is-mobile body.rg-light .ri-uv-sub { color: #5b7191; }
+html.is-mobile body.rg-light .ri-uv-foot { color: #5b7191; border-top-color: rgba(30,70,120,.10); }
+html.is-mobile body.rg-light .ri-uv-foot i { color: #1b5aa8; }
 
 html.is-mobile .ri-ranks { display: flex; flex-direction: column; gap: 6px; }
 html.is-mobile .ri-rank {
