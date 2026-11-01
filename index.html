@@ -74,13 +74,20 @@
          موضعه في الرأس حتى يُنزّل بالتوازي مع app.js بدل الانتظار حتى نهاية الصفحة. -->
     <script>
     if (document.documentElement.classList.contains('is-mobile')) {
+        /* مقاس الخط يُقرأ هنا قبل أن تُرسم أي لوحة: لو انتظر استوديو المظهر
+           لبدت اللوحة على ١٠٠ ثم قفزت إلى أكبر — ومضة كريهة عند كل فتح. */
+        try {
+            var rgText = JSON.parse(localStorage.getItem('royal_glass_v1') || '{}').text;
+            if (String(rgText) === '90') document.documentElement.style.setProperty('--m-fs', '0.9');
+            else if (String(rgText) === '110') document.documentElement.style.setProperty('--m-fs', '1.1');
+        } catch (e) {}
         var royalMobileLayer = document.createElement('script');
         royalMobileLayer.type = 'module';
-        royalMobileLayer.src = 'mobile-shell.js?v=20261031ao';
+        royalMobileLayer.src = 'mobile-shell.js?v=20261031ar';
         document.head.appendChild(royalMobileLayer);
         var royalGlassLayer = document.createElement('script');
         royalGlassLayer.type = 'module';
-        royalGlassLayer.src = 'royal-glass.js?v=20261031m';
+        royalGlassLayer.src = 'royal-glass.js?v=20261031as';
         document.head.appendChild(royalGlassLayer);
         var royalInsightLayer = document.createElement('script');
         royalInsightLayer.type = 'module';

@@ -27,6 +27,7 @@
     const DEFAULTS = {
         mode: 'dark',
         accent: 'royal',
+        text: '100',
         density: 0.50,
         blur: 26,
         motion: REDUCED ? 'soft' : 'full',
@@ -63,6 +64,7 @@
     prefs.blur = clamp(Number(prefs.blur) || DEFAULTS.blur, 0, 40);
     if (!/^(dark|light|auto)$/.test(prefs.mode)) prefs.mode = 'dark';
     if (!/^(full|soft|off)$/.test(prefs.motion)) prefs.motion = DEFAULTS.motion;
+    if (!/^(90|100|110)$/.test(String(prefs.text))) prefs.text = DEFAULTS.text;
 
     function save() {
         try { localStorage.setItem(KEY, JSON.stringify(prefs)); } catch (e) {}
@@ -74,6 +76,13 @@
         return (h >= 7 && h < 19) ? 'light' : 'dark';
     }
 
+    /* مقاس العرض: ثلاث درجات فقط، وكل ما عدا ١٠٠ يُقرأ من المتغيّر نفسه الذي
+       يضعه السكربت المصغّر قبل الرسم، فلا تختلف لحظة الفتح عن ما بعدها. */
+    function textScale() {
+        const t = String(prefs.text);
+        return t === '90' ? '0.9' : t === '110' ? '1.1' : '1';
+    }
+
     /* ---------------- تطبيق الهوية ---------------- */
     function apply(animate) {
         const p = PRESETS[prefs.accent];
@@ -81,6 +90,7 @@
         const light = resolvedMode() === 'light';
         const s = root.style;
 
+        s.setProperty('--m-fs', textScale());
         s.setProperty('--rg-accent', accent);
         s.setProperty('--rg-accent-rgb', rgbTriplet(accent));
         s.setProperty('--rg-glass-a', String(prefs.density));
@@ -657,6 +667,12 @@ html.is-mobile body.rm-motion-off::after { animation: none !important; }
                 '</div></div>' +
             '<div class="rg-row"><div class="rg-row-top"><span class="rg-label"><i class="fa-solid fa-palette"></i> لون الهوية</span></div>' +
                 '<div class="rg-swatch" data-swatch>' + swatches + '</div></div>' +
+            '<div class="rg-row"><div class="rg-row-top"><span class="rg-label"><i class="fa-solid fa-text-height"></i> حجم الخط في اللوحات</span><span class="rg-value" data-out="text"></span></div>' +
+                '<div class="rg-seg" data-seg="text">' +
+                    '<button type="button" data-val="90">٩٠٪</button>' +
+                    '<button type="button" data-val="100">١٠٠٪</button>' +
+                    '<button type="button" data-val="110">١١٠٪</button>' +
+                '</div></div>' +
             '<div class="rg-row"><div class="rg-row-top"><span class="rg-label"><i class="fa-solid fa-droplet"></i> شفافية الزجاج</span><span class="rg-value" data-out="density"></span></div>' +
                 '<input class="rg-range" type="range" min="30" max="74" step="1" data-range="density"></div>' +
             '<div class="rg-row"><div class="rg-row-top"><span class="rg-label"><i class="fa-solid fa-glasses"></i> ضباب شاشة القفل والنوافذ</span><span class="rg-value" data-out="blur"></span></div>' +
@@ -742,6 +758,8 @@ html.is-mobile body.rm-motion-off::after { animation: none !important; }
         if (od) od.textContent = Math.round(prefs.density * 100) + '%';
         const ob = box.querySelector('[data-out="blur"]');
         if (ob) ob.textContent = Math.round(prefs.blur) + 'px';
+        const ot = box.querySelector('[data-out="text"]');
+        if (ot) ot.textContent = ({ '90': '٩٠٪', '110': '١١٠٪' })[String(prefs.text)] || '١٠٠٪';
     }
 
     /* ---------------- الاهتزاز ---------------- */

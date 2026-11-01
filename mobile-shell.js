@@ -446,6 +446,12 @@ html.is-mobile .admin-section {
     transform: none;
     opacity: 1;
 }
+/* حجم الخط من استوديو المظهر: التكبير بـ zoom لا برفع font-size وحده، لأن
+   الصفوف هنا مفصّلة ببكسل ثابت؛ تكبير النص وحده كان يجعل السطر الواحد يلتصق
+   بصاحبه. zoom يعيد ترتيب اللوحة كاملة بمقدار واحد للنص والمسافة — كما يفعل
+   تكبير متصفح الهاتف. الشريطان العلوي والسفلي خارج القاعدة لأن مواضع أزرار
+   التنقل محسوبة على مقاسها، وتغييرهما يُزيح لمسات محفوظة العضلة. */
+html.is-mobile .admin-section { zoom: var(--m-fs, 1); }
 html.is-mobile .admin-section::-webkit-scrollbar { display: none; }
 html.is-mobile .admin-section.m-seen { display: block; }
 /* بوابة العرض النهائية: صفحة بلا m-seen لا تُرسم أبداً مهما كان display في
