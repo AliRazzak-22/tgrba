@@ -315,7 +315,7 @@ async function initializeDB() {
                 localData.invoices = cleanData(incomingData.invoices);
                 localData.catalog = cleanData(incomingData.catalog);
                 localData.expenses = cleanData(incomingData.expenses);
-                localData.operatingCosts = Object.values(incomingData.operatingCosts || {}); // ليس لها ID
+                localData.operatingCosts = normaliseOperatingCosts(incomingData.operatingCosts);
                 localData.debts = cleanData(incomingData.debts);
                 localData.logs = cleanData(incomingData.logs);
                 localData.partnerTx = cleanData(incomingData.partnerTx);
@@ -2418,7 +2418,8 @@ window.updateAdminDashboard = () => {
 
     // 4. التكاليف التشغيلية
     (localData.operatingCosts || []).forEach(c => { totalCosts += c.amount; });
-    let netProfit = (totalSalesCash + totalSalesElectronic) - totalExpenses - totalCosts;
+    // التكاليف التشغيلية عرضٌ معلوماتي: صافي الربح = البيع الكلي − المصروفات فقط
+    let netProfit = (totalSalesCash + totalSalesElectronic) - totalExpenses;
 
     // تحديث الأرقام العلوية للآدمن
     let cashEl = document.getElementById('admin-month-sales-cash');
@@ -2485,13 +2486,17 @@ window.updateAdminDashboard = () => {
         }
     }
 
-    // قسم التكاليف التشغيلية
+    // قسم التكاليف التشغيلية (معلوماتية: تُعرض ولا تُخصم، ولها تعديل وحذف)
     const costsTbody = document.getElementById('costs-table-body');
     if (costsTbody) {
         costsTbody.innerHTML = (localData.operatingCosts || []).map(c => `<tr>
                 <td>${window.escapeHTML(c.date)}</td>
                 <td>${window.escapeHTML(c.name)}</td>
-                <td style="font-weight:bold; color:var(--red-danger);">${c.amount.toLocaleString()}</td>
+                <td style="font-weight:bold; color:var(--red-danger);">${Number(c.amount).toLocaleString()}</td>
+                <td>
+                    <i class="fa-solid fa-pen action-icon" style="color: #4a90e2;" onclick='window.editOperatingCost("${window.escapeHTML(String(c.id || ''))}")' title="تعديل"></i>
+                    <i class="fa-solid fa-trash action-icon" style="color: var(--red-danger);" onclick='window.deleteOperatingCost("${window.escapeHTML(String(c.id || ''))}")' title="حذف"></i>
+                </td>
             </tr>`).join('');
     }
 
@@ -2569,7 +2574,7 @@ window.updateAdminDashboard = () => {
     // ==========================================
     // --- الحسابات التراكمية للمحفظة (الشركاء) ---
     // ==========================================
-    let lifetimeSales = 0, lifetimeExpenses = 0, lifetimeCosts = 0;
+    let lifetimeSales = 0, lifetimeExpenses = 0;
 
     // 1. حساب المبيعات من الفواتير
     (localData.invoices || []).forEach(inv => {
@@ -2583,11 +2588,10 @@ window.updateAdminDashboard = () => {
         else lifetimeSales += pay.amount;
     });
     
-    // 3. المصروفات والتكاليف
+    // 3. المصروفات (التكاليف التشغيلية خارج الحساب: عرض معلوماتي لا يُخصم)
     (localData.expenses || []).forEach(e => lifetimeExpenses += e.amount);
-    (localData.operatingCosts || []).forEach(c => lifetimeCosts += c.amount);
 
-    let lifetimeNetProfit = lifetimeSales - lifetimeExpenses - lifetimeCosts;
+    let lifetimeNetProfit = lifetimeSales - lifetimeExpenses;
     let baseShare = lifetimeNetProfit / 2;
     let razaqBal = baseShare, shabaBal = baseShare;
 
@@ -2616,7 +2620,7 @@ window.updateAdminDashboard = () => {
         const sortedTx = [...(localData.partnerTx || [])].sort((a,b) => b.timestamp - a.timestamp);
         
         const getHistoricalBal = (acc, ts) => {
-            let tS = 0, tE = 0, tC = 0;
+            let tS = 0, tE = 0;
             (localData.invoices || []).forEach(i => {
                 if(i.timestamp <= ts) {
                     if (i.type === 'active' || i.type === 'archived') tS += (i.customer ? i.customer.paid : 0);
@@ -2630,11 +2634,8 @@ window.updateAdminDashboard = () => {
                 }
             });
             (localData.expenses || []).forEach(e => { if(e.timestamp <= ts) tE += e.amount; });
-            (localData.operatingCosts || []).forEach(c => { 
-                if(new Date(c.date).getTime() <= ts) tC += c.amount; 
-            });
             
-            let histBal = (tS - tE - tC) / 2;
+            let histBal = (tS - tE) / 2;
             (localData.partnerTx || []).forEach(t => {
                 if(t.account === acc && t.timestamp <= ts) {
                     if(t.type === 'إيداع') histBal += t.amount; else histBal -= t.amount;
@@ -2860,13 +2861,113 @@ window.changePassword = () => {
     });
 };
 
+/* ============================ التكاليف التشغيلية ============================
+   كانت تُخزَّن بلا معرّف، فلا سبيل آمن لتعديل صفّ بعينه أو حذفه: أي مزامنة من
+   جهاز ثانٍ تُبدّل مواضع الصفوف، والفهرس الذي رُسم به الزر لم يعد ملكه. السطر
+   القديم يُعطى معرّفاً مشتقاً من محتواه نفسه، فنفس السطر يولّد نفس المعرّف على
+   كل جهاز، والجديد يُولد عشوائياً مرة واحدة ويُحفظ معه.
+   والقيمة كلها معلوماتية من هنا فصاعداً: لا تدخل في صافي الربح ولا في أرصدة
+   المحفظة، لأن التكاليف الثابتة (إيجار ورواتب) تُدفَع من الصندوق ولا تُخصم
+   مرّتين — مرّة كمصروف ومرة كتكلفة. */
+function legacyCostId(c) {
+    const k = String(c.date || '') + '\u0001' + String(c.name || '') + '\u0001' + String(c.amount || '');
+    let h = 5381;
+    for (let i = 0; i < k.length; i++) h = ((h << 5) + h + k.charCodeAt(i)) | 0;
+    return 'oc-' + (h >>> 0).toString(36);
+}
+
+function normaliseOperatingCosts(raw) {
+    const list = Array.isArray(raw) ? raw : Object.values(raw || {});
+    const seen = Object.create(null);
+    return list.filter((c) => c && typeof c === 'object').map((c) => {
+        const row = Object.assign({}, c);
+        /* المعرّف يُقرأ من السحابة فقد يكون أي نص، وهو يمرّ داخل onclick: يُقصّ
+           إلى حروف آمنة، والتكرار يُفصل باللاحقة أدناه. لا وسامة ولا هروب —
+           الحروف المهرَّبة تُفكّ قبل أن يقرأها مُفسِّر جافاسكريبت فتُعطبه. */
+        let id = String(row.id || legacyCostId(row)).replace(/[^A-Za-z0-9_-]/g, '') || legacyCostId(row);
+        /* تكرار حرفي في السطر القديم (تاريخ واسم ومبلغ سواء): لا يتشارك صفّان
+           معرّفاً واحداً، وإلا حُذف أحدهما بحذف الآخر. */
+        let uniq = id, n = 2;
+        while (seen[uniq]) uniq = id + '-' + (n++);
+        seen[uniq] = true;
+        row.id = uniq;
+        if (!row.timestamp) {
+            const t = new Date(row.date).getTime();
+            row.timestamp = isFinite(t) ? t : 0;
+        }
+        return row;
+    });
+}
+
+let editingCostId = null;
+
+function setCostFormMode(editing) {
+    const save = document.getElementById('cost-save-btn'), cancel = document.getElementById('cost-cancel-btn');
+    if (save) save.textContent = editing ? 'حفظ التعديل' : 'إضافة تكلفة تشغيلية';
+    if (cancel) cancel.style.display = editing ? '' : 'none';
+}
+
+window.editOperatingCost = (id) => {
+    const c = (localData.operatingCosts || []).find((x) => x && x.id === id);
+    if (!c) return alert('لم تُعثر على هذه التكلفة، حدّث الصفحة وأعد المحاولة');
+    editingCostId = id;
+    const nEl = document.getElementById('cost-name'), aEl = document.getElementById('cost-amount');
+    if (nEl) nEl.value = c.name || '';
+    if (aEl) aEl.value = c.amount;
+    setCostFormMode(true);
+    const form = document.getElementById('cost-form');
+    if (form && form.scrollIntoView) form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (nEl) nEl.focus();
+};
+
+window.cancelOperatingCostEdit = () => {
+    editingCostId = null;
+    setCostFormMode(false);
+    const nEl = document.getElementById('cost-name'), aEl = document.getElementById('cost-amount');
+    if (nEl) nEl.value = '';
+    if (aEl) aEl.value = '';
+};
+
 window.addOperatingCost = () => {
-    const name = document.getElementById('cost-name').value;
+    const name = String(document.getElementById('cost-name').value || '').trim();
     const amount = parseFloat(document.getElementById('cost-amount').value);
-    if(!name || isNaN(amount)) return alert('الرجاء الإدخال بشكل صحيح');
-    localData.operatingCosts.push({ date: new Date().toLocaleDateString(), name, amount });
+    if (!name || isNaN(amount) || amount < 0) return alert('الرجاء الإدخال بشكل صحيح');
+    const list = localData.operatingCosts || (localData.operatingCosts = []);
+    const target = editingCostId && list.find((x) => x && x.id === editingCostId);
+    if (target) {
+        /* التاريخ يبقى تاريخ السطر الأصلي: التعديل يصحّح اسماً ومبلغاً، ولا ينقل
+           تكلفة قديمة إلى يوم إضافتها الآن فتُحسب في شهر غير شهرها. */
+        const old = { name: target.name, amount: target.amount, date: target.date };
+        target.name = name;
+        target.amount = amount;
+        window.logAction('تعديل تكلفة تشغيلية', 'من: ' + old.name + ' (' + old.amount + ') إلى: ' + name + ' (' + amount + ')', amount, { oldCost: old, newCost: { name: name, amount: amount, date: target.date } });
+    } else {
+        const row = { id: 'oc-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8),
+                      date: new Date().toLocaleDateString(), timestamp: Date.now(), name: name, amount: amount };
+        list.push(row);
+        window.logAction('إضافة تكلفة تشغيلية', name, amount);
+    }
+    editingCostId = null;
+    setCostFormMode(false);
+    document.getElementById('cost-name').value = '';
+    document.getElementById('cost-amount').value = '';
     saveDataToCloud();
-    document.getElementById('cost-name').value = ''; document.getElementById('cost-amount').value = '';
+};
+
+window.deleteOperatingCost = (id) => {
+    const c = (localData.operatingCosts || []).find((x) => x && x.id === id);
+    if (!c) return alert('لم تُعثر على هذه التكلفة');
+    window.showConfirm('حذف التكلفة «' + c.name + '» بمبلغ ' + Number(c.amount).toLocaleString() + ' د.ع نهائياً؟', () => {
+        const list = localData.operatingCosts || [];
+        /* قد تكون مزامنة السحابة بدّلت الصفوف بين السؤال والجواب: البحث بالمعرّف
+           لا بالفهرس، وإلا حُذف صفٌّ غير الذي نظر إليه صاحب المكوى. */
+        const i = list.findIndex((x) => x && x.id === id);
+        if (i < 0) return;
+        list.splice(i, 1);
+        if (editingCostId === id) window.cancelOperatingCostEdit();
+        window.logAction('حذف تكلفة تشغيلية', c.name, Number(c.amount) || 0, c);
+        saveDataToCloud();
+    });
 };
 
 let currentDebtCustomerName = null;

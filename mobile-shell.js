@@ -247,7 +247,6 @@ html.is-mobile .m-head::after {
     -webkit-text-fill-color: #eaf4ff;
     background: none;
     text-shadow: 0 1px 0 rgba(0,0,0,.45), 0 0 14px rgba(90,168,255,.20);
-    transition: font-size .26s var(--m-ease), letter-spacing .26s var(--m-ease);
 }
 .m-conn { margin-inline-start: auto; display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--m-muted); }
 /* نقطة الاتصال: قرينة صلبة بحلقة ضوئية رفيعة بدل الهالة */
@@ -256,7 +255,6 @@ html.is-mobile .m-head::after {
 .m-time {
     font-size: 12px; color: var(--m-muted); font-variant-numeric: tabular-nums; min-width: 46px; text-align: end;
     padding: 3px 8px; border-radius: 99px; border: 1px solid var(--m-hair); background: rgba(255,255,255,.04);
-    transition: font-size .26s var(--m-ease);
 }
 /* خيط تقدّم أسفل الترويسة: يمتلئ من جهة القراءة مع تمرير اللوحة الطويلة،
    فتعرف أين أنت بلا شريط تمرير يقتحم الزجاج. transform فقط، بلا تخطيط. */
@@ -272,19 +270,12 @@ html.is-mobile .m-head-prog {
     transition: opacity .28s var(--m-ease);
 }
 html.is-mobile .m-head.m-scrolled .m-head-prog { opacity: 1; }
-/* بعد أول تمرير يعمق الزجاج قليلاً: فصل بصري بين الترويسة والمحتوى المتحرك */
-html.is-mobile .m-head { transition: background .3s var(--m-ease), box-shadow .3s var(--m-ease), padding .26s var(--m-ease); }
-/* انكماش الترويسة عند النزول: شريط أرفع للقراءة الطويلة، يعود كاملاً عند
-   الرجوع لبداية اللوحة. عتبة الانكماش (110) أعلى من عتبة العودة (40) فتمنع
-   الرفرفة عند الحد. تغيير واحد لكل إطار، والارتفاع وحده يتغيّر. */
-html.is-mobile .m-head.m-compact {
-    padding: 5px 14px 5px;
-}
-html.is-mobile .m-head.m-compact .m-brand {
-    font-size: 16px;
-    letter-spacing: .2px;
-}
-html.is-mobile .m-head.m-compact .m-time { font-size: 11px; }
+/* بعد أول تمرير يعمق الزجاج قليلاً: فصل بصري بين الترويسة والمحتوى المتحرك.
+   الترويسة لا تغيّر ارتفاعها ولا حجم كتابتها عند التمرير: كان هناك انكماش
+   (m-compact) يُبدّل الحشو وقياس الاسم والوقت دفعة واحدة، فيبدو نزولاً مفاجئاً
+   للوحة ويعود عند الصعود — وهو قفز يُربك القراءة أكثر مما يربح من بكسلين.
+   العمق والزجاج والخيط المتقدّم تبقى كما هي، فهي التي تفصل دون أن تحرّك. */
+html.is-mobile .m-head { transition: background .3s var(--m-ease), box-shadow .3s var(--m-ease); }
 @media (prefers-reduced-motion: reduce) {
     html.is-mobile .m-head,
     html.is-mobile .m-brand,
@@ -884,6 +875,193 @@ html.is-mobile .monthly-strip {
 html.is-mobile .monthly-strip-item { color: var(--m-muted) !important; font-size: 11.5px !important; }
 html.is-mobile .monthly-strip-item strong { color: #eaf4ff !important; text-shadow: 0 1px 2px rgba(0,0,0,.55); }
 
+/* ═══════════════════════ نبض المكوى: حركة القطع ═══════════════════════
+   الأرقام الخمسة التي يكتبها النظام (bento-current-pieces / entered-today /
+   finished-today / month-entered / month-finished) تُنقل كما هي — نفس العقدة،
+   لا نسخة ولا حساب موازٍ — إلى هذا التركيب. المضاف اشتقاق بصري فقط: مقياس
+   الخزان بنسبة ما في المكوى من وارد الشهر، وشريط لكل من الوارد والصادر يقارن
+   حصة اليوم من شهره، وسباق الشهر على مقياس واحد، وصافي الحركة.
+   قواعد البينتو أعلاه تبقى عاملة احتياطاً: إن تعذّر التركيب لسبب ما يبقى العرض
+   القديم مهندماً، فلا شاشة بيضاء ولا لوحة عارية. */
+html.is-mobile .m-flow { display: flex; flex-direction: column; gap: 13px; margin: 0 0 26px; }
+
+/* ── الخزان: ما داخل المكوى الآن ── */
+html.is-mobile .m-flow-tank {
+    position: relative; overflow: hidden;
+    padding: 16px 18px 15px;
+    border-radius: 26px;
+    border: 1px solid rgba(184,224,255,.30);
+    background:
+        radial-gradient(126% 100% at 92% -18%, rgba(122,104,255,.40), transparent 60%),
+        radial-gradient(112% 88% at -6% 112%, rgba(44,134,255,.34), transparent 62%),
+        linear-gradient(152deg, rgba(206,234,255,.16), rgba(120,172,240,.03) 48%, rgba(150,200,255,.10) 100%),
+        rgba(18,40,80,.70);
+    box-shadow: 0 26px 54px rgba(1,6,16,.56), inset 0 1px 0 rgba(222,242,255,.42), inset 0 0 0 1px rgba(150,200,255,.12);
+}
+html.is-mobile .m-flow-tank::after {
+    content: ""; position: absolute; top: -70%; bottom: -70%; left: -45%; width: 42%;
+    z-index: 0; pointer-events: none;
+    background: linear-gradient(100deg, transparent, rgba(206,236,255,.15), transparent);
+    transform: rotate(14deg) translate3d(-30%, 0, 0);
+    animation: mHeroSheen 9s ease-in-out infinite alternate;
+}
+html.is-mobile .m-flow-tank > * { position: relative; z-index: 1; }
+html.is-mobile .m-flow-kicker { display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 900; color: #cfe6ff; letter-spacing: .2px; }
+html.is-mobile .m-flow-kicker > i { font-size: 13px; opacity: .9; }
+html.is-mobile .m-flow-live { margin-inline-start: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 10.5px; font-weight: 800; color: var(--m-muted); }
+html.is-mobile .m-flow-live i { width: 7px; height: 7px; border-radius: 50%; background: var(--m-green); box-shadow: 0 0 0 3px rgba(61,220,151,.16); animation: mFlowPulse 2.6s ease-in-out infinite; }
+@keyframes mFlowPulse { 50% { box-shadow: 0 0 0 7px rgba(61,220,151,.04); opacity: .55; } }
+html.is-mobile .m-flow-figure { display: flex; align-items: baseline; gap: 9px; margin: 4px 0 13px; }
+html.is-mobile #admin-daily-report .m-flow #bento-current-pieces {
+    font-size: 56px !important; line-height: .94 !important; font-weight: 900 !important;
+    letter-spacing: -1.5px; color: #ffffff !important; text-shadow: 0 2px 12px rgba(0,0,0,.40) !important;
+}
+html.is-mobile .m-flow-unit { font-size: 13px; font-weight: 800; color: #bcd8f7; }
+/* مقياس مجزّأ: عشرون خانة تُضاء بقدر ما في المكوى من وارد الشهر — تُقرأ
+   بنظرة واحدة، وتُظهر امتلاء المكوى لا رقمه فقط. */
+html.is-mobile .m-flow-gauge { display: flex; gap: 3px; height: 13px; }
+html.is-mobile .m-flow-gauge i {
+    flex: 1; border-radius: 2px; background: rgba(232,244,255,.09);
+    box-shadow: inset 0 0 0 1px rgba(160,205,255,.10);
+    transition: background .55s var(--m-ease), box-shadow .55s var(--m-ease);
+}
+html.is-mobile .m-flow-gauge i.on { background: linear-gradient(180deg, #bfe4ff, #5aa8ff); box-shadow: 0 0 10px rgba(90,168,255,.34), inset 0 1px 0 rgba(255,255,255,.5); }
+html.is-mobile .m-flow-gauge i.head { background: linear-gradient(180deg, #f2faff, #7cc0ff); box-shadow: 0 0 15px rgba(124,192,255,.6); }
+html.is-mobile .m-flow-caption { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-top: 10px; font-size: 11.5px; color: var(--m-faint); }
+html.is-mobile .m-flow-caption b { color: #eaf4ff; font-weight: 900; font-variant-numeric: tabular-nums; font-size: 12.5px; }
+html.is-mobile .m-flow-caption-2 { margin-top: 5px; }
+
+/* ── زوج اليوم: وارد وصادر ── */
+html.is-mobile .m-flow-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+html.is-mobile .m-flow-node {
+    --c: #5aa8ff; --c-soft: rgba(90,168,255,.15); --c-line: rgba(90,168,255,.34);
+    position: relative; overflow: hidden;
+    padding: 13px 14px 13px;
+    border-radius: 20px;
+    border: 1px solid var(--m-edge);
+    background: var(--m-glass), rgba(10,20,36,.62);
+    box-shadow: var(--m-rim);
+}
+html.is-mobile .m-flow-node.out { --c: #3ddc97; --c-soft: rgba(61,220,151,.13); --c-line: rgba(61,220,151,.32); }
+html.is-mobile .m-flow-node::before {
+    content: ""; position: absolute; z-index: 1; inset: auto 0 0 0; height: 3px;
+    background: linear-gradient(90deg, transparent, var(--c)); opacity: .8;
+}
+html.is-mobile .m-flow-node-top { display: flex; align-items: center; gap: 8px; }
+html.is-mobile .m-flow-chip {
+    width: 27px; height: 27px; display: grid; place-items: center; flex: none;
+    border-radius: 9px; font-size: 12px; color: var(--c);
+    background: var(--c-soft); box-shadow: inset 0 0 0 1px var(--c-line);
+}
+html.is-mobile .m-flow-tag { margin-inline-start: auto; font-size: 10px; font-weight: 900; letter-spacing: .4px; color: var(--m-muted); padding: 2px 8px; border-radius: 99px; border: 1px solid var(--m-hair); }
+html.is-mobile .m-flow-num { display: flex; align-items: baseline; gap: 5px; margin: 9px 0 0; }
+html.is-mobile #admin-daily-report .m-flow-node .stat-value {
+    font-size: 33px !important; line-height: 1 !important; font-weight: 900 !important;
+    letter-spacing: -.8px; color: var(--c) !important; text-shadow: none !important;
+}
+html.is-mobile .m-flow-node-label { font-size: 12.5px; font-weight: 800; color: #dbeaff; margin-top: 3px; }
+html.is-mobile .m-flow-minibar { height: 5px; border-radius: 99px; background: rgba(232,244,255,.10); overflow: hidden; margin-top: 10px; }
+html.is-mobile .m-flow-minibar i {
+    display: block; height: 100%; width: 0; border-radius: 99px;
+    background: linear-gradient(90deg, var(--c-line), var(--c));
+    transition: width .8s var(--m-ease-out);
+}
+html.is-mobile .m-flow-node-sub { font-size: 10.5px; color: var(--m-faint); margin-top: 7px; }
+html.is-mobile .m-flow-node-sub b { color: #e2efff; font-weight: 900; font-variant-numeric: tabular-nums; }
+
+/* ── سباق الشهر ── */
+html.is-mobile .m-flow-month {
+    padding: 15px 16px 13px; border-radius: 22px;
+    border: 1px solid var(--m-edge);
+    background: var(--m-glass), rgba(10,20,36,.58);
+    box-shadow: var(--m-rim);
+}
+html.is-mobile .m-flow-month-head { display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 900; color: #dcecff; margin-bottom: 13px; }
+html.is-mobile .m-flow-month-head > i { color: var(--m-accent2); }
+html.is-mobile .m-flow-month-head span:last-child { margin-inline-start: auto; font-size: 11px; font-weight: 700; color: var(--m-faint); }
+html.is-mobile .m-flow-row { display: grid; grid-template-columns: 52px 1fr auto; align-items: center; gap: 10px; }
+html.is-mobile .m-flow-row + .m-flow-row { margin-top: 12px; }
+html.is-mobile .m-flow-row-lbl { font-size: 11.5px; font-weight: 800; color: var(--m-muted); }
+html.is-mobile .m-flow-track {
+    position: relative; height: 12px; border-radius: 99px; overflow: hidden;
+    background: rgba(232,244,255,.07); box-shadow: inset 0 0 0 1px rgba(160,205,255,.10);
+}
+html.is-mobile .m-flow-fill {
+    position: absolute; top: 0; bottom: 0; inset-inline-start: 0; width: 0; border-radius: 99px;
+    transition: width .85s var(--m-ease-out);
+}
+html.is-mobile .m-flow-fill.in { background: linear-gradient(90deg, rgba(90,168,255,.42), #7cc0ff); box-shadow: 0 0 12px rgba(90,168,255,.30); }
+html.is-mobile .m-flow-fill.out { background: linear-gradient(90deg, rgba(61,220,151,.38), #62e8b0); box-shadow: 0 0 12px rgba(61,220,151,.26); }
+html.is-mobile #admin-daily-report .m-flow-rowval,
+html.is-mobile #admin-daily-report .m-flow-rowval > [id^="bento-month"] {
+    font-size: 15px !important; font-weight: 900 !important; color: #eaf4ff !important;
+    font-variant-numeric: tabular-nums; text-shadow: none !important;
+}
+html.is-mobile #admin-daily-report .m-flow-rowval { min-width: 46px; text-align: end; }
+html.is-mobile .m-flow-delta {
+    display: flex; align-items: center; gap: 8px; margin-top: 14px; padding-top: 11px;
+    border-top: 1px dashed rgba(160,205,255,.18); font-size: 11.5px; color: var(--m-muted);
+}
+html.is-mobile .m-flow-delta b { margin-inline-start: auto; font-size: 15px; font-weight: 900; font-variant-numeric: tabular-nums; color: #eaf4ff; }
+html.is-mobile .m-flow-delta.in-net b { color: #7cc0ff; }
+html.is-mobile .m-flow-delta.out-net b { color: #62e8b0; }
+
+/* ── النهار: نفس البنية بأحبار داكنة، بلا هالات ولا أبيض فوق أبيض ── */
+html.is-mobile body.rg-light .m-flow-tank {
+    border-color: rgba(120,164,214,.34);
+    background:
+        radial-gradient(120% 96% at 92% -16%, rgba(var(--rg-accent-rgb), .16), transparent 60%),
+        linear-gradient(180deg, #ffffff, rgba(244,250,255,.86) 60%, rgba(232,243,255,.9));
+    box-shadow: 0 18px 38px rgba(28,62,110,.14), inset 0 1px 0 #fff, inset 0 0 0 1px rgba(255,255,255,.7);
+}
+html.is-mobile body.rg-light .m-flow-tank::after { background: linear-gradient(100deg, transparent, rgba(255,255,255,.62), transparent); }
+html.is-mobile body.rg-light .m-flow-kicker,
+html.is-mobile body.rg-light .m-flow-node-label,
+html.is-mobile body.rg-light .m-flow-month-head { color: #12324f; }
+html.is-mobile body.rg-light .m-flow-live { color: #4d6a8a; }
+html.is-mobile body.rg-light #admin-daily-report .m-flow #bento-current-pieces { color: #0e2138 !important; text-shadow: none !important; }
+html.is-mobile body.rg-light .m-flow-unit { color: #3d5a7c; }
+html.is-mobile body.rg-light .m-flow-gauge i { background: rgba(20,50,90,.08); box-shadow: inset 0 0 0 1px rgba(30,70,120,.08); }
+html.is-mobile body.rg-light .m-flow-gauge i.on { background: linear-gradient(180deg, #6fb0f5, #1668c9); box-shadow: none; }
+html.is-mobile body.rg-light .m-flow-gauge i.head { background: linear-gradient(180deg, #a9d2ff, #1668c9); box-shadow: 0 0 10px rgba(22,104,201,.35); }
+html.is-mobile body.rg-light .m-flow-caption b,
+html.is-mobile body.rg-light .m-flow-node-sub b { color: #12324f; }
+/* الشرح الصغير تحت الخزان وتحت اسم الشهر: --m-faint فوق بطاقة مصبوغة يعطي ٣٫٤
+   وهو أضعف من بقية التطبيق، فَرُفع إلى ٤٫٦ ليبقى ثانوياً لكن مقروءاً. */
+html.is-mobile body.rg-dark .m-flow-caption,
+html.is-mobile body.rg-dark .m-flow-month-head span:last-child { color: #9db4d0; }
+html.is-mobile body.rg-light .m-flow-node {
+    border-color: rgba(120,164,214,.26);
+    background: linear-gradient(180deg, #ffffff, rgba(246,251,255,.9));
+    box-shadow: inset 0 1px 0 #fff, 0 10px 24px rgba(28,62,110,.09);
+}
+html.is-mobile body.rg-light .m-flow-node.in  { --c: #1668c9; --c-soft: rgba(22,104,201,.11); --c-line: rgba(22,104,201,.28); }
+html.is-mobile body.rg-light .m-flow-node.out { --c: #0d8a5b; --c-soft: rgba(13,138,91,.11); --c-line: rgba(13,138,91,.28); }
+html.is-mobile body.rg-light .m-flow-tag { color: #4d6a8a; border-color: rgba(30,70,120,.16); }
+html.is-mobile body.rg-light .m-flow-month {
+    border-color: rgba(120,164,214,.26);
+    background: linear-gradient(180deg, #ffffff, rgba(246,251,255,.9));
+    box-shadow: inset 0 1px 0 #fff, 0 10px 24px rgba(28,62,110,.09);
+}
+html.is-mobile body.rg-light .m-flow-month-head > i { color: #1668c9; }
+html.is-mobile body.rg-light .m-flow-row-lbl { color: #3d5a7c; }
+html.is-mobile body.rg-light .m-flow-track { background: rgba(20,50,90,.07); box-shadow: inset 0 0 0 1px rgba(30,70,120,.08); }
+html.is-mobile body.rg-light .m-flow-fill.in { background: linear-gradient(90deg, rgba(22,104,201,.35), #1668c9); box-shadow: none; }
+html.is-mobile body.rg-light .m-flow-fill.out { background: linear-gradient(90deg, rgba(13,138,91,.32), #0d8a5b); box-shadow: none; }
+html.is-mobile body.rg-light #admin-daily-report .m-flow-rowval,
+html.is-mobile body.rg-light #admin-daily-report .m-flow-rowval > [id^="bento-month"] { color: #12324f !important; }
+html.is-mobile body.rg-light .m-flow-delta { border-top-color: rgba(30,70,120,.16); color: #4d6a8a; }
+html.is-mobile body.rg-light .m-flow-delta b { color: #12324f; }
+html.is-mobile body.rg-light .m-flow-delta.in-net b { color: #1668c9; }
+html.is-mobile body.rg-light .m-flow-delta.out-net b { color: #0d7a51; }
+@media (prefers-reduced-motion: reduce) {
+    html.is-mobile .m-flow-tank::after,
+    html.is-mobile .m-flow-live i { animation: none; }
+    html.is-mobile .m-flow-gauge i,
+    html.is-mobile .m-flow-minibar i,
+    html.is-mobile .m-flow-fill { transition: none; }
+}
+
 /* ------------------------- لوحة تفاصيل اليوم ------------------------- */
 html.is-mobile .m-today {
     border-radius: var(--m-radius-card) !important;
@@ -1166,7 +1344,8 @@ html.is-mobile .m-po { animation: mPoIn .42s var(--m-ease-out) both; animation-d
 /* ------------------------- المحفظة: إجراءات وكشف الأرصدة -------------------------
    التبويب كان بطاقتين ثم جدول فارغ يُقرأ كفراغ طويل. الآن: شريط إجراءات زجاجي،
    وحالة فارغة مصممة تحل مكان الجدول الفارغ، وورقة «كشف الأرصدة» تشرح كيف
-   تكوّن الرقم من المبيعات والمصروفات والتكاليف وحركات الشريكين. قراءة فقط. */
+   تكوّن الرقم من المبيعات والمصروفات وحركات الشريكين — والتكاليف التشغيلية تُعرض
+   فيه خارج الحساب ولا تدخل فيه. قراءة فقط. */
 html.is-mobile .m-wb-bar {
     display: flex; gap: 9px;
     margin: 0 0 18px;
@@ -4651,8 +4830,10 @@ html.is-mobile #bento-current-pieces {
 }
 /* صحن الأيقونة: المتجر يضيف ظلاً ذهبياً !important حول كل أيقونة */
 html.is-mobile #admin-screen .stat-icon { box-shadow: none !important; text-shadow: none !important; }
-html.is-mobile .stat-card[onclick*="costs"] .stat-icon,
-html.is-mobile .stat-card[onclick*="logs"] .stat-icon {
+/* صحن الأيقونة في صفحة المزيد: صحن واحد لكل البطاقات الثمانية. الورشة تكتب
+   فوق كل أيقونة لوناً وحلقة ملوّنة، فكانت «سجل الحركات» و«التكاليف» فقط هما
+   اللتان ورثتا الصحن الكحلي العميق، والبقية تسبح على زجاج أزرق فاتح. */
+html.is-mobile #admin-more-menu .stat-card .stat-icon {
     background:
         linear-gradient(152deg, rgba(150,200,255,.16) 0%, rgba(120,165,235,.04) 44%, rgba(130,175,255,.09) 100%),
         rgba(14,25,44,.62) !important;
@@ -5113,6 +5294,17 @@ html.is-mobile body.rg-light #admin-screen #costs-table-body tr > td:nth-child(2
 html.is-mobile body.rg-light #admin-screen #costs-table-body tr > td:nth-child(3) {
     color: #a8342c !important;
 }
+/* سطر الشرح تحت عنوان التكاليف: الحبر الرمادي العام باهت فوق الزجاج الداكن
+   وأبهت فوق النهار الفاتح، فله حبر خاص بكل وضع. */
+html.is-mobile #admin-costs > p { color: var(--m-muted) !important; font-size: 12.5px !important; margin: 0 0 20px !important; }
+html.is-mobile body.rg-light #admin-costs > p { color: #4d6a8a !important; }
+/* «إلغاء التعديل» زر ثانوي بجانب «الحفظ»: بلا تعبئة ولا توهج، لا يزاحم الفعل الأساسي */
+html.is-mobile #cost-cancel-btn {
+    margin-inline-start: 8px; background: transparent !important;
+    border: 1px solid var(--m-edge) !important; color: var(--m-muted) !important;
+    box-shadow: none !important;
+}
+html.is-mobile body.rg-light #cost-cancel-btn { border-color: rgba(30,70,120,.2) !important; color: #3d5a7c !important; }
 
 /* السجل: الشارة كانت أخضر نيون متوهجاً فوق أبيض، وزر العين زجاجاً داكناً */
 html.is-mobile body.rg-light .log-type {
@@ -6378,7 +6570,6 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
             const y = page.scrollTop;
             setDepth(y);
             headRef.classList.toggle('m-scrolled', y > 6);
-            headRef.classList.toggle('m-compact', headRef.classList.contains('m-compact') ? y > 40 : y > 110);
             syncFab();
         };
         syncProgress = update;
@@ -8140,7 +8331,10 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
         });
         (data.expenses || []).forEach((e) => { if (e) expenses += num(e.amount); });
         (data.operatingCosts || []).forEach((c) => { if (c) costs += num(c.amount); });
-        const net = sales - expenses - costs;
+        /* التكاليف التشغيلية تُجمَع للعرض وحده: الرصيد والحصّة لا يراهما، فهي
+           خارج البيع والمصروفات — وإلا نُقص من جيب الشريك مرّة عند الدفع ومرّة
+           عند التقسيم. */
+        const net = sales - expenses;
         const share = net / 2;
         const acc = {};
         WB_ACCOUNTS.forEach((name) => { acc[name] = { dep: 0, wd: 0, n: 0 }; });
@@ -8206,9 +8400,10 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
                     '<div class="m-wb-sec">من أين يأتي الرصيد</div>' +
                     wbRow('fa-arrow-trend-up', 'صافي المبيعات التراكمي', money(f.sales), '') +
                     wbRow('fa-arrow-trend-down', 'المصروفات التراكمية', '− ' + money(f.expenses), 'neg') +
-                    wbRow('fa-gears', 'التكاليف التشغيلية', '− ' + money(f.costs), 'neg') +
                     wbRow('fa-scale-balanced', 'صافي الربح التراكمي', wbMoney(f.net), wbSign(f.net), true) +
                     wbRow('fa-divide', 'حصّة كل شريك من الربح', wbMoney(f.share), wbSign(f.share)) +
+                    '<div class="m-wb-sec">خارج الحساب — للمعرفة فقط</div>' +
+                    wbRow('fa-gears', 'التكاليف التشغيلية (لا تُخصم من الربح)', money(f.costs), '') +
                     '<div class="m-wb-sec">أرصدة الشريكين</div>' +
                     wbAccRow(WB_ACCOUNTS[0], f) +
                     wbAccRow(WB_ACCOUNTS[1], f) +
@@ -10133,7 +10328,7 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
         qsa(':scope > *', page).forEach((c) => {
             const kids = qsa(':scope > *', c);
             const allCards = kids.length > 1 && kids.every((k) => k.classList.contains('stat-card'));
-            const grid = c.classList.contains('bento-box-container') || c.classList.contains('stats-grid') || allCards;
+            const grid = c.classList.contains('bento-box-container') || c.classList.contains('m-flow') || c.classList.contains('stats-grid') || allCards;
             if (grid && kids.length) { kids.forEach((k) => out.push(k)); }
             else { out.push(c); }
         });
@@ -10387,6 +10582,169 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
         if (strip) ['display', 'justify-content', 'background', 'background-color', 'padding', 'border', 'border-radius'].forEach((p) => strip.style.removeProperty(p));
     }
 
+    /* ═════════════════════════ نبض المكوى ═════════════════════════
+       الأرقام الخمسة التي تكتبها الورشة تُنقل بعُقدتها نفسها إلى هذا التركيب —
+       لا نسخة ولا حساب موازٍ، فلا ينحرف العرض عن المصدر أبداً. المضاف اشتقاق
+       بصري فقط: مقياس من عشرين خانة يقيس ما في المكوى بنسبة وارد الشهر، وشريط
+       تحت كل بطاقة يوم يقيس حصة يومها من شهرها، وسباق الشهر على مقياس واحد
+       فيُقارن الوارد بالصادر بطولَيهما لا برقمَيهما فقط، وصافي الحركة.
+       المراقبة مركّبة على العقد المنقولة نفسها: كل ما تكتبه الورشة يُعيد
+       اشتقاق الأطوال في الإطار التالي، بلا حلقة تكرار ولا مؤقّت. */
+    const FLOW_IDS = ['bento-current-pieces', 'bento-entered-today', 'bento-finished-today', 'bento-month-entered', 'bento-month-finished'];
+    const FLOW_TICKS = 20;
+    const FLOW_MONTHS = ['كانون الثاني', 'شباط', 'آذار', 'نيسان', 'أيار', 'حزيران', 'تموز', 'آب', 'أيلول', 'تشرين الأول', 'تشرين الثاني', 'كانون الأول'];
+    let flowObs = null;
+
+    /* أرقام الورشة قد تكون لاتينية أو هندية حسب لغة المتجر، والفواصل للآلاف:
+       تُقرأ كلها كما هي ولا تُفترض تنسيقاً واحداً. */
+    function flowNum(el) {
+        if (!el) return 0;
+        let s = String(el.textContent || '');
+        s = s.replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660));
+        s = s.replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 0x06f0));
+        s = s.replace(/[^\d.-]/g, '');
+        const v = parseFloat(s);
+        return v > 0 && isFinite(v) ? v : 0;
+    }
+
+    /* اليوم من مصدر النظام نفسه (توقيت بغداد مع إزاحة الخادم)، لا من ساعة
+       الجهاز: متوسط اليوم يقسم رقم الشهر على يومه، وخطأ يومٍ يُحرّف الرقم. */
+    function flowToday() {
+        try {
+            const m = /^(\d{4})-(\d{2})-(\d{2})/.exec((window.getRealTime && window.getRealTime().date) || '');
+            if (m) return { y: +m[1], mo: +m[2], day: +m[3] };
+        } catch (e) {}
+        const n = new Date();
+        return { y: n.getFullYear(), mo: n.getMonth() + 1, day: n.getDate() };
+    }
+
+    function flowMarkup() {
+        const ticks = new Array(FLOW_TICKS + 1).join('<i></i>');
+        return '' +
+            '<section class="m-flow-tank">' +
+                '<div class="m-flow-kicker"><i class="fa-solid fa-shirt"></i><span>داخل المكوى الآن</span>' +
+                    '<span class="m-flow-live"><i></i>مباشر</span></div>' +
+                '<div class="m-flow-figure"><span data-slot="bento-current-pieces"></span><span class="m-flow-unit">قطعة</span></div>' +
+                '<div class="m-flow-gauge" aria-hidden="true">' + ticks + '</div>' +
+                '<div class="m-flow-caption"><span>سُلّم اليوم من الموجود</span><b class="js-tank-pct">—</b></div>' +
+                '<div class="m-flow-caption m-flow-caption-2"><span>على وتيرة اليوم ينتهي المخزون خلال</span><b class="js-tank-days">—</b></div>' +
+            '</section>' +
+            '<div class="m-flow-pair">' +
+                '<section class="m-flow-node in">' +
+                    '<div class="m-flow-node-top"><span class="m-flow-chip"><i class="fa-solid fa-boxes-stacked"></i></span><span class="m-flow-tag">اليوم</span></div>' +
+                    '<div class="m-flow-num"><span data-slot="bento-entered-today"></span></div>' +
+                    '<div class="m-flow-node-label">قطع استُلمت</div>' +
+                    '<div class="m-flow-minibar"><i class="js-in-bar"></i></div>' +
+                    '<div class="m-flow-node-sub">متوسط اليوم <b class="js-in-avg">—</b></div>' +
+                '</section>' +
+                '<section class="m-flow-node out">' +
+                    '<div class="m-flow-node-top"><span class="m-flow-chip"><i class="fa-solid fa-truck-fast"></i></span><span class="m-flow-tag">اليوم</span></div>' +
+                    '<div class="m-flow-num"><span data-slot="bento-finished-today"></span></div>' +
+                    '<div class="m-flow-node-label">قطع سُلّمت</div>' +
+                    '<div class="m-flow-minibar"><i class="js-out-bar"></i></div>' +
+                    '<div class="m-flow-node-sub">متوسط اليوم <b class="js-out-avg">—</b></div>' +
+                '</section>' +
+            '</div>' +
+            '<section class="m-flow-month">' +
+                '<div class="m-flow-month-head"><i class="fa-solid fa-chart-simple"></i><span>تراكمي الشهر</span><span class="js-month-name">—</span></div>' +
+                '<div class="m-flow-race">' +
+                    '<div class="m-flow-row"><span class="m-flow-row-lbl">وارد</span>' +
+                        '<span class="m-flow-track"><i class="m-flow-fill in js-in-race"></i></span>' +
+                        '<span class="m-flow-rowval" data-slot="bento-month-entered"></span></div>' +
+                    '<div class="m-flow-row"><span class="m-flow-row-lbl">مُسلَّم</span>' +
+                        '<span class="m-flow-track"><i class="m-flow-fill out js-out-race"></i></span>' +
+                        '<span class="m-flow-rowval" data-slot="bento-month-finished"></span></div>' +
+                '</div>' +
+                '<div class="m-flow-delta js-delta"><span>دخل ولم يخرج بعد</span><b>—</b></div>' +
+            '</section>';
+    }
+
+    function syncFlow() {
+        const root = document.querySelector('#admin-daily-report .m-flow');
+        if (!root) return;
+        const by = (id) => document.getElementById(id);
+        const cur = flowNum(by('bento-current-pieces'));
+        const inT = flowNum(by('bento-entered-today'));
+        const outT = flowNum(by('bento-finished-today'));
+        const mIn = flowNum(by('bento-month-entered'));
+        const mOut = flowNum(by('bento-month-finished'));
+        const q = (sel) => root.querySelector(sel);
+        const nf = (v) => Math.round(v).toLocaleString();
+        const setW = (el, v) => { if (el) el.style.width = clamp(v, 0, 100).toFixed(2) + '%'; };
+
+        /* المقياس لا يُقاس بوارد الشهر: ما في المكوى اليوم فيه بقية من أشهر قبله،
+           فيصير الرقم «١٣٢٠٪» ويكذب التشبيه. ما يُهمّ صاحب المكوى من هذه البطاقة
+           سرعة التفريغ: كم خرج اليوم ممّن هو موجود، وكم يوماً على هذه الوتيرة. */
+        const cleared = cur > 0 ? (outT / cur) * 100 : 0;
+        const lit = cleared > 0 ? Math.max(1, Math.round((clamp(cleared, 0, 100) / 100) * FLOW_TICKS)) : 0;
+        qsa('.m-flow-gauge i', root).forEach((t, i) => {
+            const on = i < lit;
+            if (t.classList.contains('on') !== on) t.classList.toggle('on', on);
+            const head = on && i === lit - 1;
+            if (t.classList.contains('head') !== head) t.classList.toggle('head', head);
+        });
+        const pctEl = q('.js-tank-pct');
+        if (pctEl) pctEl.textContent = cur > 0 ? (cleared > 100 ? '100%+' : Math.round(cleared) + '%') : 'المكوى فارغ';
+        const daysEl = q('.js-tank-days');
+        if (daysEl) {
+            let t = '—';
+            if (cur > 0 && outT > 0) {
+                const d = cur / outT;
+                t = (d >= 10 ? Math.round(d) : Math.round(d * 10) / 10).toLocaleString() + ' يوم';
+            } else if (cur > 0) t = 'لا تسليم اليوم';
+            daysEl.textContent = t;
+        }
+
+        setW(q('.js-in-bar'), mIn > 0 ? (inT / mIn) * 100 : (inT > 0 ? 100 : 0));
+        setW(q('.js-out-bar'), mOut > 0 ? (outT / mOut) * 100 : (outT > 0 ? 100 : 0));
+        const day = Math.max(1, flowToday().day);
+        const inAvg = q('.js-in-avg'), outAvg = q('.js-out-avg');
+        if (inAvg) inAvg.textContent = mIn > 0 ? nf(mIn / day) : '—';
+        if (outAvg) outAvg.textContent = mOut > 0 ? nf(mOut / day) : '—';
+
+        const raceMax = Math.max(mIn, mOut, 1);
+        setW(q('.js-in-race'), (mIn / raceMax) * 100);
+        setW(q('.js-out-race'), (mOut / raceMax) * 100);
+        const mn = q('.js-month-name');
+        if (mn) { const t = flowToday(); mn.textContent = (FLOW_MONTHS[t.mo - 1] || '') + ' ' + t.y; }
+
+        const dEl = q('.js-delta');
+        if (dEl) {
+            const net = mIn - mOut;
+            dEl.classList.toggle('in-net', net > 0);
+            dEl.classList.toggle('out-net', net < 0);
+            const b = dEl.querySelector('b'), s = dEl.querySelector('span');
+            /* بلا إشارة سالبة: علامة الطرح محايدة حيدياً وتنقلب حول الرقم في
+               العربية فتُقرأ «٧−». الاتجاه يقوله الوصف واللون، فيبقى الرقم مطلقاً. */
+            if (b) b.textContent = nf(Math.abs(net)) + ' قطعة';
+            if (s) s.textContent = net > 0 ? 'دخل ولم يُسلَّم بعد' : net < 0 ? 'سُلّم أكثر مما دخل' : 'وارد الشهر ومُسلَّمه سيّان';
+        }
+    }
+
+    function structureBento() {
+        const page = document.getElementById('admin-daily-report');
+        if (!page || page.querySelector('.m-flow')) return;
+        const box = page.querySelector('.bento-box-container');
+        if (!box) return;
+        const nodes = FLOW_IDS.map((id) => document.getElementById(id));
+        if (nodes.some((n) => !n)) return;
+        const wrap = document.createElement('div');
+        wrap.className = 'm-flow';
+        wrap.innerHTML = flowMarkup();
+        const slots = FLOW_IDS.map((id) => wrap.querySelector('[data-slot="' + id + '"]'));
+        /* قالب ناقص: نُبقي عرض الورشة كما هو بدل أن نُفقد رقماً من الشاشة */
+        if (slots.some((s) => !s)) return;
+        slots.forEach((s, i) => s.appendChild(nodes[i]));
+        page.insertBefore(wrap, box);
+        box.remove();
+        syncFlow();
+        try { if (flowObs) flowObs.disconnect(); } catch (e) {}
+        try {
+            flowObs = new MutationObserver(() => syncFlow());
+            nodes.forEach((n) => flowObs.observe(n, { childList: true, characterData: true, subtree: true }));
+        } catch (e) {}
+    }
+
     function mount() {
         splash();
         /* الشريط إلى body مباشرة: لا حاوية متحوّلة أو مقصوصة تبقى فوقه،
@@ -10407,6 +10765,7 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
         if (designer && content && designer.parentElement !== content) content.appendChild(designer);
         injectActivityBar();
         unstyleBento();
+        structureBento();
         const order = readTabsOrder();
         if (!order.length) return;
         state.keys = order;
