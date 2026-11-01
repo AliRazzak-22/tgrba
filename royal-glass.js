@@ -125,7 +125,7 @@
             s.setProperty('--m-text', '#eaf3ff');
             s.setProperty('--m-ink', '#eaf3ff');
             s.setProperty('--m-muted', hexOf(mix('#94aac6', accent, 0.10)));
-            s.setProperty('--m-faint', hexOf(mix('#647c99', accent, 0.08)));
+            s.setProperty('--m-faint', hexOf(mix('#7f9ab7', accent, 0.08)));
             s.setProperty('--text-white', '#eef5ff');
             s.setProperty('--text-gray', '#94aac6');
             s.setProperty('--light-gray', hexOf(mix('#223a5c', accent, 0.12)));
@@ -152,7 +152,7 @@
             s.setProperty('--m-text', '#0e2138');
             s.setProperty('--m-ink', '#0e2138');
             s.setProperty('--m-muted', '#4d6a8a');
-            s.setProperty('--m-faint', '#5e7b9d');
+            s.setProperty('--m-faint', '#54708f');
             s.setProperty('--text-white', '#0e2138');
             s.setProperty('--text-gray', '#5b7591');
             s.setProperty('--light-gray', 'rgba(30,80,140,.16)');
@@ -322,7 +322,7 @@ html.is-mobile .rg-seg {
 html.is-mobile body.rg-light .rg-seg { background: rgba(30,70,120,.06); }
 html.is-mobile .rg-seg button {
     flex: 1;
-    min-height: 34px;
+    min-height: 40px;
     border: none;
     border-radius: 10px;
     background: transparent;
@@ -340,8 +340,11 @@ html.is-mobile .rg-seg button.on {
     box-shadow: 0 6px 16px rgba(var(--rg-accent-rgb), .34), inset 0 1px 0 rgba(255,255,255,.35);
 }
 html.is-mobile body.rg-light .rg-seg button.on {
-    color: #fff;
-    background: linear-gradient(140deg, color-mix(in srgb, var(--rg-accent) 82%, #12325e), var(--rg-accent));
+    /* الحرف الفاتح على الياقة الياقوتية يختفي في الوضع النهاري: اللون نفسه
+       ساطع، فلا فائدة من تبييض ما فوقه. هنا الحبر غامق والياقة أفتح. */
+    color: #0b1e33;
+    background: linear-gradient(140deg, color-mix(in srgb, var(--rg-accent) 84%, #ffffff), var(--rg-accent));
+    box-shadow: 0 6px 16px rgba(var(--rg-accent-rgb), .28), inset 0 1px 0 rgba(255,255,255,.6);
 }
 html.is-mobile .rg-swatch {
     display: flex; align-items: center; justify-content: space-between; gap: 6px;
@@ -373,7 +376,7 @@ html.is-mobile .rg-range {
     -webkit-appearance: none;
     appearance: none;
     width: 100%;
-    height: 26px;
+    height: 36px;
     background: transparent;
     direction: ltr;
 }
@@ -395,7 +398,7 @@ html.is-mobile .rg-range::-webkit-slider-thumb {
 }
 html.is-mobile .rg-toggle {
     position: relative;
-    width: 46px; height: 27px;
+    width: 54px; height: 36px;
     border-radius: 99px;
     border: 1px solid var(--m-edge);
     background: rgba(0,0,0,.22);
@@ -404,15 +407,15 @@ html.is-mobile .rg-toggle {
 html.is-mobile body.rg-light .rg-toggle { background: rgba(30,70,120,.10); }
 html.is-mobile .rg-toggle::after {
     content: "";
-    position: absolute; top: 3px; left: 3px;
-    width: 19px; height: 19px;
+    position: absolute; top: 4px; left: 5px;
+    width: 26px; height: 26px;
     border-radius: 50%;
     background: #fff;
     box-shadow: 0 2px 8px rgba(0,4,14,.35);
     transition: transform .32s var(--m-ease);
 }
 html.is-mobile .rg-toggle.on { background: linear-gradient(140deg, var(--rg-accent), color-mix(in srgb, var(--rg-accent) 60%, #16305e)); border-color: transparent; }
-html.is-mobile .rg-toggle.on::after { transform: translateX(19px); }
+html.is-mobile .rg-toggle.on::after { transform: translateX(16px); }
 html.is-mobile .rg-preview {
     margin-top: 14px;
     display: flex; align-items: center; gap: 12px;
@@ -438,7 +441,9 @@ html.is-mobile .rg-preview-body { min-width: 0; flex: 1; }
 html.is-mobile .rg-preview-t { font-size: 12px; font-weight: 900; color: var(--m-text); }
 html.is-mobile .rg-preview-s { font-size: 10.5px; font-weight: 700; color: var(--m-muted); margin-top: 2px; }
 html.is-mobile .rg-preview-n {
-    font-size: 17px; font-weight: 900; color: var(--rg-accent);
+    /* ١٩ بكسل لا ١٧: رقم المعاينة غليظ (٩٠٠) وعلى صفيحة زجاجية فاتحة، وعند هذا
+       المقاس يُعامل معاملة الحرف الكبير في شروط الوضوح فيكفيه ٣٫٠ بدل ٤٫٥. */
+    font-size: 19px; font-weight: 900; color: var(--rg-accent-ink);
     font-variant-numeric: tabular-nums;
     text-shadow: 0 0 18px rgba(var(--rg-accent-rgb), .35);
 }
@@ -569,7 +574,11 @@ html.is-mobile body.rg-light #admin-daily-report .bento-hero .stat-title { color
 html.is-mobile body.rg-light .monthly-strip-item strong { color: #0e2138 !important; text-shadow: none !important; }
 html.is-mobile body.rg-light .m-today-head { color: #16324f !important; }
 html.is-mobile body.rg-light .m-today-head i { text-shadow: none !important; }
-html.is-mobile body.rg-light .m-today-date { color: #5b7591 !important; }
+html.is-mobile body.rg-light .m-today-date {
+    color: var(--m-muted) !important;
+    background: rgba(30,70,120,.07) !important;
+    border-color: rgba(30,80,140,.14) !important;
+}
 html.is-mobile body.rg-light .m-today-meta > span { color: #4d6a8a !important; }
 html.is-mobile body.rg-light .m-today-row > i {
     color: var(--rg-accent-ink) !important;

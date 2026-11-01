@@ -2029,7 +2029,7 @@ html.is-mobile .ri-chips {
 }
 html.is-mobile body.rg-light .ri-chips { background: rgba(30,70,120,.06); }
 html.is-mobile .ri-chips button {
-    flex: 1; min-height: 32px;
+    flex: 1; min-height: 38px;
     border: none; border-radius: 10px;
     background: transparent; color: var(--m-muted);
     font-size: 11.5px; font-weight: 800;
@@ -2041,6 +2041,12 @@ html.is-mobile .ri-chips button.on {
     box-shadow: 0 6px 16px rgba(var(--rg-accent-rgb), .32), inset 0 1px 0 rgba(255,255,255,.3);
 }
 html.is-mobile .ri-chips button:active { transform: scale(.96); }
+/* نهاري: الياقة الياقوتية الساطعة لا تحمل حرفاً أبيض — الحبر غامق والياقة أفتح */
+html.is-mobile body.rg-light .ri-chips button.on,
+html.is-mobile body.rg-light .ri-svc-seg button.on {
+    color: #0b1e33;
+    background: linear-gradient(140deg, color-mix(in srgb, var(--rg-accent) 84%, #ffffff), var(--rg-accent));
+}
 html.is-mobile .ri-hero-mid { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; }
 html.is-mobile .ri-hero-num { display: flex; flex-direction: column; }
 html.is-mobile .ri-hero-num strong {
@@ -2068,7 +2074,7 @@ html.is-mobile .ri-hero-foot {
     border-top: 1px solid var(--ri-line);
     font-size: 11px; line-height: 1.6; font-weight: 600; color: var(--m-muted);
 }
-html.is-mobile .ri-hero-foot i { color: var(--rg-accent); margin-inline-end: 4px; }
+html.is-mobile .ri-hero-foot i { color: var(--rg-accent-ink); margin-inline-end: 4px; }
 html.is-mobile .ri-hero-foot b { color: var(--m-text); }
 
 html.is-mobile .ri-kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-bottom: 12px; }
@@ -2255,7 +2261,7 @@ html.is-mobile body.rm-motion-off .ri-sheet-top > .ri-io {
 html.is-mobile .ri-cmp-ret { margin-top: 15px; padding-top: 13px; border-top: 1px solid var(--ri-line); display: flex; flex-direction: column; gap: 7px; }
 html.is-mobile .ri-cmp-ret-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 html.is-mobile .ri-cmp-ret-top span { display: inline-flex; align-items: center; gap: 6px; font-size: 10.5px; font-weight: 800; color: var(--m-muted); }
-html.is-mobile .ri-cmp-ret-top span i { font-size: 9px; color: var(--rg-accent); }
+html.is-mobile .ri-cmp-ret-top span i { font-size: 9px; color: var(--rg-accent-ink); }
 html.is-mobile .ri-cmp-ret-top strong { font-size: 14px; font-weight: 900; color: var(--m-text); font-variant-numeric: tabular-nums; }
 html.is-mobile .ri-cmp-ret-bar { height: 5px; border-radius: 99px; background: rgba(255,255,255,.06); overflow: hidden; }
 html.is-mobile .ri-cmp-ret-bar i {
@@ -2884,7 +2890,7 @@ html.is-mobile .ri-dir-more {
     cursor: pointer; -webkit-tap-highlight-color: transparent;
     transition: background .2s var(--m-ease), transform .14s var(--m-ease);
 }
-html.is-mobile .ri-dir-more i { font-size: 9px; color: var(--rg-accent); }
+html.is-mobile .ri-dir-more i { font-size: 9px; color: var(--rg-accent-ink); }
 html.is-mobile .ri-dir-more:active { transform: scale(.985); background: rgba(255,255,255,.09); }
 html.is-mobile body.rg-light .ri-dir-more { background: rgba(30,70,120,.05); color: #0e2138; }
 html.is-mobile body.rg-light .ri-dir-count { color: #5b7191; }
@@ -3032,7 +3038,7 @@ html.is-mobile .ri-cust-life {
     border: 1px solid var(--ri-line);
     font-size: 9.5px; font-weight: 700; color: var(--m-muted); line-height: 1.6;
 }
-html.is-mobile .ri-cust-life i { color: var(--rg-accent); font-size: 10px; }
+html.is-mobile .ri-cust-life i { color: var(--rg-accent-ink); font-size: 10px; }
 html.is-mobile .ri-cust-life b { color: var(--m-text); font-weight: 900; font-variant-numeric: tabular-nums; }
 html.is-mobile .ri-cust-trend { margin-bottom: 13px; }
 html.is-mobile .ri-cust-trend h4 {
@@ -3126,6 +3132,30 @@ body.ri-sheet-open #mobile-bottom-nav { opacity: .35; pointer-events: none; tran
     html.is-mobile .ri-sheet-card { transition: none !important; }
     html.is-mobile .ri-cm-track i { animation: none !important; }
 }
+
+/* ============================ أرضية الخط المقروء ============================
+   جولة التلميع: عشرات البطاقات كانت تُكتب بـ ٨٫٥ و٩ و٩٫٥ بكسل. المشكلة ليست
+   في الرقم نفسه بل في العربية: التشكيل والنقاط تسبق ارتفاع الحروف، فتنغلق
+   العيون عند القياسات الصغيرة مهما كان اللون جيداً.
+   طبقتان فقط: ١٠٫٥ للنص الجاري والتذييلات، و١٠ للأرقام داخل الشبكات الضيقة
+   (أيام الأسبوع، رؤوس الخريطة الحرارية، أعمدة الجدول) حيث كل نصف بكسل ثمنه
+   مساحة. :is() يحمل أعلى تخصيص بين أطرافه في التغلب على التعريفات السابقة. */
+html.is-mobile :is(.ri-kpi-s, .ri-money-i span, .ri-leg small, .ri-bar-sub, .ri-wd-note,
+    .ri-ov-foot small, .ri-cc-foot small, .ri-gap-foot small, .ri-lad-money,
+    .ri-fr-top small, .ri-fr-legend, .ri-fr-foot, .ri-fs-sub, .ri-fs-foot,
+    .ri-uv-sub, .ri-uv-foot, .ri-rank-body small, .ri-absent-body small,
+    .ri-absent-more, .ri-more-note, .ri-foot, .ri-cust-rhythm-main, .ri-cust-life,
+    .ri-chip, .ri-cmp-ret small) { font-size: 10.5px; }
+html.is-mobile :is(.ri-money-i small, .ri-chart-days, .ri-donut-mid span, .ri-mo-l,
+    .ri-mo-foot small, .ri-heat-head span, .ri-heat-day, .ri-wd-l, .ri-cc-n,
+    .ri-gap-hero > span small, .ri-gap-hero em, .ri-gap-l, .ri-gap-l small,
+    .ri-cust-stats span, .ri-cust-trend h4 small, .ri-cm small, .ri-cm-sum,
+    .ri-cust-rhythm-main small, .ri-dir-body small, .ri-dir-end small, .ri-inv-s,
+    .ri-search-scope, .ri-chart-max, .ri-open-age, .ri-cmp-nums small,
+    .ri-cmp-d) { font-size: 10px; }
+html.is-mobile .ri-cmp-d i { font-size: 9px; }
+html.is-mobile .ri-badge-new { font-size: 10px; }
+html.is-mobile :is(.ri-filters button, .ri-svc-seg button) { min-height: 36px; }
 `;
 
     const style = document.createElement('style');

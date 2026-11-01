@@ -26,7 +26,7 @@ html.is-mobile {
     --m-text: #eaf3ff;
     --m-ink: #eaf3ff;
     --m-muted: #94aac6;
-    --m-faint: #647c99;
+    --m-faint: #7f9ab7;
     --m-line: rgba(130,185,255,.15);
     --m-hair: rgba(150,200,255,.085);
     --m-accent: #5aa8ff;
@@ -900,7 +900,7 @@ html.is-mobile .m-today-head {
 html.is-mobile .m-today-head i { color: var(--m-accent2); text-shadow: 0 1px 2px rgba(0,0,0,.55); }
 html.is-mobile .m-today-date {
     margin-inline-start: auto; font-size: 10.5px; font-weight: 700; color: var(--m-muted);
-    padding: 3px 9px; border-radius: 99px; border: 1px solid var(--m-hair); background: rgba(255,255,255,.04);
+    padding: 3px 9px; border-radius: 99px; border: 1px solid var(--m-hair); background: rgba(10,24,48,.66);
 }
 html.is-mobile .m-today-rows { display: block; }
 html.is-mobile .m-today-row {
@@ -957,7 +957,7 @@ html.is-mobile body.rg-light .m-today-cmp { border-top-color: rgba(30,80,140,.10
 html.is-mobile .m-today-cmp-h {
     display: flex; align-items: center; gap: 6px;
     margin-bottom: 7px;
-    font-size: 9.5px; font-weight: 900; color: var(--m-faint);
+    font-size: 10.5px; font-weight: 900; color: var(--m-faint);
 }
 html.is-mobile .m-today-cmp-h i { font-size: 8.5px; color: var(--m-accent2); }
 html.is-mobile .m-today-cmp-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
@@ -968,7 +968,7 @@ html.is-mobile .m-today-cmp-grid > span {
     background: rgba(255,255,255,.035);
     border: 1px solid rgba(255,255,255,.045);
 }
-html.is-mobile .m-today-cmp-grid small { font-size: 9px; font-weight: 800; color: var(--m-muted); }
+html.is-mobile .m-today-cmp-grid small { font-size: 10px; font-weight: 800; color: var(--m-muted); }
 html.is-mobile .m-today-cmp-grid b {
     display: inline-flex; align-items: center; gap: 4px;
     font-size: 11.5px; font-weight: 900; color: #e8f1fb;
@@ -1123,7 +1123,7 @@ html.is-mobile .m-po-av {
 }
 html.is-mobile .m-po-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 html.is-mobile .m-po-body strong { font-size: 12px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-html.is-mobile .m-po-body small { font-size: 9.5px; font-weight: 700; color: var(--m-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html.is-mobile .m-po-body small { font-size: 10px; font-weight: 700; color: var(--m-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 html.is-mobile .m-po-call {
     flex: none; width: 32px; height: 32px;
     display: inline-flex; align-items: center; justify-content: center;
@@ -1139,7 +1139,7 @@ html.is-mobile body.rg-light .m-po-call { color: #1c5f9e; background: rgba(30,11
 html.is-mobile .m-po-end { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
 html.is-mobile .m-po-end b { font-size: 11.5px; font-weight: 900; font-variant-numeric: tabular-nums; }
 html.is-mobile .m-po-age {
-    font-size: 8.5px; font-weight: 900;
+    font-size: 10px; font-weight: 900;
     padding: 2px 6px; border-radius: 6px;
     background: rgba(255,255,255,.07); color: var(--m-muted);
 }
@@ -1242,7 +1242,6 @@ html.is-mobile body.rg-light .m-wb-empty {
 }
 html.is-mobile body.rg-light .m-wb-empty b { color: #16324f; }
 html.is-mobile body.rg-light .m-wb-empty p { color: #4a6a8d; }
-html.is-mobile body.rg-light .m-wb-empty small { color: #6f8bab; }
 
 /* ورقة كشف الأرصدة */
 html.is-mobile .m-wb-sheet { position: fixed; inset: 0; z-index: 9660; display: flex; align-items: flex-end; }
@@ -1338,13 +1337,13 @@ html.is-mobile .m-wb-acc-av {
 }
 html.is-mobile .m-wb-acc-t { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 html.is-mobile .m-wb-acc-t b { font-size: 12px; font-weight: 900; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-html.is-mobile .m-wb-acc-t small { font-size: 9.5px; font-weight: 700; color: var(--m-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html.is-mobile .m-wb-acc-t small { font-size: 10px; font-weight: 700; color: var(--m-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 html.is-mobile .m-wb-acc-v { direction: ltr; flex: none; font-size: 13px; font-weight: 900; font-variant-numeric: tabular-nums; }
 html.is-mobile .m-wb-acc-v.neg { color: var(--m-red); }
 html.is-mobile .m-wb-acc-v.pos { color: var(--m-green); }
 html.is-mobile .m-wb-note {
     margin: 7px 5px 2px;
-    font-size: 9.5px; font-weight: 700; line-height: 1.9;
+    font-size: 10.5px; font-weight: 700; line-height: 1.9;
     color: var(--m-faint);
 }
 html.is-mobile body.rg-light .m-wb-row { background: rgba(30,70,120,.05); }
@@ -1383,7 +1382,7 @@ html.is-mobile #modal-invoices .m-inv-hint {
     margin-top: -2px;
 }
 html.is-mobile #modal-invoices .m-inv-hint.on { display: block; }
-html.is-mobile body.rg-light #modal-invoices .m-inv-hint { color: #6f8bab; }
+html.is-mobile body.rg-light #modal-invoices .m-inv-hint { color: var(--m-faint); }
 
 /* صفا التاريخ بعنوانيهما ثم البحث صفاً كاملاً بزر مسح: «من» و«إلى» يمنعان
    قراءة الحقلين بالمقلوب، والمسح يوفّر حذف النص حرفاً حرفاً على الجوال. */
@@ -1542,7 +1541,7 @@ html.is-mobile .m-act-bar-txt b { font-size: 13px; font-weight: 900; letter-spac
 html.is-mobile .m-act-bar-txt small {
     font-size: 10.5px;
     font-weight: 600;
-    color: rgba(172,200,232,.68);
+    color: var(--m-faint);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1569,7 +1568,7 @@ html.is-mobile body.rg-light .m-act-bar {
     color: #16324f;
     box-shadow: 0 8px 20px rgba(28,62,110,.10), inset 0 1px 0 #fff;
 }
-html.is-mobile body.rg-light .m-act-bar-txt small { color: rgba(70,100,135,.66); }
+html.is-mobile body.rg-light .m-act-bar-txt small { color: var(--m-faint); }
 html.is-mobile body.rg-light .m-act-bar-n { background: rgba(47,127,208,.08); border-color: rgba(47,127,208,.20); color: #2f6ea8; }
 html.is-mobile body.rg-light .m-act-bar-go { color: rgba(47,127,208,.42); }
 
@@ -1640,7 +1639,7 @@ html.is-mobile .m-act-head-orb {
 }
 html.is-mobile .m-act-hd { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; }
 html.is-mobile .m-act-hd b { font-size: 16px; font-weight: 900; color: #eef6ff; letter-spacing: .1px; }
-html.is-mobile .m-act-hd small { font-size: 10.5px; color: rgba(170,198,230,.62); }
+html.is-mobile .m-act-hd small { font-size: 10.5px; color: var(--m-faint); }
 html.is-mobile .m-act-x {
     flex: none;
     width: 32px; height: 32px;
@@ -1680,7 +1679,7 @@ html.is-mobile .m-act-chip b {
     overflow: hidden;
     text-overflow: ellipsis;
 }
-html.is-mobile .m-act-chip small { font-size: 9.5px; font-weight: 700; color: rgba(168,198,232,.60); }
+html.is-mobile .m-act-chip small { font-size: 10.5px; font-weight: 700; color: var(--m-faint); }
 html.is-mobile .m-act-chip.inv b { color: #ffe6a8; }
 html.is-mobile .m-act-chip.pay b { color: #a9dcff; }
 html.is-mobile .m-act-chip.val b { color: #f2d489; }
@@ -1716,9 +1715,9 @@ html.is-mobile .m-act-live {
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    font-size: 9.5px;
+    font-size: 10.5px;
     font-weight: 700;
-    color: rgba(160,190,225,.46);
+    color: var(--m-faint);
 }
 html.is-mobile .m-act-live i {
     width: 6px; height: 6px;
@@ -1745,7 +1744,7 @@ html.is-mobile .m-act-day {
     font-size: 10px;
     font-weight: 900;
     letter-spacing: .5px;
-    color: rgba(168,198,232,.62);
+    color: var(--m-faint);
     background: linear-gradient(180deg, rgba(12,24,44,.94), rgba(12,24,44,.78) 70%, transparent);
 }
 html.is-mobile .m-act-day::after {
@@ -1757,7 +1756,7 @@ html.is-mobile .m-act-day::after {
 html.is-mobile .m-act-day em {
     font-style: normal;
     font-weight: 700;
-    color: rgba(150,185,222,.42);
+    color: var(--m-faint);
 }
 html.is-mobile .m-act-row {
     display: flex;
@@ -1815,7 +1814,7 @@ html.is-mobile .m-act-txt b {
 }
 html.is-mobile .m-act-txt small {
     font-size: 10px;
-    color: rgba(170,198,230,.62);
+    color: var(--m-faint);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1834,9 +1833,9 @@ html.is-mobile .m-act-amt {
 }
 html.is-mobile .m-act-amt em {
     font-style: normal;
-    font-size: 8.5px;
+    font-size: 10px;
     font-weight: 700;
-    color: rgba(160,190,225,.46);
+    color: var(--m-faint);
 }
 html.is-mobile .m-act-amt.inv { color: #ffe6a8; }
 html.is-mobile .m-act-amt.pay { color: #a9dcff; }
@@ -1846,7 +1845,7 @@ html.is-mobile .m-act-empty {
 }
 html.is-mobile .m-act-empty i { display: block; font-size: 24px; color: rgba(150,195,245,.42); margin-bottom: 10px; }
 html.is-mobile .m-act-empty b { display: block; font-size: 13px; font-weight: 800; color: #dbe9fb; margin-bottom: 4px; }
-html.is-mobile .m-act-empty span { font-size: 11px; color: rgba(160,190,225,.55); }
+html.is-mobile .m-act-empty span { font-size: 11px; color: var(--m-faint); }
 html.is-mobile .m-act-more {
     display: block;
     margin: 8px auto 2px;
@@ -1866,11 +1865,11 @@ html.is-mobile body.rg-light .m-act-card {
     box-shadow: 0 -24px 60px rgba(24,54,100,.22), inset 0 1px 0 #fff;
 }
 html.is-mobile body.rg-light .m-act-hd b { color: #142c47; }
-html.is-mobile body.rg-light .m-act-hd small { color: rgba(60,90,125,.62); }
+html.is-mobile body.rg-light .m-act-hd small { color: var(--m-faint); }
 html.is-mobile body.rg-light .m-act-x { border-color: rgba(30,70,120,.14); background: rgba(30,70,120,.06); color: #24466f; }
 html.is-mobile body.rg-light .m-act-chip { border-color: rgba(30,70,120,.10); background: rgba(30,70,120,.045); }
 html.is-mobile body.rg-light .m-act-chip b { color: #142c47; }
-html.is-mobile body.rg-light .m-act-chip small { color: rgba(60,90,125,.60); }
+html.is-mobile body.rg-light .m-act-chip small { color: var(--m-faint); }
 html.is-mobile body.rg-light .m-act-chip.inv b { color: #8a6316; }
 html.is-mobile body.rg-light .m-act-chip.pay b { color: #1f5f9e; }
 html.is-mobile body.rg-light .m-act-chip.val b { color: #9a7018; }
@@ -1882,24 +1881,24 @@ html.is-mobile body.rg-light .m-act-seg.sel {
     color: #17395e;
     box-shadow: inset 0 1px 0 #fff;
 }
-html.is-mobile body.rg-light .m-act-live { color: rgba(60,90,125,.48); }
+html.is-mobile body.rg-light .m-act-live { color: var(--m-faint); }
 html.is-mobile body.rg-light .m-act-day {
-    color: rgba(60,90,125,.62);
+    color: var(--m-faint);
     background: linear-gradient(180deg, rgba(250,253,255,.97), rgba(250,253,255,.82) 70%, transparent);
 }
 html.is-mobile body.rg-light .m-act-day::after { background: linear-gradient(90deg, rgba(47,127,208,.18), transparent); }
-html.is-mobile body.rg-light .m-act-day em { color: rgba(60,90,125,.45); }
+html.is-mobile body.rg-light .m-act-day em { color: var(--m-faint); }
 html.is-mobile body.rg-light .m-act-row { color: #16324f; }
 html.is-mobile body.rg-light .m-act-row:active { background: rgba(47,127,208,.06); border-color: rgba(47,127,208,.16); }
 html.is-mobile body.rg-light .m-act-ic.inv { border-color: rgba(190,150,60,.30); background: linear-gradient(160deg, rgba(255,231,170,.35), rgba(255,214,120,.10)); color: #9a7018; }
 html.is-mobile body.rg-light .m-act-ic.pay { border-color: rgba(47,127,208,.24); background: linear-gradient(160deg, rgba(150,205,255,.30), rgba(120,180,255,.08)); color: #1f5f9e; }
-html.is-mobile body.rg-light .m-act-txt small { color: rgba(60,90,125,.62); }
+html.is-mobile body.rg-light .m-act-txt small { color: var(--m-faint); }
 html.is-mobile body.rg-light .m-act-amt { color: #142c47; }
 html.is-mobile body.rg-light .m-act-amt.inv { color: #8a6316; }
 html.is-mobile body.rg-light .m-act-amt.pay { color: #1f5f9e; }
-html.is-mobile body.rg-light .m-act-amt em { color: rgba(60,90,125,.48); }
+html.is-mobile body.rg-light .m-act-amt em { color: var(--m-faint); }
 html.is-mobile body.rg-light .m-act-empty b { color: #24466f; }
-html.is-mobile body.rg-light .m-act-empty span { color: rgba(60,90,125,.55); }
+html.is-mobile body.rg-light .m-act-empty span { color: var(--m-faint); }
 html.is-mobile body.rg-light .m-act-more { border-color: rgba(47,127,208,.20); background: rgba(47,127,208,.06); color: #1f5f9e; }
 @media (prefers-reduced-motion: reduce) {
     html.is-mobile .m-act-card,
@@ -1940,7 +1939,7 @@ html.is-mobile .m-idle-orb {
 }
 html.is-mobile .m-idle-hd { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 html.is-mobile .m-idle-hd b { font-size: 13.5px; font-weight: 900; color: #eaf3ff; }
-html.is-mobile .m-idle-hd small { font-size: 10.5px; font-weight: 600; line-height: 1.65; color: rgba(170,198,230,.60); }
+html.is-mobile .m-idle-hd small { font-size: 10.5px; font-weight: 600; line-height: 1.65; color: var(--m-faint); }
 html.is-mobile .m-idle-seg { display: flex; gap: 6px; margin-top: 12px; }
 html.is-mobile .m-idle-seg button {
     flex: 1 1 0;
@@ -1970,7 +1969,7 @@ html.is-mobile .m-idle-note {
     margin-top: 10px;
     font-size: 10px;
     font-weight: 700;
-    color: rgba(168,198,232,.58);
+    color: var(--m-faint);
 }
 html.is-mobile .m-idle-note i { font-size: 7px; color: #6bf0b6; }
 html.is-mobile .m-idle-note.off i { color: rgba(150,180,215,.35); }
@@ -1980,15 +1979,15 @@ html.is-mobile body.rg-light .m-idle-card {
     box-shadow: 0 8px 20px rgba(28,62,110,.10), inset 0 1px 0 #fff;
 }
 html.is-mobile body.rg-light .m-idle-hd b { color: #142c47; }
-html.is-mobile body.rg-light .m-idle-hd small { color: rgba(60,90,125,.62); }
-html.is-mobile body.rg-light .m-idle-seg button { border-color: rgba(30,70,120,.12); background: rgba(30,70,120,.03); color: rgba(50,80,115,.78); }
+html.is-mobile body.rg-light .m-idle-hd small { color: var(--m-faint); }
+html.is-mobile body.rg-light .m-idle-seg button { border-color: rgba(30,70,120,.12); background: rgba(30,70,120,.03); color: var(--m-faint); }
 html.is-mobile body.rg-light .m-idle-seg button.on {
     background: linear-gradient(160deg, rgba(255,231,170,.50), rgba(255,214,120,.16));
     border-color: rgba(190,150,60,.40);
     color: #7d5a12;
     box-shadow: inset 0 1px 0 #fff;
 }
-html.is-mobile body.rg-light .m-idle-note { color: rgba(60,90,125,.60); }
+html.is-mobile body.rg-light .m-idle-note { color: var(--m-faint); }
 
 html.is-mobile .m-idle-warn {
     position: fixed;
@@ -2494,7 +2493,10 @@ html.is-mobile .modal-overlay .modal-content.mobile-sticky-modal .modal-actions 
 html.is-mobile .modal-overlay.m-sheet.m-on .modal-content { transform: translateY(0); }
 html.is-mobile .modal-overlay.m-sheet .modal-title {
     position: sticky; top: -6px; z-index: 3;
-    margin: 0 -14px 10px;
+    /* السالب يساوي حشو الورقة الأفقي بالضبط، لا رقماً ثابتاً: نافذة الصرفيات
+       بلا حشو (الجدول يأكل العرض كاملاً)، فالسالب كان يدفع عنوانها ١٣ بكسل
+       خارج الورقة ويمنحها تمريراً أفقياً لا يُقصد. */
+    margin: 0 calc(-1 * var(--m-sheet-pad-x, 14px)) 10px;
     padding: 14px 14px 12px;
     background:
         linear-gradient(180deg, rgba(160,206,255,.14), rgba(146,200,255,.02) 74%),
@@ -2544,6 +2546,7 @@ html.is-mobile .m-sheet-x:active { background: linear-gradient(160deg, rgba(214,
 /* الورقة ثابتة: لا تُسحب ولا تُغلق إلا بالزر أو ×. الرقم هو الأساس، والملاحظة
    داخل صندوق حاجز لا تخرج منه: تُقصّ بأسطر ويتصغّر خطّها كلما طال النص. */
 html.is-mobile .modal-overlay .modal-content.m-exp-modal {
+    --m-sheet-pad-x: 0px;
     height: 92% !important;
     max-height: 92% !important;
 }
@@ -2657,7 +2660,7 @@ html.is-mobile .m-exp-note {
     overflow: hidden;
     display: flex; flex-direction: column; gap: 2px;
 }
-html.is-mobile .m-exp-note-t { font-size: 9px; font-weight: 900; letter-spacing: .3px; color: rgba(170,205,245,.6); }
+html.is-mobile .m-exp-note-t { font-size: 10px; font-weight: 900; letter-spacing: .3px; color: var(--m-faint); }
 html.is-mobile .m-exp-note-x {
     margin: 0;
     font-size: 12.5px; line-height: 1.42; font-weight: 650; color: #dceafc;
@@ -2715,7 +2718,7 @@ html.is-mobile .m-day-modal .modal-header-sticky > div > span {
 html.is-mobile .m-day-hint {
     display: flex; align-items: center; justify-content: center; gap: 6px;
     margin-top: 8px;
-    font-size: 10.5px; font-weight: 800; color: rgba(170,205,245,.55);
+    font-size: 10.5px; font-weight: 800; color: var(--m-faint);
 }
 html.is-mobile #modal-daily-transactions .modal-body-scrollable {
     flex: 1 1 auto !important;
@@ -2807,10 +2810,10 @@ html.is-mobile #modal-daily-transactions .invoices-table td:nth-child(n+5) {
 html.is-mobile #modal-daily-transactions .invoices-table td:nth-child(n+5)::before {
     display: block;
     margin-bottom: 2px;
-    font-size: 9px;
+    font-size: 10px;
     font-weight: 800;
     letter-spacing: .2px;
-    color: rgba(170,205,245,.52);
+    color: var(--m-faint);
 }
 html.is-mobile #modal-daily-transactions .invoices-table td:nth-child(5) { grid-column: 1 !important; grid-row: 3 !important; }
 html.is-mobile #modal-daily-transactions .invoices-table td:nth-child(6) { grid-column: 2 !important; grid-row: 4 !important; display: block !important; }
@@ -4135,7 +4138,7 @@ html.is-mobile .m-ptr-label {
     transform: translate3d(-50%, -4px, 0);
     padding: 3px 9px 4px;
     border-radius: 99px;
-    font-size: 9.5px;
+    font-size: 10px;
     font-weight: 800;
     letter-spacing: .2px;
     white-space: nowrap;
@@ -4281,10 +4284,10 @@ html.is-mobile .m-cmd-grp {
     align-items: center;
     gap: 8px;
     padding: 12px 10px 6px;
-    font-size: 10px;
+    font-size: 10.5px;
     font-weight: 900;
     letter-spacing: .6px;
-    color: rgba(168,198,232,.62);
+    color: var(--m-faint);
 }
 html.is-mobile .m-cmd-grp::after {
     content: "";
@@ -4340,7 +4343,7 @@ html.is-mobile .m-cmd-txt b {
 }
 html.is-mobile .m-cmd-txt small {
     font-size: 10.5px;
-    color: rgba(170,198,230,.68);
+    color: var(--m-faint);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -4354,9 +4357,9 @@ html.is-mobile .m-cmd-hint {
     flex: none;
     padding: 8px 14px calc(10px + env(safe-area-inset-bottom, 0px) * .3);
     border-top: 1px solid rgba(150,200,255,.10);
-    font-size: 9.5px;
+    font-size: 10.5px;
     letter-spacing: .2px;
-    color: rgba(160,190,225,.50);
+    color: var(--m-faint);
     text-align: center;
 }
 html.is-mobile body.rg-light .m-cmd-scrim { background: rgba(232,240,250,.55); }
@@ -4370,7 +4373,7 @@ html.is-mobile body.rg-light .m-cmd-bar > i.fa-magnifying-glass { color: #2f7fd0
 html.is-mobile body.rg-light .m-cmd-input { color: #0e2138; }
 html.is-mobile body.rg-light .m-cmd-input::placeholder { color: rgba(70,100,135,.55); }
 html.is-mobile body.rg-light .m-cmd-x { border-color: rgba(30,70,120,.14); background: rgba(30,70,120,.06); color: #24466f; }
-html.is-mobile body.rg-light .m-cmd-grp { color: rgba(60,90,125,.62); }
+html.is-mobile body.rg-light .m-cmd-grp { color: var(--m-faint); }
 html.is-mobile body.rg-light .m-cmd-grp::after { background: linear-gradient(90deg, rgba(47,127,208,.20), transparent); }
 html.is-mobile body.rg-light .m-cmd-row { color: #16324f; }
 html.is-mobile body.rg-light .m-cmd-row.sel {
@@ -4382,10 +4385,10 @@ html.is-mobile body.rg-light .m-cmd-ic {
     border-color: rgba(47,127,208,.18);
     color: #2f7fd0;
 }
-html.is-mobile body.rg-light .m-cmd-txt small { color: rgba(70,100,135,.70); }
+html.is-mobile body.rg-light .m-cmd-txt small { color: var(--m-faint); }
 html.is-mobile body.rg-light .m-cmd-go { color: rgba(47,127,208,.40); }
 html.is-mobile body.rg-light .m-cmd-empty b { color: #24466f; }
-html.is-mobile body.rg-light .m-cmd-hint { border-top-color: rgba(30,70,120,.08); color: rgba(70,100,135,.55); }
+html.is-mobile body.rg-light .m-cmd-hint { border-top-color: rgba(30,70,120,.08); color: var(--m-faint); }
 @media (prefers-reduced-motion: reduce) {
     html.is-mobile .m-cmd-card,
     html.is-mobile .m-cmd.on .m-cmd-row { transition: none; animation: none; }
@@ -4842,6 +4845,36 @@ html.is-mobile body.rg-light #admin-screen .cart-table tr > td:last-child:not(:f
 html.is-mobile body.rg-light #admin-screen .invoices-table tr > td:last-child:not(:first-child) {
     color: var(--rg-accent-ink) !important;
 }
+
+/* بطاقات الأيام في لوحة المالية: خاصّيتها أعلى من قواعد الجداول العامة (اثنان من
+   المعرّفات)، فلم يمسها تصحيح النهار وبقي عليها حبر الليل — رقم الدخل الصافي
+   أبيضُ محفورٌ بظلّ أسود فوق زجاج فاتح، و«٠» الصرفيات وردّي شاحب على صفيحة
+   وردية. السطور أدناه تحلّ الطبقة الكحلية بلوحة فاتحة وتقلب الأحبار الثلاثة إلى
+   صبغات داكنة تحتفظ بدلالها: أخضر للمبيعات، أحمر للصرفيات، كحلي للصافي. */
+html.is-mobile body.rg-light #admin-screen #admin-daily-reports-body tr {
+    background:
+        linear-gradient(180deg, rgba(255,255,255,.62), rgba(255,255,255,0) 30%),
+        var(--m-glass),
+        rgba(246,250,255,.78) !important;
+    box-shadow: inset 0 1px 0 #fff, inset 0 0 0 1px rgba(120,164,214,.20) !important;
+}
+html.is-mobile body.rg-light #admin-screen #admin-daily-reports-body tr > td:nth-child(3) {
+    background: linear-gradient(165deg, rgba(16,140,95,.14), rgba(16,140,95,.04)) !important;
+    color: #0d6b49 !important;
+    text-shadow: none !important;
+}
+html.is-mobile body.rg-light #admin-screen #admin-daily-reports-body tr > td:nth-child(4) {
+    background: linear-gradient(165deg, rgba(200,45,65,.14), rgba(200,45,65,.04)) !important;
+    color: #a11f34 !important;
+    text-shadow: none !important;
+}
+html.is-mobile body.rg-light #admin-screen #admin-daily-reports-body tr > td:nth-child(6) {
+    color: #16324f !important;
+    text-shadow: none !important;
+}
+html.is-mobile body.rg-light #admin-screen #admin-daily-reports-body tr > td:nth-child(6)::before {
+    color: #3d5a7c !important;
+}
 /* الذمم والاشتراكات لهما ترتيب أعمدة مختلف عن باقي الجداول: بطاقة الجدول
    العامة تجعل الخلية الثانية عنواناً كبيراً، وهي هنا الهاتف أو الاسم. */
 html.is-mobile #admin-debts .cart-table tr > td:nth-child(1) {
@@ -5179,7 +5212,7 @@ html.is-mobile body.rg-light #modal-invoices .invoices-table td:nth-child(1) {
     grid-area: 1 / 1 / 2 / 2 !important;
     font-size: 11px !important;
     font-weight: 700 !important;
-    color: #5e7b9d !important;
+    color: var(--m-faint) !important;
 }
 html.is-mobile body.rg-light #modal-invoices .invoices-table td:nth-child(2) {
     grid-area: 2 / 1 / 3 / 2 !important;
@@ -5286,7 +5319,7 @@ html.is-mobile body.rg-light #modal-daily-transactions .invoices-table td:nth-ch
     color: #0e2138 !important;
 }
 html.is-mobile body.rg-light #modal-daily-transactions .invoices-table td:nth-child(n+5)::before {
-    color: #5e7b9d !important;
+    color: var(--m-faint) !important;
 }
 html.is-mobile body.rg-light .m-day-empty { color: #4d6a8a !important; }
 html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-content .invoices-table td[style*="red-danger"],
