@@ -35,6 +35,9 @@
         rendered: false,
         signature: '',
         timer: 0,
+        lastReplay: 0,
+        freshStage: true,
+        stageEls: [],
         sheetCustomer: null
     };
 
@@ -1239,9 +1242,9 @@
             '</div>' +
 
             '<div class="ri-money">' +
-                '<div class="ri-money-i"><span>قيمة الطلبات</span><strong>' + money(vm.billed) + '</strong></div>' +
-                '<div class="ri-money-i"><span>المستلَم</span><strong>' + money(vm.collected) + '</strong><small>عربون + دفعات</small></div>' +
-                '<div class="ri-money-i warn"><span>ذمم قائمة</span><strong>' + money(vm.debtsTotal) + '</strong><small>كل الفترات</small></div>' +
+                '<div class="ri-money-i"><span>قيمة الطلبات</span><strong data-count-money="' + vm.billed + '">' + money(vm.billed) + '</strong></div>' +
+                '<div class="ri-money-i"><span>المستلَم</span><strong data-count-money="' + vm.collected + '">' + money(vm.collected) + '</strong><small>عربون + دفعات</small></div>' +
+                '<div class="ri-money-i warn"><span>ذمم قائمة</span><strong data-count-money="' + vm.debtsTotal + '">' + money(vm.debtsTotal) + '</strong><small>كل الفترات</small></div>' +
             '</div>' +
 
             (vm.openDue && vm.openDue.count
@@ -1405,43 +1408,149 @@
         host.classList.toggle('ri-no-motion', motionOff());
         countUpAll(host);
         bindRoot(host);
-        revealBelowFold(host);
+        stageScroll(host);
     }
 
-    /* البطاقات التي تبدأ أسفل الشاشة تماماً تُكشف عند التمرير إليها، ولا
-       تُخفى بطاقة يراها المستخدم الآن كي لا يومض المحتوى عند إعادة الرسم. */
-    function revealBelowFold(host) {
-        if (ioReveal) { ioReveal.disconnect(); ioReveal = null; }
-        if (motionOff() || !('IntersectionObserver' in window)) return;
+    /* ================= كشف اللوحة مع السحب =================
+       النازل هو الذي يبني اللوحة لا لحظة فتحها: البطاقات التي تبدأ تحت الطية
+       تبقى مبهمة حتى تدخل، وحينها ترتفع هي الأخرى وأشرطتها وأرقامها — فيصبح
+       النزول في تبويب طويل بناءً متدرّجاً بدل شاشة مرسومة سلفاً بلا حركة.
+       إعادة الرسم واللوحة في منتصفها لا تُخفي ما يراه المستخدم الآن، وإلا
+       يومض المحتوى كل أربع ثوانٍ مع نبضة البيانات. */
+
+    /* الوحدات القابلة للكشف: أبناء ri-sheet-top بالترتيب. أول اثنين (البطل
+       والمؤشرات) فوق الطية دائماً فيكفيهما تدرّج الفتح، وما تحت الطية يُرحَّل
+       للسحب. واللوحة المخفية لحظة القياس — إعادة الدخول تسبق ظهور الصفحة —
+       تعطي أصفاراً لكل بطاقة فيظهر كله دفعة واحدة بلا حركة؛ لذا تُستعاد قائمة
+       المُرحَّل من آخر قياس صحيح. */
+    function stageUnits(host, keepSeen) {
+        const sec = document.getElementById(SEC_ID);
         const sheet = host.querySelector('.ri-sheet-top');
-        if (!sheet) return;
-        const kids = [...sheet.children].slice(6).filter((el) => el.getBoundingClientRect().top > window.innerHeight);
-        if (!kids.length) return;
-        kids.forEach((el) => el.classList.add('ri-io'));
-        const io = new IntersectionObserver((entries) => {
-            let step = 0;
-            entries.forEach((entry) => {
-                if (!entry.isIntersecting) return;
-                const el = entry.target;
-                el.style.setProperty('--ri-j', String(step++));
-                el.classList.add('ri-io-seen');
-                io.unobserve(el);
+        if (!sec || !sheet) return [];
+        const kids = [...sheet.children];
+        if (keepSeen) {
+            /* إعادة رسم واللوحة في منتصفها: ما يراه المستخدم لا يُخفى ولا يومض،
+               وما هو في الانتظار يبقى في انتظاره ويُعاد مراقبته فقط. */
+            return kids.filter((el) => el.classList.contains('ri-io') && !el.classList.contains('ri-io-seen'));
+        }
+        if (!sec.getBoundingClientRect().height) {
+            const prev = (state.stageEls || []).filter((el) => kids.indexOf(el) !== -1);
+            kids.forEach((el) => {
+                const staged = prev.indexOf(el) !== -1;
+                el.classList.toggle('ri-io', staged);
+                if (staged) { el.classList.remove('ri-io-seen', 'ri-pop'); el.style.removeProperty('--ri-j'); }
             });
-        }, { rootMargin: '0px 0px -6% 0px', threshold: 0.01 });
-        ioReveal = io;
-        kids.forEach((el) => io.observe(el));
+            return prev;
+        }
+        const sr = sec.getBoundingClientRect();
+        const vh = window.innerHeight || 800;
+        const pending = [];
+        kids.forEach((el, i) => {
+            el.classList.remove('ri-io', 'ri-io-seen', 'ri-pop');
+            el.style.removeProperty('--ri-j');
+            const top = el.getBoundingClientRect().top - sr.top + sec.scrollTop;
+            if (i >= 2 && top > vh * 0.96) pending.push(el);
+        });
+        pending.forEach((el) => el.classList.add('ri-io'));
+        return pending;
     }
 
-    function countUpAll(host) {
+    function unstage(host) {
+        const sheet = host.querySelector('.ri-sheet-top');
+        if (sheet) [...sheet.children].forEach((el) => {
+            el.classList.remove('ri-io', 'ri-io-seen', 'ri-pop');
+            el.style.removeProperty('--ri-j');
+        });
+        state.stageEls = [];
+    }
+
+    let sweepSec = null;
+    let sweepQueued = false;
+
+    /* رفعة سريعة قد تتخطى بطاقات بين إطارين، والمراقب لا يرى ما لم يلمس
+       الشاشة في أي إطار: فما خرج من الأعلى يُكشف في الحال بلا تدرّج، وإلا
+       بقي غائباً حتى يرجع المستخدم إليه من تحته. */
+    function onSweep() {
+        if (sweepQueued) return;
+        sweepQueued = true;
+        requestAnimationFrame(() => {
+            sweepQueued = false;
+            const sec = sweepSec;
+            if (!sec || !ioReveal) return;
+            /* واللوحة مخفية فالقياس أصفار: لا يكشف شيء قبل أن تُرى */
+            if (!sec.offsetHeight) return;
+            const top = sec.getBoundingClientRect().top;
+            sec.querySelectorAll('.ri-sheet-top > .ri-io:not(.ri-io-seen)').forEach((el) => {
+                if (el.getBoundingClientRect().bottom >= top + 6) return;
+                el.style.setProperty('--ri-j', '0');
+                el.classList.add('ri-io-seen');
+                ioReveal.unobserve(el);
+                countUpAll(el);
+            });
+        });
+    }
+
+    function bindSweep(sec) {
+        if (sweepSec === sec) return;
+        if (sweepSec) sweepSec.removeEventListener('scroll', onSweep);
+        sweepSec = sec;
+        sec.addEventListener('scroll', onSweep, { passive: true });
+    }
+
+    function stageScroll(host) {
+        if (ioReveal) { ioReveal.disconnect(); ioReveal = null; }
+        /* بإيقاف الحركة لا ترحيل ولا انتظار: اللوحة كلها ظاهرة من أول إطار */
+        if (motionOff() || !('IntersectionObserver' in window)) { unstage(host); return; }
+        const keep = state.rendered && !state.freshStage;
+        const pending = stageUnits(host, keep);
+        state.stageEls = pending.slice();
+        if (!pending.length) return;
+        let batch = 0;
+        let batchAt = 0;
+        const io = new IntersectionObserver((entries) => {
+            const live = entries.filter((e) => e.isIntersecting);
+            if (!live.length) return;
+            const t = performance.now();
+            /* السحب السريع ينزل بكتل معاً: دفعة واحدة تتدرّج بثلاث خطوات،
+               وبعدها يبدأ العدّ من جديد لئلا تتأخر البطاقة اللاحقة ثانية كاملة */
+            if (t - batchAt > 240) batch = 0;
+            batchAt = t;
+            live.forEach((entry) => {
+                const el = entry.target;
+                el.style.setProperty('--ri-j', String(Math.min(batch++, 3)));
+                el.classList.add('ri-io-seen', 'ri-pop');
+                io.unobserve(el);
+                countUpAll(el);
+                staggerRows(el);
+                setTimeout(() => el.classList.remove('ri-pop'), 1100);
+            });
+        }, { root: document.getElementById(SEC_ID), rootMargin: '0px 0px -4% 0px', threshold: 0.02 });
+        ioReveal = io;
+        pending.forEach((el) => io.observe(el));
+        bindSweep(document.getElementById(SEC_ID));
+    }
+
+    /* صفوف القوائم تتصاعد واحداً بعد الآخر داخل بطاقتها، لا دفعة واحدة */
+    function staggerRows(el) {
+        el.querySelectorAll('.ri-ranks > .ri-rank, .ri-absent-list > .ri-absent-row, .ri-dir .ri-dir-row')
+            .forEach((row, i) => { if (i < 12) row.style.setProperty('--ri-r', String(i)); });
+    }
+
+    function countUpAll(scope) {
         if (motionOff()) return;
-        host.querySelectorAll('[data-count]').forEach((el) => {
-            const end = num(el.getAttribute('data-count'));
+        scope.querySelectorAll('[data-count], [data-count-money]').forEach((el) => {
+            /* رقمٌ تحت الطية لا يُعدّ قبل أن يُرى، وإلا انتهى العدّ في الظل */
+            if (el.closest('.ri-io:not(.ri-io-seen)')) return;
+            const isMoney = el.hasAttribute('data-count-money');
+            const end = num(el.getAttribute(isMoney ? 'data-count-money' : 'data-count'));
             if (!end) return;
-            const isMoney = false;
+            const run = String(performance.now()) + ':' + Math.random();
+            el.dataset.riRun = run;
             const start = 0;
             const t0 = performance.now();
             const dur = motionSoft() ? 450 : 760;
             const step = (t) => {
+                if (el.dataset.riRun !== run) return;
                 const k = clamp((t - t0) / dur, 0, 1);
                 const e = 1 - Math.pow(1 - k, 3);
                 el.textContent = isMoney ? money(start + (end - start) * e) : fmt(start + (end - start) * e);
@@ -1866,9 +1975,28 @@
         return [d.invoices.length, lastTs, d.payments.length, d.debts.length].join(':');
     }
 
-    function draw(force) {
+    /* هيكل التجهيز: يُركَّب عند الإقلاع لا عند أول زيارة، فتبقى القوائم القديمة
+       مخفية قبل أن يلمس المستخدم التبويب — لا ثانية واحدة من الشكل السابق. */
+    function bootSkeleton() {
+        let cards = '';
+        for (let i = 0; i < 4; i++) {
+            cards += '<div class="ri-boot-card"><i class="ri-boot-line w70"></i><i class="ri-boot-line w40"></i>' +
+                '<i class="ri-boot-bar"></i><i class="ri-boot-bar"></i><i class="ri-boot-bar"></i></div>';
+        }
+        return '<div class="ri-boot">' +
+            '<div class="ri-boot-hero"><i class="ri-boot-line w35"></i><i class="ri-boot-line w80 h2"></i><i class="ri-boot-line w55"></i>' +
+                '<div class="ri-boot-chips"><i></i><i></i><i></i><i></i></div></div>' +
+            '<div class="ri-boot-kpis"><i></i><i></i><i></i><i></i></div>' +
+            cards +
+            '<div class="ri-boot-note"><i class="fa-solid fa-hourglass-half"></i> يُجهَّز تحليل الزبائن…</div>' +
+        '</div>';
+    }
+
+    function mountShell() {
         const sec = document.getElementById(SEC_ID);
-        if (!sec) return;
+        if (!sec) return null;
+        /* بلا جسر البيانات لا يوجد مركز زبائن: لا حق في إخفاء قوائم الكمبيوتر */
+        if (typeof window.royalDataRead !== 'function') return null;
         let host = sec.querySelector('.ri-root');
         if (!host) {
             host = document.createElement('div');
@@ -1876,16 +2004,29 @@
             sec.insertBefore(host, sec.firstChild);
         }
         if (!sec.classList.contains('ri-on')) sec.classList.add('ri-on');
+        host.classList.toggle('ri-no-motion', motionOff());
+        if (!state.rendered && !host.firstElementChild) host.innerHTML = bootSkeleton();
+        return host;
+    }
+
+    function draw(force) {
+        const sec = document.getElementById(SEC_ID);
+        if (!sec) return;
+        const host = mountShell();
+        if (!host) return;
         const sig = signature();
         if (!force && state.rendered && sig === state.signature) return;
         const vm = build(periodDays());
         if (!vm) return;
         state.signature = sig;
-        state.rendered = true;
         const scroll = sec.scrollTop;
         const active = document.activeElement;
         const focusSearch = active && active.id === 'ri-search';
         const caret = focusSearch ? active.selectionStart : null;
+        /* اللوحة عند أولها أو لم تُرسم بعد: تدرّج السحب يبدأ من الصفر.
+           وهي في منتصفها: ما يراه المستخدم الآن لا يُخفى ولا يومض. */
+        state.freshStage = !state.rendered || scroll < 4;
+        state.rendered = true;
         renderRoot(host, vm);
         if (scroll) sec.scrollTop = scroll;
         if (focusSearch) {
@@ -1894,12 +2035,39 @@
         }
     }
 
+    /* كل دخول للتبويب يبدأ من الصفر: ما نزل إليه المستخدم ينتظر سحبه من جديد،
+       والبطاقات العلوية تتدرّج والأرقام تُعدّ مرة أخرى — بلا إعادة رسم. */
+    function replay() {
+        const sec = document.getElementById(SEC_ID);
+        if (!sec || !state.rendered) return;
+        const host = sec.querySelector('.ri-root');
+        const sheet = host && host.querySelector('.ri-sheet-top');
+        if (!sheet) return;
+        const t = performance.now();
+        if (t - state.lastReplay < 320) return;
+        state.lastReplay = t;
+        if (motionOff()) { state.freshStage = false; stageScroll(host); return; }
+        sec.scrollTop = 0;
+        state.freshStage = true;
+        stageScroll(host);
+        sheet.classList.remove('ri-in');
+        void sheet.offsetHeight;
+        sheet.classList.add('ri-in');
+        countUpAll(host);
+    }
+
     function ensureHook() {
         const sec = document.getElementById(SEC_ID);
-        if (!sec || sec.dataset.riObs === '1') return;
+        if (!sec) return;
+        mountShell();
+        if (sec.dataset.riObs === '1') return;
         sec.dataset.riObs = '1';
+        let shown = sec.classList.contains('active');
         new MutationObserver(() => {
-            if (!sec.classList.contains('active')) { closeSheet(); return; }
+            if (!sec.classList.contains('active')) { shown = false; closeSheet(); return; }
+            const first = !shown;
+            shown = true;
+            if (first && state.rendered) replay();
             draw(false);
         }).observe(sec, { attributes: true, attributeFilter: ['class'] });
         if (sec.classList.contains('active')) draw(false);
@@ -1908,6 +2076,7 @@
     function tick() {
         const sec = document.getElementById(SEC_ID);
         if (!sec || !sec.classList.contains('active') || document.hidden) return;
+        mountShell();
         draw(false);
     }
 
@@ -1926,6 +2095,7 @@
     else boot();
     window.RoyalInsight = {
         refresh: () => draw(true),
+        replay,
         state,
         /* البحث السريع يفتح ملف الزبون من أي فترة، لا من الفترة المعروضة وحدها */
         openCustomer: (name) => openCustomer(String(name == null ? '' : name), true),
@@ -2257,6 +2427,86 @@ html.is-mobile body.rm-motion-off .ri-sheet-top > .ri-io {
     visibility: visible;
     transform: none;
 }
+
+/* النازل هو الذي يبني: بطاقةٌ لم تدخل الشاشة بعد لا تُحرَّك رسوماتها ولا
+   تُعدّ أرقامها — الأشرطة والمخططات تنمو حين تُرى. بلا هذا القفل تنتهي كل
+   حركات اللوحة في الظل قبل أن يصل إليها المستخدم، فينزل على شاشة مرسومة. */
+html.is-mobile .ri-root:not(.ri-no-motion) .ri-sheet-top.ri-in > .ri-io { animation: none; }
+html.is-mobile .ri-sheet-top > .ri-io:not(.ri-io-seen) * { animation-play-state: paused; }
+
+/* صفوف القوائم تتصاعد واحداً بعد الآخر حين يدخل بلوكها — لا دفعة واحدة.
+   أول اثني عشر صفاً فقط: ما تحتها لا يُرى وهو يُبنى، وتحريك أربعمئة صف
+   دفعةً واحدة كان ثِقل الدخول نفسه الذي أفنى الإطارات. */
+@keyframes riRowIn {
+    from { opacity: 0; transform: translate3d(0, 14px, 0); }
+    to   { opacity: 1; transform: none; }
+}
+html.is-mobile .ri-io.ri-pop .ri-ranks > .ri-rank:nth-child(-n+12),
+html.is-mobile .ri-io.ri-pop .ri-absent-list > .ri-absent-row:nth-child(-n+12),
+html.is-mobile .ri-io.ri-pop .ri-dir .ri-dir-row:nth-child(-n+12) {
+    animation: riRowIn .52s var(--m-ease-out) both;
+    animation-delay: calc(130ms + min(var(--ri-r, 0), 11) * 45ms);
+}
+html.is-mobile .ri-root.ri-no-motion .ri-io.ri-pop .ri-rank,
+html.is-mobile .ri-root.ri-no-motion .ri-io.ri-pop .ri-absent-row,
+html.is-mobile .ri-root.ri-no-motion .ri-io.ri-pop .ri-dir-row,
+html.is-mobile body.rm-motion-off .ri-io.ri-pop .ri-dir-row { animation: none; }
+
+/* هيكل التجهيز: شكل اللوحة نفسها — بطاقة فوق بطاقة — إلى أن تصل البيانات،
+   فلا يبقى التبويب فارغاً ولا يرجع إلى قائمة الكمبيوتر أثناء الانتظار. */
+@keyframes riBootPulse { 0%, 100% { opacity: .34; } 50% { opacity: .82; } }
+html.is-mobile .ri-boot { display: flex; flex-direction: column; gap: 0; padding-top: 2px; }
+html.is-mobile .ri-boot-hero,
+html.is-mobile .ri-boot-card {
+    border-radius: var(--m-radius-card);
+    border: 1px solid var(--m-edge);
+    background:
+        linear-gradient(150deg, rgba(255,255,255,.10), rgba(255,255,255,.012) 46%, rgba(255,255,255,.055)),
+        var(--ri-card);
+    box-shadow: var(--m-lift);
+    padding: 16px 14px;
+    margin-bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+}
+html.is-mobile body.rg-light .ri-boot-hero,
+html.is-mobile body.rg-light .ri-boot-card {
+    background: linear-gradient(150deg, rgba(255,255,255,.98), rgba(255,255,255,.7)), var(--ri-card);
+}
+html.is-mobile .ri-boot i {
+    display: block;
+    border-radius: 7px;
+    background: rgba(var(--rg-accent-rgb), .16);
+    animation: riBootPulse 1.5s var(--m-ease) infinite;
+}
+html.is-mobile .ri-boot .ri-boot-line { height: 11px; }
+html.is-mobile .ri-boot .h2 { height: 22px; }
+html.is-mobile .ri-boot .w35 { width: 35%; }
+html.is-mobile .ri-boot .w40 { width: 40%; }
+html.is-mobile .ri-boot .w55 { width: 55%; }
+html.is-mobile .ri-boot .w70 { width: 70%; }
+html.is-mobile .ri-boot .w80 { width: 80%; }
+html.is-mobile .ri-boot-chips,
+html.is-mobile .ri-boot-kpis { display: grid; gap: 9px; margin-top: 4px; }
+html.is-mobile .ri-boot-chips { grid-template-columns: repeat(4, 1fr); }
+html.is-mobile .ri-boot-chips i { height: 26px; border-radius: 13px; }
+html.is-mobile .ri-boot-kpis { grid-template-columns: 1fr 1fr; }
+html.is-mobile .ri-boot-kpis i { height: 62px; border-radius: var(--m-radius-card); }
+html.is-mobile .ri-boot-bar { height: 9px; }
+html.is-mobile .ri-boot-card .ri-boot-bar:nth-of-type(2) { width: 76%; }
+html.is-mobile .ri-boot-card .ri-boot-bar:nth-of-type(3) { width: 52%; }
+html.is-mobile .ri-boot-hero i:nth-child(2) { animation-delay: .12s; }
+html.is-mobile .ri-boot-hero i:nth-child(3) { animation-delay: .24s; }
+html.is-mobile .ri-boot-kpis i:nth-child(2) { animation-delay: .18s; }
+html.is-mobile .ri-boot-kpis i:nth-child(3) { animation-delay: .3s; }
+html.is-mobile .ri-boot-kpis i:nth-child(4) { animation-delay: .42s; }
+html.is-mobile .ri-boot-note {
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+    font-size: 11px; font-weight: 800; color: var(--m-muted); padding: 6px 0 2px;
+}
+html.is-mobile .ri-boot-note i { color: var(--m-accent2); font-size: 11px; }
+html.is-mobile .ri-root.ri-no-motion .ri-boot i { animation: none; opacity: .6; }
 
 html.is-mobile .ri-cmp-ret { margin-top: 15px; padding-top: 13px; border-top: 1px solid var(--ri-line); display: flex; flex-direction: column; gap: 7px; }
 html.is-mobile .ri-cmp-ret-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
@@ -3127,6 +3377,10 @@ body.ri-sheet-open #mobile-bottom-nav { opacity: .35; pointer-events: none; tran
 @media (prefers-reduced-motion: reduce) {
     html.is-mobile .ri-in { animation: none !important; }
     html.is-mobile .ri-sheet-top > .ri-io { opacity: 1 !important; visibility: visible !important; transform: none !important; }
+    html.is-mobile .ri-boot i { animation: none !important; opacity: .6; }
+    html.is-mobile .ri-io.ri-pop .ri-dir-row,
+    html.is-mobile .ri-io.ri-pop .ri-ranks > .ri-rank,
+    html.is-mobile .ri-io.ri-pop .ri-absent-list > .ri-absent-row { animation: none !important; }
     html.is-mobile .ri-area-line { animation: none !important; stroke-dashoffset: 0 !important; }
     html.is-mobile .ri-mo-b { animation: none !important; transform: none !important; }
     html.is-mobile .ri-sheet-card { transition: none !important; }

@@ -10326,6 +10326,10 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
     function enterNodes(page) {
         const out = [];
         qsa(':scope > *', page).forEach((c) => {
+            /* مركز الزبائن يدير حركته بنفسه عبر التدرّج مع السحب؛ رفع .ri-root
+               بـ mRise كان يقيس نقطة مركزها على ارتفاع اللوحة كله (عشرة آلاف
+               بكسل) فتزيحها قفزةً عند أول إطار بدل أن تتصاعد بطاقاتها. */
+            if (c.classList && c.classList.contains('ri-root')) return;
             const kids = qsa(':scope > *', c);
             const allCards = kids.length > 1 && kids.every((k) => k.classList.contains('stat-card'));
             const grid = c.classList.contains('bento-box-container') || c.classList.contains('m-flow') || c.classList.contains('stats-grid') || allCards;
@@ -10371,6 +10375,12 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
     function enterAnimate(page) {
         if (!page) return;
         clearEnter(page);
+        /* لوحة لها محرك دخول خاص (مركز الزبائن): تُعاد من عنده لا من هنا،
+           وإلا بقيت بطاقاتها مرسومة من زيارة سابقة فلا يرى المستخدم شيئاً */
+        if (page.querySelector('.ri-root') && window.RoyalInsight && typeof window.RoyalInsight.replay === 'function') {
+            try { window.RoyalInsight.replay(); } catch (e) { }
+            return;
+        }
         const nodes = enterNodes(page);
         const rows = enterRows(page);
         nodes.forEach((n, i) => n.style.setProperty('--m-k', String(i)));
