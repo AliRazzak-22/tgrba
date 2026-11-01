@@ -789,9 +789,12 @@
         }).join('') + '</div>';
     }
 
-    function ladderHTML(ladder) {
+    function ladderHTML(ladder, returning, total, visits) {
         const max = Math.max(1, ...ladder.map((l) => l.n));
-        return '<div class="ri-ladder">' + ladder.map((l, i) => {
+        const rep = total ? Math.round((returning / total) * 100) : 0;
+        const per = total ? (visits / total).toFixed(1) : '0';
+        return '<div class="ri-lad-sum"><b dir="ltr">' + rep + '%</b> عادوا أكثر من مرة · متوسط <b dir="ltr">' + per + '</b> زيارة لكل زبون</div>' +
+            '<div class="ri-ladder">' + ladder.map((l, i) => {
             const w = clamp((l.n / max) * 100, l.n ? 3 : 0, 100);
             return '<div class="ri-lad-row">' +
                 '<span class="ri-lad-l">' + l.label + '</span>' +
@@ -850,12 +853,12 @@
         }).join('') + '</div>';
     }
 
-    function absentRows(list) {
+    function absentRows(list, since) {
         return '<div class="ri-absent-list">' + list.slice(0, 5).map((c) =>
             '<button type="button" class="ri-absent-row" data-customer="' + esc(c.name) + '" data-alltime="1">' +
                 '<span class="ri-av">' + esc(initial(c.name)) + '</span>' +
                 '<span class="ri-absent-body"><strong>' + esc(c.name) + '</strong>' +
-                    '<small><i class="fa-solid fa-hourglass-half"></i> غاب ' + fmt(c.days) + ' يوماً · ' + visitsWord(c.visits) + '</small></span>' +
+                    '<small><i class="fa-solid fa-hourglass-half"></i> ' + (since ? 'منذ ' : 'غاب ') + fmt(c.days) + ' يوماً · ' + visitsWord(c.visits) + '</small></span>' +
                 '<span class="ri-absent-v">' + money(c.spent) + '</span>' +
             '</button>'
         ).join('') + '</div>';
@@ -1074,7 +1077,7 @@
 
             '<div class="ri-card">' +
                 '<div class="ri-card-head"><h3><i class="fa-solid fa-stairs"></i> مدرّج الولاء</h3><span>عدد الزيارات</span></div>' +
-                ladderHTML(vm.ladder) +
+                ladderHTML(vm.ladder, vm.returning, vm.customers.length, vm.visits) +
             '</div>' +
 
             '<div class="ri-card">' +
@@ -1096,7 +1099,7 @@
                     '<div class="ri-watch-note"><i class="fa-solid fa-hourglass-half"></i><span><b>' + fmt(vm.watch.length) + '</b> ' +
                         (vm.watch.length === 1 ? 'زبون' : vm.watch.length === 2 ? 'زبونان' : vm.watch.length <= 10 ? 'زبائن' : 'زبوناً') +
                         ' لم يزوروا منذ ١٤–٢٠ يوماً — قبل بلوغ حدّ الغياب · إنفاقهم التاريخي <b>' + money(vm.watchSpend) + '</b></span></div>' +
-                    absentRows(vm.watch) +
+                    absentRows(vm.watch, true) +
                     (vm.watch.length > 5 ? '<div class="ri-absent-more">و' + fmt(vm.watch.length - 5) + ' آخرون — افتح دليل الزبائن للبحث بالاسم</div>' : '') +
                   '</div>'
                 : '') +
@@ -2185,6 +2188,17 @@ html.is-mobile body.rg-light .ri-gap-foot b { color: #0e2138; }
 html.is-mobile body.rg-light .ri-gap-foot i { color: #1b5aa8; }
 html.is-mobile body.rg-light .ri-gap-foot small { color: #5b7191; }
 
+html.is-mobile .ri-lad-sum {
+    display: flex; align-items: center; flex-wrap: wrap; gap: 4px;
+    margin-bottom: 11px; padding: 9px 11px;
+    border-radius: 12px;
+    background: rgba(var(--rg-accent-rgb), .07);
+    border: 1px solid rgba(var(--rg-accent-rgb), .16);
+    font-size: 10px; font-weight: 700; color: var(--m-muted);
+}
+html.is-mobile .ri-lad-sum b { color: var(--m-text); font-weight: 900; font-variant-numeric: tabular-nums; }
+html.is-mobile body.rg-light .ri-lad-sum { background: rgba(30,90,170,.05); border-color: rgba(30,90,170,.14); color: #4c5d75; }
+html.is-mobile body.rg-light .ri-lad-sum b { color: #0e2138; }
 html.is-mobile .ri-ladder { display: flex; flex-direction: column; gap: 9px; }
 html.is-mobile .ri-lad-row { display: grid; grid-template-columns: 64px 1fr 28px; align-items: center; gap: 8px; }
 html.is-mobile .ri-lad-l { font-size: 10px; font-weight: 800; color: var(--m-muted); }
