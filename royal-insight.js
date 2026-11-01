@@ -1009,6 +1009,7 @@
     }
 
     let cachedVm = null;
+    let ioReveal = null;
 
     function cmpDelta(now, was) {
         if (!was) {
@@ -1248,6 +1249,31 @@
         host.classList.toggle('ri-no-motion', motionOff());
         countUpAll(host);
         bindRoot(host);
+        revealBelowFold(host);
+    }
+
+    /* البطاقات التي تبدأ أسفل الشاشة تماماً تُكشف عند التمرير إليها، ولا
+       تُخفى بطاقة يراها المستخدم الآن كي لا يومض المحتوى عند إعادة الرسم. */
+    function revealBelowFold(host) {
+        if (ioReveal) { ioReveal.disconnect(); ioReveal = null; }
+        if (motionOff() || !('IntersectionObserver' in window)) return;
+        const sheet = host.querySelector('.ri-sheet-top');
+        if (!sheet) return;
+        const kids = [...sheet.children].slice(6).filter((el) => el.getBoundingClientRect().top > window.innerHeight);
+        if (!kids.length) return;
+        kids.forEach((el) => el.classList.add('ri-io'));
+        const io = new IntersectionObserver((entries) => {
+            let step = 0;
+            entries.forEach((entry) => {
+                if (!entry.isIntersecting) return;
+                const el = entry.target;
+                el.style.setProperty('--ri-j', String(step++));
+                el.classList.add('ri-io-seen');
+                io.unobserve(el);
+            });
+        }, { rootMargin: '0px 0px -6% 0px', threshold: 0.01 });
+        ioReveal = io;
+        kids.forEach((el) => io.observe(el));
     }
 
     function countUpAll(host) {
@@ -1913,6 +1939,26 @@ html.is-mobile .ri-root:not(.ri-no-motion) .ri-sheet-top.ri-in > *:nth-child(4) 
 html.is-mobile .ri-root:not(.ri-no-motion) .ri-sheet-top.ri-in > *:nth-child(5) { animation-delay: 390ms; }
 html.is-mobile .ri-root:not(.ri-no-motion) .ri-sheet-top.ri-in > *:nth-child(6) { animation-delay: 470ms; }
 html.is-mobile .ri-root:not(.ri-no-motion) .ri-sheet-top.ri-in > *:nth-child(n+7) { animation: none; }
+
+/* كشف بطاقات ما بعد الطية مع التمرير بدل السكون التام */
+html.is-mobile .ri-sheet-top > .ri-io {
+    opacity: 0;
+    visibility: hidden;
+    transform: translate3d(0, 22px, 0) scale(.985);
+    transition: opacity .8s var(--m-ease-out), transform .8s var(--m-ease-out);
+}
+html.is-mobile .ri-sheet-top > .ri-io.ri-io-seen {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    transition-delay: calc(min(var(--ri-j, 0), 4) * 70ms);
+}
+html.is-mobile .ri-root.ri-no-motion .ri-sheet-top > .ri-io,
+html.is-mobile body.rm-motion-off .ri-sheet-top > .ri-io {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+}
 
 html.is-mobile .ri-cmp-ret { margin-top: 15px; padding-top: 13px; border-top: 1px solid var(--ri-line); display: flex; flex-direction: column; gap: 7px; }
 html.is-mobile .ri-cmp-ret-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
@@ -2734,6 +2780,7 @@ body.ri-sheet-open #mobile-bottom-nav { opacity: .35; pointer-events: none; tran
 
 @media (prefers-reduced-motion: reduce) {
     html.is-mobile .ri-in { animation: none !important; }
+    html.is-mobile .ri-sheet-top > .ri-io { opacity: 1 !important; visibility: visible !important; transform: none !important; }
     html.is-mobile .ri-area-line { animation: none !important; stroke-dashoffset: 0 !important; }
     html.is-mobile .ri-mo-b { animation: none !important; transform: none !important; }
     html.is-mobile .ri-sheet-card { transition: none !important; }
