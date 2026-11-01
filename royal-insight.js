@@ -41,7 +41,11 @@
         visited: false,
         enterUntil: 0,
         deferTimer: 0,
-        sheetCustomer: null
+        sheetCustomer: null,
+        armed: false,
+        pendingRefresh: false,
+        countTries: 0,
+        countRetry: 0
     };
 
     function esc(v) {
@@ -1551,6 +1555,23 @@
 
     function countUpAll(scope) {
         if (motionOff()) return;
+        /* والبناء خلف الشاشة لا يُعدّ وهو مخفي: من عدّ وهو مخفي وصل المستخدم إلى
+           أرقام مستقرة ثم أعادها الدخول من الصفر. يُعاد الطلب حتى تُرى الصفحة،
+           فتتصاعد الأرقام مع سحبها إلى العين لا بعد استقرارها. */
+        const sec = document.getElementById(SEC_ID);
+        if (!sec || !sec.offsetHeight) {
+            /* إعادة الطلب للدخول الجاري وحده: السحبة ترمى والصفحة مخفية، فإن
+               رآها المستخدم عدّت الأرقام معه. وما عدا ذلك يسكت — فالبناء
+               الخلفي لا يُعدّ لأحد، والدخول يستدعي هذا من جديد بنفسه. */
+            if (state.armed && !state.countRetry && state.countTries < 24) {
+                state.countTries++;
+                state.countRetry = setTimeout(() => {
+                    state.countRetry = 0;
+                    countUpAll(scope);
+                }, 80);
+            }
+            return;
+        }
         scope.querySelectorAll('[data-count], [data-count-money]').forEach((el) => {
             /* رقمٌ تحت الطية لا يُعدّ قبل أن يُرى، وإلا انتهى العدّ في الظل */
             if (el.closest('.ri-io:not(.ri-io-seen)')) return;
@@ -1560,6 +1581,9 @@
             const run = String(performance.now()) + ':' + Math.random();
             el.dataset.riRun = run;
             const start = 0;
+            /* القيمة النهائية مكتوبة في البنية: من لا يُمسح قبل أول إطار يومض
+               الرقم كاملاً ثم يهبط إلى الصفر ويعدّ — والوميض يبدو بناءً ثانياً. */
+            el.textContent = isMoney ? money(start) : fmt(start);
             const t0 = performance.now();
             const dur = motionSoft() ? 450 : 760;
             const step = (t) => {
@@ -2022,6 +2046,58 @@
         return host;
     }
 
+
+    /* الأجدّ المنتظر يُرسَم بعد هدأة الدخول لا قبلها: مرة واحدة، ولا شيء منها
+       تحت الإصبع ولا في منتصف تدرّج البطاقات. */
+    function scheduleRefresh() {
+        if (!state.pendingRefresh || state.deferTimer) return;
+        const sec = document.getElementById(SEC_ID);
+        if (!sec) return;
+        state.deferTimer = setTimeout(() => {
+            state.deferTimer = 0;
+            if (state.pendingRefresh) draw(false);
+        }, Math.max(0, state.enterUntil - performance.now()) + 60);
+    }
+
+    /* والبناء الذي لا يراه أحد يُبنى حين يفرغ الخيط: لا يزاحم سحبةً ولا حركة
+       وهو خلف الشاشة، ويصل قبل الدخول فلا يرى المستخدم صفحةً بلا أرقام. */
+    let idleHandle = 0;
+    function queueIdleBuild() {
+        if (idleHandle || !state.pendingRefresh) return;
+        const run = () => {
+            idleHandle = 0;
+            if (!state.pendingRefresh) return;
+            const sec = document.getElementById(SEC_ID);
+            /* وظهرت اللوحة قبل أن يفرغ الخيط: الدخول أحقّ بالبناء وأجدر تدرّجاً */
+            if (!sec || sec.offsetHeight || sec.classList.contains('active')) return;
+            draw(true);
+        };
+        if ('requestIdleCallback' in window) idleHandle = window.requestIdleCallback(run, { timeout: 3000 });
+        else idleHandle = setTimeout(run, 700);
+    }
+
+    /* القياس عند أول ظهور: واللوحة خلف الشاشة كل مستطيلات أبنائها أصفار، فلا
+       ترحيل يُحسب ولا عدّ يبدأ. والانتظار بالإطار لا بالمؤقّت: أول إطار تلمسه
+       العين هو الذي يُركَّب فيه الدخول، فلو تأخّر رأها المستخدم مكتملة ثم أُعيد
+       بناؤها من الصفر — وهو «تتكوّن وتختفي وترجع تتكوّن». */
+    let armWait = 0;
+    function whenSeen(run) {
+        const sec = document.getElementById(SEC_ID);
+        if (!sec) return;
+        if (sec.offsetHeight) { run(); return; }
+        if (armWait) return;
+        const stopAt = performance.now() + 1500;
+        const poll = () => {
+            armWait = 0;
+            const s = document.getElementById(SEC_ID);
+            if (!s) return;
+            if (s.offsetHeight) { run(); return; }
+            if (performance.now() > stopAt) return;
+            armWait = requestAnimationFrame(poll);
+        };
+        armWait = requestAnimationFrame(poll);
+    }
+
     function draw(force) {
         const sec = document.getElementById(SEC_ID);
         if (!sec) return;
@@ -2029,21 +2105,30 @@
         if (!host) return;
         const sig = signature();
         if (!force && state.rendered && sig === state.signature) return;
-        /* بناء الدخول جارٍ: إعادة رسم الآن تُلغي التدرّج من منتصفه، فيرى
-           المستخدم اللوحة تتكوّن ثم تختفي ثم تتكوّن. تُرجأ إلى أن يستقر.
+        /* واللوحة مخفية: لا عمل تحت عين المستخدم، ولا خمول أيضاً — الأجدّ يُبنى
+           حين يهدأ الخيط. فما لا يُبنى إلا عند الدخول يرى المستخدم هيكلاً بلا
+           أرقام يدخل معه، ثم تُصفق البيانات في وجهه بعد نصف ثانية. */
+        if (!force && !sec.offsetHeight) {
+            state.pendingRefresh = true;
+            queueIdleBuild();
+            return;
+        }
+        /* بناء الدخول جارٍ أو السحب لم يستقرّ بعد: إعادة الرسم تستبدل كل
+           البطاقات في منتصف التدرّج، فتبدو اللوحة قد تكوّنت ثم اختفت ثم
+           تكوّنت — وهو بعينه ما يشتكيه المستخدم. تُرجأ إلى أن يهدأ الدخول،
+           وموجّه الجوال يعيد جدولة هذا المؤجَّل عند استقرار السحبة (replay).
            وما جاء من فعل المستخدم (فترة/فلتر/تحديث) لا يُرجأ: ينتظر جواباً. */
-        if (!force && state.rendered && sec.classList.contains('active') && performance.now() < state.enterUntil) {
-            if (!state.deferTimer) {
-                state.deferTimer = setTimeout(() => {
-                    state.deferTimer = 0;
-                    draw(false);
-                }, Math.max(0, state.enterUntil - performance.now()) + 40);
-            }
+        if (!force && state.rendered && (performance.now() < state.enterUntil || !sec.classList.contains('active'))) {
+            state.pendingRefresh = true;
+            /* وتحت الإصبع نفسها (مرئية ولم تستقرّ) لا تُجدوَل هنا: استقرار
+               السحبة يستدعي replay فيجدّل وحده، وإلا دار المؤقّت تحت الإصبع. */
+            if (sec.classList.contains('active')) scheduleRefresh();
             return;
         }
         const vm = build(periodDays());
         if (!vm) return;
         state.signature = sig;
+        state.pendingRefresh = false;
         const scroll = sec.scrollTop;
         const active = document.activeElement;
         const focusSearch = active && active.id === 'ri-search';
@@ -2069,30 +2154,57 @@
        والبطاقات العلوية تتدرّج والأرقام تُعدّ مرة أخرى — بلا إعادة رسم. */
     function replay() {
         const sec = document.getElementById(SEC_ID);
-        if (!sec || !state.rendered) return;
-        const host = sec.querySelector('.ri-root');
-        const sheet = host && host.querySelector('.ri-sheet-top');
-        if (!sheet) return;
+        if (!sec) return;
         const t = performance.now();
         /* بناء واحد لكل دخول: الدخول يستدعي هذه من مكانين — موجّه الجوال
            ومراقب أصناف اللوحة — وكان الثاني يقطع التدرّج من منتصفه فيبدو
            أنه تكوّن ثم اختفى ثم تكوّن. والفاصل عمرُ الحركة كلها لا أقل منها. */
         if (t - state.lastReplay < 1500) return;
+        /* والسحبة تُرمى مرّتين: عند أولها (تُبنى والصفحة تُجرّ إلى العين) وعند
+           استقرار الموجّه عليها. الثانية هي «تختفي وترجع تتكوّن»: اللوحة قد
+           بُنيت أمام المستخدم فعلاً، فلا تُرمى من جديد، ويُوشم دخولها ليأخذ أي
+           تحديث لاحق طريق الاستبدال في مكانه. */
+        if (state.armed && sec.offsetHeight) {
+            /* والاستقرار يمدّد نافذة الدخول: التدرّج الذي رُكّب عند أول السحب
+               لم يبدأ ظهوره الحقيقي إلا الآن، فأي تجديد قبل نهايته يقطعه. */
+            state.visited = true;
+            state.enterUntil = Math.max(state.enterUntil, t + 1100);
+            if (signature() !== state.signature) state.pendingRefresh = true;
+            scheduleRefresh();
+            return;
+        }
+        state.armed = true;
         state.lastReplay = t;
-        /* والبيانات أجدّ من المرسوم: الدخول يُبنى برسمٍ جديد لا بإعادة تشغيل
-           بناءٍ قديم، وإلا رأى المستخدم أرقاماً ثم تصحيحها بعده بلحظة. */
-        if (signature() !== state.signature) { state.visited = false; draw(false); return; }
+        state.countTries = 0;
+        /* ولم يُبنَ بعدُ (لم تكن البيانات وصلت عند الإقلاع): يُبنى الآن قبل أن
+           يُقاس، فبناءٌ بعد قياسٍ يعني وحدةً محجوبة وهي مرئية وعينُ المستخدم
+           بينهما. وأما وقد بُنيت فالبناء تحت الإصبع نصفُ ثانية من الإطار يقتل
+           الحركة نفسها: تُعاد الحركة على الموجود، والأجدّ ينتظر هدأة الدخول. */
+        if (!state.rendered) draw(true);
+        else if (signature() !== state.signature) state.pendingRefresh = true;
         state.visited = true;
         state.enterUntil = t + 1500;
-        if (motionOff()) { state.freshStage = false; stageScroll(host); return; }
+        scheduleRefresh();
         sec.scrollTop = 0;
+        const host = sec.querySelector('.ri-root');
+        /* ولا لوحة بعدُ إلا هيكل التجهيز: البيانات في طريقها، والدخول يُرمى
+           من جديد عند وصولها — لا تُستهلك حركةُ دخولٍ على هيكل. */
+        if (!host || !host.querySelector('.ri-sheet-top')) { state.armed = false; state.lastReplay = 0; return; }
+        if (motionOff()) { state.freshStage = false; whenSeen(() => stageScroll(host)); return; }
         state.freshStage = true;
-        [...host.children].forEach((el) => el.classList.remove('ri-settled'));
-        stageScroll(host);
-        sheet.classList.remove('ri-in');
-        void sheet.offsetHeight;
-        sheet.classList.add('ri-in');
-        countUpAll(host);
+        /* والقياس كله عند أول ظهور: السحبة تُرمى والصفحة بعدُ خلف الشاشة، فكل
+           مستطيل صفر — لا وحدة تُرحَّل ولا رقم يُعدّ، فيرى المستخدم لوحةً
+           مكتملة ساكنة ثم تُصفق فيها البطاقات من الصفر عند الاستقرار. */
+        whenSeen(() => {
+            const sheet = host.querySelector('.ri-sheet-top');
+            if (!sheet) return;
+            [...host.children].forEach((el) => el.classList.remove('ri-settled'));
+            stageScroll(host);
+            sheet.classList.remove('ri-in');
+            void sheet.offsetHeight;
+            sheet.classList.add('ri-in');
+            countUpAll(host);
+        });
     }
 
     function ensureHook() {
@@ -2104,11 +2216,18 @@
         let shown = sec.classList.contains('active');
         if (shown) state.visited = true;
         new MutationObserver(() => {
-            if (!sec.classList.contains('active')) {
+            const on = sec.classList.contains('active');
+            if (!on) {
+                /* والمغادرة تُنسى وحدها: أي تغيّر صنف آخر — m-seen في أول السحب
+                   مثلاً — كان يمرّ من هنا فيمحو أثر الدخول الجاري، فتُبنى اللوحة
+                   مرة عند السحب ومرة عند الاستقرار. */
+                if (shown) {
+                    state.visited = false;
+                    state.lastReplay = 0;
+                    state.armed = false;
+                    closeSheet();
+                }
                 shown = false;
-                state.visited = false;
-                state.lastReplay = 0;
-                closeSheet();
                 return;
             }
             const first = !shown;
@@ -2116,16 +2235,21 @@
             /* الدخول بناء واحد يتكفّل به replay: يعيد تشغيل الحركة على نفس
                البناء، أو يرسم من جديد إن كانت البيانات أجدّ — لا الاثنان معاً،
                فذلك ما كان يُكوّن اللوحة ثم يمحوها ثم يعيدها. */
-            if (first && state.rendered) replay();
+            if (first) replay();
             draw(false);
         }).observe(sec, { attributes: true, attributeFilter: ['class'] });
-        if (sec.classList.contains('active')) draw(false);
+        /* واللوحة مخفية: لا تُرسم لأجل نفسها، بل لأجل السحبة التي تحملها.
+           من بنيت عند الاستقرار بعد انتهاء السحب رأى المستخدم هيكلاً رمادياً
+           يدخل معه ثم «يُصفق» مكانه التحليل كاملاً. */
+        draw(false);
     }
 
     function tick() {
         const sec = document.getElementById(SEC_ID);
-        if (!sec || !sec.classList.contains('active') || document.hidden) return;
+        if (!sec || document.hidden) return;
         mountShell();
+        /* ومخفيةً أيضاً يُسأل هذا كل أربع ثوانٍ: البناء المؤجَّل للخيط الفارغ
+           هو ما يجعل أرقام أول دخول تُعدّ من الصفر بدل أن تهبط دفعة واحدة. */
         draw(false);
     }
 
@@ -2446,21 +2570,33 @@ html.is-mobile body.rg-light .ri-cmp-d.flat { background: rgba(30,70,120,.06); c
     from { opacity: 0; transform: translate3d(0, 22px, 0) scale(.985); }
     to   { opacity: 1; transform: none; }
 }
+html.is-mobile .ri-root:not(.ri-no-motion) .ri-sheet-top.ri-in { animation: none; }
 html.is-mobile .ri-root:not(.ri-no-motion) .ri-sheet-top.ri-in > * {
-    animation: riIn .8s var(--m-ease-out) both;
+    animation: riIn .72s var(--m-ease-out) both;
 }
-html.is-mobile .ri-root:not(.ri-no-motion) .ri-sheet-top.ri-in > *:nth-child(1) { animation-delay: 70ms; }
-html.is-mobile .ri-root:not(.ri-no-motion) .ri-sheet-top.ri-in > *:nth-child(2) { animation-delay: 150ms; }
-html.is-mobile .ri-root:not(.ri-no-motion) .ri-sheet-top.ri-in > *:nth-child(3) { animation-delay: 230ms; }
-html.is-mobile .ri-root:not(.ri-no-motion) .ri-sheet-top.ri-in > *:nth-child(4) { animation-delay: 310ms; }
-html.is-mobile .ri-root:not(.ri-no-motion) .ri-sheet-top.ri-in > *:nth-child(5) { animation-delay: 390ms; }
-html.is-mobile .ri-root:not(.ri-no-motion) .ri-sheet-top.ri-in > *:nth-child(6) { animation-delay: 470ms; }
+html.is-mobile .ri-root:not(.ri-no-motion) .ri-sheet-top.ri-in > *:nth-child(1) { animation-delay: 20ms; }
+html.is-mobile .ri-root:not(.ri-no-motion) .ri-sheet-top.ri-in > *:nth-child(2) { animation-delay: 90ms; }
+html.is-mobile .ri-root:not(.ri-no-motion) .ri-sheet-top.ri-in > *:nth-child(3) { animation-delay: 170ms; }
+html.is-mobile .ri-root:not(.ri-no-motion) .ri-sheet-top.ri-in > *:nth-child(4) { animation-delay: 240ms; }
+html.is-mobile .ri-root:not(.ri-no-motion) .ri-sheet-top.ri-in > *:nth-child(5) { animation-delay: 310ms; }
+html.is-mobile .ri-root:not(.ri-no-motion) .ri-sheet-top.ri-in > *:nth-child(6) { animation-delay: 380ms; }
 html.is-mobile .ri-root:not(.ri-no-motion) .ri-sheet-top.ri-in > *:nth-child(n+7) { animation: none; }
+/* بطاقات المؤشرات الأربع في وعاء واحد: الوعاء يقف والبطاقات تتصاعد واحدة بعد
+   أخرى — كما هو حال بطاقات اليومية في بقية التبويبات. */
+html.is-mobile .ri-root:not(.ri-no-motion) .ri-sheet-top.ri-in > .ri-kpis { animation: none; }
+html.is-mobile .ri-root:not(.ri-no-motion) .ri-sheet-top.ri-in > .ri-kpis > * {
+    animation: riIn .72s var(--m-ease-out) both;
+}
+html.is-mobile .ri-root:not(.ri-no-motion) .ri-sheet-top.ri-in > .ri-kpis > *:nth-child(1) { animation-delay: 120ms; }
+html.is-mobile .ri-root:not(.ri-no-motion) .ri-sheet-top.ri-in > .ri-kpis > *:nth-child(2) { animation-delay: 180ms; }
+html.is-mobile .ri-root:not(.ri-no-motion) .ri-sheet-top.ri-in > .ri-kpis > *:nth-child(3) { animation-delay: 240ms; }
+html.is-mobile .ri-root:not(.ri-no-motion) .ri-sheet-top.ri-in > .ri-kpis > *:nth-child(4) { animation-delay: 300ms; }
 /* تحديث البيانات واللوحة معروضة: البطاقات تُستبدل في مكانها. ri-settled يُبقي
    حركة الأشرطة داخل ri-in ويعطّل تدرّج الدخول نفسه — فلا تمحو اللوحة نفسها
    ثم تعود من الصفر كل ما تجددت فاتورة. */
 html.is-mobile .ri-root > .ri-in.ri-settled { animation: none; }
 html.is-mobile .ri-root:not(.ri-no-motion) .ri-sheet-top.ri-in.ri-settled > * { animation: none; }
+html.is-mobile .ri-root:not(.ri-no-motion) .ri-sheet-top.ri-in.ri-settled > .ri-kpis > * { animation: none; }
 
 /* كشف بطاقات ما بعد الطية مع التمرير بدل السكون التام */
 html.is-mobile .ri-sheet-top > .ri-io {

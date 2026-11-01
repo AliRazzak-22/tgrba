@@ -5966,10 +5966,13 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
             if (!el) continue;
             el.style.removeProperty('transform');
             el.style.removeProperty('opacity');
-            /* عند السكون لا تبقى إلا اللوحة الجارية معروضة */
             const cur = i === state.index;
             if (cur !== el.classList.contains('m-cur')) el.classList.toggle('m-cur', cur);
-            if (!cur && el.classList.contains('m-seen')) el.classList.remove('m-seen');
+            /* عند السكون لا تبقى إلا اللوحة الجارية معروضة — وما عُرِض أثناء
+               السحب وتولّاه الموجّه الآن (عليه active) يبقى: إزالته لحظةً تُبطل
+               كل حركة داخله ثم تُعيدها من الصفر، وهو «تتكوّن وتختفي وترجع
+               تتكوّن» الذي رآه المستخدم في الزبائن عند الرجوع بالسحب. */
+            if (!cur && el.classList.contains('m-seen') && !el.classList.contains('active')) el.classList.remove('m-seen');
         }
     }
 
