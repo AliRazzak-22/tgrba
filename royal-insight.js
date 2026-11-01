@@ -490,6 +490,30 @@
             else ladder[4].n++;
         });
 
+        /* العودة الأولى: هل رجع الزبون بعد أول زيارة، وكم انتظر؟ تُقاس من
+           سجل الزبون كله لا من الفترة، ومن مضى على أول زيارة له ثلاثون
+           يوماً على الأقل — كي لا يُحاسب زبون زار أمس على عودة لم يحن وقتها. */
+        const frWaits = [];
+        const firstRepeat = { mature: 0, returned: 0, buckets: [0, 0, 0, 0] };
+        Object.values(life).forEach((c) => {
+            const times = c.times.slice().sort((a, b) => a - b);
+            if (!times.length || times[0] > todayMs - 30 * 86400000) return;
+            firstRepeat.mature += 1;
+            if (times.length < 2) return;
+            firstRepeat.returned += 1;
+            const gap = (times[1] - times[0]) / 86400000;
+            frWaits.push(gap);
+            if (gap < 1) firstRepeat.buckets[0] += 1;
+            else if (gap <= 7) firstRepeat.buckets[1] += 1;
+            else if (gap <= 30) firstRepeat.buckets[2] += 1;
+            else firstRepeat.buckets[3] += 1;
+        });
+        frWaits.sort((a, b) => a - b);
+        const frN = frWaits.length;
+        firstRepeat.median = frN ? (frN % 2 ? frWaits[(frN - 1) / 2] : (frWaits[frN / 2 - 1] + frWaits[frN / 2]) / 2) : 0;
+        firstRepeat.rate = firstRepeat.mature ? Math.round((firstRepeat.returned / firstRepeat.mature) * 100) : 0;
+        firstRepeat.pending = firstRepeat.mature - firstRepeat.returned;
+
         const pieces = customers.reduce((s, c) => s + c.pieces, 0);
         const visits = customers.reduce((s, c) => s + c.visits, 0);
         const newCount = customers.filter((c) => c.isNew).length;
@@ -509,6 +533,7 @@
             weekday: { list: wd, best: wdBest, worst: wdWorst },
             orderValue: oval,
             ladder,
+            firstRepeat,
             absent,
             absentWarn,
             absentSpend,
@@ -804,6 +829,30 @@
         }).join('') + '</div>';
     }
 
+    function firstRepeatHTML(fr) {
+        const med = fr.median;
+        const medTxt = med < 1
+            ? (med * 24 < 1 ? 'أقل من ساعة' : Math.max(1, Math.round(med * 24)) + ' ساعة')
+            : Math.round(med) === 1 ? 'يوم واحد'
+                : Math.round(med) === 2 ? 'يومين'
+                    : Math.round(med) + ' أيام';
+        const segs = [
+            { n: fr.buckets[0], c: '#3ddc97', l: 'في اليوم نفسه' },
+            { n: fr.buckets[1], c: '#8b9dff', l: 'خلال أسبوع' },
+            { n: fr.buckets[2], c: '#ffd166', l: 'خلال شهر' },
+            { n: fr.buckets[3], c: '#ff7a7a', l: 'بعد شهر' }
+        ];
+        const total = fr.returned || 1;
+        return '<div class="ri-fr-top"><strong dir="ltr">' + fr.rate + '%</strong>' +
+                '<span>من الزبائن عادوا بعد الزيارة الأولى' +
+                    '<small>عاد <b>' + fmt(fr.returned) + '</b> من <b>' + fmt(fr.mature) + '</b> زبوناً ممن زاروا أول مرة قبل ٣٠ يوماً على الأقل</small>' +
+                '</span></div>' +
+            '<div class="ri-fr-med"><i class="fa-solid fa-stopwatch"></i> نصف العائدين رجعوا خلال <b>' + medTxt + '</b> من زيارتهم الأولى</div>' +
+            '<div class="ri-fr-bar">' + segs.map((s) => '<i style="--w:' + ((s.n / total) * 100).toFixed(2) + '%;--c:' + s.c + '"></i>').join('') + '</div>' +
+            '<div class="ri-fr-legend">' + segs.map((s) => '<span><i style="--c:' + s.c + '"></i>' + s.l + ' <b>' + fmt(s.n) + '</b></span>').join('') + '</div>' +
+            '<div class="ri-fr-foot"><b>' + fmt(fr.pending) + '</b> زبوناً لم يعودوا بعد — العودة الأولى تحدد من يبقى.</div>';
+    }
+
     /* أعمدة شهرية مزدوجة: الأخضر لجدد والأزرق لعائدين، الأقدم يميناً كبقية
        المخططات، والارتفاع نسبي إلى أعلى عمود في الأشهر الستة. */
     function monthlyChart(months) {
@@ -1079,6 +1128,13 @@
                 '<div class="ri-card-head"><h3><i class="fa-solid fa-stairs"></i> مدرّج الولاء</h3><span>عدد الزيارات</span></div>' +
                 ladderHTML(vm.ladder, vm.returning, vm.customers.length, vm.visits) +
             '</div>' +
+
+            (vm.firstRepeat && vm.firstRepeat.mature >= 5
+                ? '<div class="ri-card">' +
+                    '<div class="ri-card-head"><h3><i class="fa-solid fa-repeat"></i> العودة الأولى</h3><span>بعد أول زيارة</span></div>' +
+                    firstRepeatHTML(vm.firstRepeat) +
+                  '</div>'
+                : '') +
 
             '<div class="ri-card">' +
                 '<div class="ri-card-head"><h3><i class="fa-solid fa-user-clock"></i> زبائن غائبون</h3><span>٢١ يوماً بلا زيارة</span></div>' +
@@ -2209,6 +2265,42 @@ html.is-mobile .ri-lad-track i {
     background: linear-gradient(90deg, color-mix(in srgb, var(--c) 45%, transparent), var(--c));
 }
 html.is-mobile .ri-lad-n { font-size: 11px; font-weight: 900; color: var(--m-text); text-align: end; font-variant-numeric: tabular-nums; }
+
+html.is-mobile .ri-fr-top { display: flex; align-items: center; gap: 12px; }
+html.is-mobile .ri-fr-top strong {
+    font-size: 34px; line-height: 1; font-weight: 900; color: var(--m-text);
+    font-variant-numeric: tabular-nums; letter-spacing: -1.2px;
+    text-shadow: 0 8px 24px rgba(var(--rg-accent-rgb), .22);
+}
+html.is-mobile .ri-fr-top span { display: flex; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 800; color: var(--m-muted); }
+html.is-mobile .ri-fr-top small { font-size: 9.5px; font-weight: 700; color: var(--m-faint); line-height: 1.65; }
+html.is-mobile .ri-fr-top small b { color: var(--m-muted); font-weight: 900; font-variant-numeric: tabular-nums; }
+html.is-mobile .ri-fr-med { margin-top: 12px; display: flex; align-items: center; flex-wrap: wrap; gap: 5px; font-size: 10.5px; font-weight: 700; color: var(--m-muted); }
+html.is-mobile .ri-fr-med i { font-size: 9px; color: var(--m-accent2); }
+html.is-mobile .ri-fr-med b { color: var(--m-text); font-weight: 900; font-variant-numeric: tabular-nums; }
+html.is-mobile .ri-fr-bar {
+    display: flex; gap: 2px; height: 8px; margin-top: 12px;
+    border-radius: 99px; overflow: hidden; background: rgba(255,255,255,.06);
+}
+html.is-mobile .ri-fr-bar i { display: block; height: 100%; width: var(--w); background: var(--c); }
+html.is-mobile .ri-fr-legend { display: flex; flex-wrap: wrap; gap: 5px 13px; margin-top: 9px; font-size: 9.5px; font-weight: 700; color: var(--m-faint); }
+html.is-mobile .ri-fr-legend span { display: inline-flex; align-items: center; gap: 4px; }
+html.is-mobile .ri-fr-legend i { width: 7px; height: 7px; border-radius: 2px; background: var(--c); }
+html.is-mobile .ri-fr-legend b { color: var(--m-muted); font-weight: 900; font-variant-numeric: tabular-nums; }
+html.is-mobile .ri-fr-foot { margin-top: 11px; padding-top: 9px; border-top: 1px solid var(--ri-line); font-size: 9.5px; font-weight: 700; color: var(--m-faint); }
+html.is-mobile .ri-fr-foot b { color: var(--m-muted); font-weight: 900; font-variant-numeric: tabular-nums; }
+html.is-mobile body.rg-light .ri-fr-top strong { color: #0e2138; text-shadow: none; }
+html.is-mobile body.rg-light .ri-fr-top span { color: #33507a; }
+html.is-mobile body.rg-light .ri-fr-top small { color: #5b7191; }
+html.is-mobile body.rg-light .ri-fr-top small b { color: #0e2138; }
+html.is-mobile body.rg-light .ri-fr-med { color: #4c5d75; }
+html.is-mobile body.rg-light .ri-fr-med i { color: #1b5aa8; }
+html.is-mobile body.rg-light .ri-fr-med b { color: #0e2138; }
+html.is-mobile body.rg-light .ri-fr-bar { background: rgba(30,70,120,.09); }
+html.is-mobile body.rg-light .ri-fr-legend { color: #5b7191; }
+html.is-mobile body.rg-light .ri-fr-legend b { color: #0e2138; }
+html.is-mobile body.rg-light .ri-fr-foot { color: #5b7191; border-top-color: rgba(30,70,120,.10); }
+html.is-mobile body.rg-light .ri-fr-foot b { color: #0e2138; }
 
 html.is-mobile .ri-ranks { display: flex; flex-direction: column; gap: 6px; }
 html.is-mobile .ri-rank {
