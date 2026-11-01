@@ -57,6 +57,20 @@
         if (v >= 3 && v <= 10) return fmt(v) + ' فواتير';
         return fmt(v) + ' فاتورة';
     }
+    function openOrdersWord(n) {
+        const v = Math.round(num(n));
+        if (v === 1) return 'طلب واحد مفتوح';
+        if (v === 2) return 'طلبان مفتوحان';
+        if (v >= 3 && v <= 10) return fmt(v) + ' طلبات مفتوحة';
+        return fmt(v) + ' طلباً مفتوحاً';
+    }
+    function daysWord(n) {
+        const v = Math.round(num(n));
+        if (v === 1) return 'يوم';
+        if (v === 2) return 'يومين';
+        if (v >= 3 && v <= 10) return 'أيام';
+        return 'يوماً';
+    }
     /* البحث في الدليل يتسامح مع اختلاف رسم الاسم العربي (أ/ا، ة/ه، ى/ي)
        ومع الأرقام الهندية، لأن الاسم مكتوب مرة واحدة لكن يُبحث عنه بأشكال. */
     function normSearch(v) {
@@ -341,6 +355,26 @@
             const key = dateOfMs(t);
             if (dayMap[key]) { dayMap[key].value += num(inv.total); dayMap[key].count += 1; }
         });
+
+        /* المتبقي على الطلبات المفتوحة: مال لم يُستلم بعد على طلبات لم تُسلَّم.
+           تُحسب من الفواتير المفتوحة وحدها، لأن الفاتورة المسلَّمة قد تحمل
+           متبقياً قديماً سُدّد فعلاً في سجل الدفعات ثم أُعيد بخطأ تعديل،
+           فلا يصح أن يُعدّ ديناً ولا أن يزيد ذمم الزبائن. */
+        let openDue = 0, openCount = 0, openOldest = 0;
+        all.forEach((inv) => {
+            if (!inv || inv.type !== 'active') return;
+            const rem = inv.customer ? num(inv.customer.remaining) : 0;
+            if (rem <= 0) return;
+            openDue += rem;
+            openCount += 1;
+            const t = tsOf(inv);
+            if (t > 0 && (!openOldest || t < openOldest)) openOldest = t;
+        });
+        const openInfo = {
+            sum: openDue,
+            count: openCount,
+            oldestDays: openOldest ? Math.max(0, Math.floor((todayMs - openOldest) / 86400000)) : 0
+        };
 
         /* الخدمات */
         const services = {};
@@ -628,6 +662,7 @@
             cash,
             electronic,
             debtsTotal,
+            openDue: openInfo,
             pieces,
             visits,
             newCount,
@@ -1205,6 +1240,16 @@
                 '<div class="ri-money-i"><span>المستلَم</span><strong>' + money(vm.collected) + '</strong><small>عربون + دفعات</small></div>' +
                 '<div class="ri-money-i warn"><span>ذمم قائمة</span><strong>' + money(vm.debtsTotal) + '</strong><small>كل الفترات</small></div>' +
             '</div>' +
+
+            (vm.openDue && vm.openDue.count
+                ? '<div class="ri-open-due">' +
+                    '<span class="ri-open-ico"><i class="fa-solid fa-hourglass-half"></i></span>' +
+                    '<span class="ri-open-txt">' +
+                        '<span class="ri-open-main"><b>' + openOrdersWord(vm.openDue.count) + '</b> · متبقٍ عند التسليم <b>' + money(vm.openDue.sum) + '</b></span>' +
+                        (vm.openDue.oldestDays >= 7 ? '<span class="ri-open-age"> أقدمها منذ <b>' + fmt(vm.openDue.oldestDays) + '</b> ' + daysWord(vm.openDue.oldestDays) + '</span>' : '') +
+                    '</span>' +
+                  '</div>'
+                : '') +
 
             compareCard(vm) +
 
@@ -1985,6 +2030,44 @@ html.is-mobile body.rg-light .ri-money-i strong { color: #0e2138; }
 html.is-mobile body.rg-light .ri-money-i span { color: #33507a; }
 html.is-mobile body.rg-light .ri-money-i small { color: #5b7191; }
 html.is-mobile body.rg-light .ri-money-i.warn strong { color: #b32b3a; }
+
+/* متبقٍ على الطلبات المفتوحة — مال لم يُستلم بعد، لا دين على أحد */
+html.is-mobile .ri-open-due {
+    display: flex; align-items: center; gap: 9px;
+    margin: -3px 0 12px;
+    padding: 9px 11px;
+    border-radius: 15px;
+    border: 1px solid rgba(255,209,102,.24);
+    background:
+        linear-gradient(150deg, rgba(255,209,102,.13), rgba(255,209,102,.02) 62%),
+        var(--ri-card);
+    box-shadow: var(--m-lift);
+    font-size: 10.5px; font-weight: 700; color: var(--m-muted);
+    line-height: 1.65;
+}
+html.is-mobile .ri-open-ico {
+    flex: 0 0 auto; width: 27px; height: 27px; border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(255,209,102,.15); color: #ffd166; font-size: 11.5px;
+}
+html.is-mobile .ri-open-txt {
+    flex: 1; min-width: 0;
+    display: flex; flex-direction: column; gap: 2px;
+}
+html.is-mobile .ri-open-main { line-height: 1.55; }
+html.is-mobile .ri-open-age { font-size: 9.5px; line-height: 1.4; color: var(--m-faint); }
+html.is-mobile .ri-open-due b {
+    color: #ffd166; font-weight: 900;
+    font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+html.is-mobile body.rg-light .ri-open-due {
+    border-color: rgba(150,104,0,.20);
+    background:
+        linear-gradient(150deg, rgba(255,197,60,.17), rgba(255,255,255,.9) 62%),
+        #fff;
+}
+html.is-mobile body.rg-light .ri-open-due b { color: #8a5a00; }
+html.is-mobile body.rg-light .ri-open-ico { background: rgba(255,197,60,.22); color: #8a5a00; }
 
 /* مقارنة بالفترة السابقة */
 html.is-mobile .ri-cmp { display: flex; flex-direction: column; gap: 15px; }
