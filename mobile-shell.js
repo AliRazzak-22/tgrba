@@ -1289,26 +1289,31 @@ html.is-mobile .m-day-pick i { font-size: 11px; color: var(--m-accent2); }
 html.is-mobile .m-day-pick.on { color: #eaf4ff; border-color: var(--m-edge); }
 html.is-mobile .m-day-pick:active { transform: scale(.975); }
 
+/* الرسالة تنمو وتنكمش بارتفاعٍ مُتحَقَّق منه، لا بعنصرٍ يُدرَج أو يُمحى:
+   الإدراج الفوري كان يدفع اللوحة كلها مئةً وثلاثة عشر بكسل إلى الأسفل
+   لحظة اللمسة، فتُقرأ القفزة كأن التبويب يُعاد بناؤه أمام المستخدم. */
 html.is-mobile .m-day-note {
+    display: grid; grid-template-rows: 0fr;
+    opacity: 0; margin: 0; pointer-events: none;
+    /* منحنى يبدأ هادئاً: «خروج مُبطَّأة» كانت تدفع ثلاثين بكسلاً في أول إطار
+       فتُقرأ الانبساطة دفعةً، والمقصود أن تُرى اللوحة وهي تأخذ مكانها. */
+    transition: grid-template-rows .38s cubic-bezier(.36,.06,.2,1),
+                opacity .24s var(--m-ease),
+                margin-bottom .38s cubic-bezier(.36,.06,.2,1);
+}
+html.is-mobile .m-day-note-in { overflow: hidden; min-height: 0; }
+html.is-mobile .m-day-note[data-open="1"] {
+    grid-template-rows: 1fr; opacity: 1; margin-bottom: 12px; pointer-events: auto;
+}
+html.is-mobile .m-day-note-face {
     display: flex; align-items: flex-start; gap: 10px;
-    margin: 0 0 12px; padding: 12px 13px;
+    padding: 12px 13px;
     border-radius: 16px;
     background:
         linear-gradient(152deg, rgba(150,200,255,.10) 0%, rgba(90,140,226,.02) 46%, rgba(128,184,255,.06) 100%),
         var(--m-glass-bg);
     border: 1px solid var(--m-hair);
     box-shadow: 0 10px 24px rgba(1,6,16,.34);
-}
-html.is-mobile .m-day-note[hidden] { display: none; }
-/* الظهور من لا شيء: العرض كان يُبقيها «مخفية» بصفر شفافية فقط، فتنزل الرسالة
-   على نصف مساحتها المحجوزة ثم يقفز كل ما تحتها */
-html.is-mobile .m-day-note:not([hidden]) {
-    display: flex;
-    animation: mDayNoteIn .46s var(--m-ease-out) both;
-}
-@keyframes mDayNoteIn {
-    from { opacity: 0; transform: translate3d(0, -6px, 0); }
-    to { opacity: 1; transform: none; }
 }
 html.is-mobile .m-day-note-ic {
     flex: 0 0 auto; width: 30px; height: 30px;
@@ -1364,7 +1369,7 @@ html.is-mobile body.rg-light .m-day-pick {
 }
 html.is-mobile body.rg-light .m-day-pick.on { color: #0f2f57; border-color: rgba(30,80,140,.32); }
 html.is-mobile body.rg-light .m-day-pick i { color: #1c5f9e; }
-html.is-mobile body.rg-light .m-day-note {
+html.is-mobile body.rg-light .m-day-note-face {
     background: linear-gradient(152deg, rgba(255,255,255,.96), rgba(214,232,252,.72));
     border-color: rgba(30,70,120,.13);
     box-shadow: 0 10px 22px rgba(28,60,100,.10);
@@ -1446,7 +1451,7 @@ html.is-mobile body.rg-light .m-day-row-v small { color: #4d6a8a; }
 html.is-mobile body.rg-light .m-day-row-v.neg b { color: #b32b3a; }
 @media (prefers-reduced-motion: reduce) {
     html.is-mobile .m-day-thumb { transition: none; }
-    html.is-mobile .m-day-note:not([hidden]) { animation: none; }
+    html.is-mobile .m-day-note { transition: none; }
     html.is-mobile .m-day-row { animation: none; }
     html.is-mobile .m-day-seg-btn,
     html.is-mobile .m-day-pick,
@@ -9346,7 +9351,10 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
         bar.innerHTML = dayBarMarkup();
         const note = document.createElement('div');
         note.className = 'm-day-note';
-        note.hidden = true;
+        /* البنية ثابتة من أول رسم: الحاضنة تزنَّر، القصّاصة تخفي، والوجه يحمل الكلام.
+           ما كان «عنصر يدخل ويخرج» صار «ارتفاع ينمو وينكمش»، فلا تدفع اللوحة قفزة. */
+        note.innerHTML = '<div class="m-day-note-in"><div class="m-day-note-face"></div></div>';
+        note.setAttribute('aria-live', 'polite');
         const anchor = page.querySelector('.m-flow') || page.querySelector('.bento-box-container') || page.querySelector('.m-today');
         if (anchor && anchor.parentNode === page) {
             page.insertBefore(bar, anchor);
@@ -9380,7 +9388,14 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
            عليه المحرك أصلاً، أو حين طلب المستخدم يوماً بيده — فالدخول العادي
            لا يكلّف دورة رسم زائدة. */
         if (force === true || key !== calTodayKey()) {
-            try { if (typeof window.updateBentoBox === 'function') window.updateBentoBox(); } catch (e) {}
+            /* المحرك وحده مصدر الأرقام، لكن نفخة ‎scale‎ التي تصحب كتابته
+               تُقرأ لحظة اللمسة كأن اللوحة تُبنى من جديد: تُهدَّأ هنا،
+               وتبقى كما هي عند كل تحديث جاء من النظام نفسه. */
+            try {
+                window.royalBentoQuiet = true;
+                if (typeof window.updateBentoBox === 'function') window.updateBentoBox();
+            } catch (e) {}
+            try { window.royalBentoQuiet = false; } catch (e) {}
         }
         paintToday();
         syncFlow();
@@ -9482,10 +9497,20 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
             sub = 'يوم من السجل: أرقامه كما سُجِّلَت، لا تزيد مع اليوم الجاري';
         }
         if (!kind) {
-            if (!dayNoteEl.hidden) dayNoteEl.hidden = true;
-            if (dayNoteEl.innerHTML) dayNoteEl.innerHTML = '';
+            /* الانكماش يُرى، فالكلام يبقى في مكانه حتى يكتمل ثم يُمحى:
+               المحو الفوري كان يُخلي القصّاصة وهي تنغلق فتظهر فجوة فارغة. */
+            if (dayNoteEl.dataset.open === '1') {
+                delete dayNoteEl.dataset.open;
+                delete dayNoteEl.dataset.kind;
+                setTimeout(() => {
+                    const f = dayNoteEl.querySelector('.m-day-note-face');
+                    if (f && dayNoteEl.dataset.open !== '1' && f.innerHTML) f.innerHTML = '';
+                }, 400);
+            }
             return;
         }
+        const face = dayNoteEl.querySelector('.m-day-note-face');
+        if (!face) return;
         const ICONS = { night: 'fa-moon', wait: 'fa-clock', yesterday: 'fa-clock-rotate-left', archive: 'fa-box-archive' };
         const back = kind === 'yesterday' || kind === 'archive';
         const pct = back ? 0 : clamp(100 - (ph.resetInSec / (8 * 3600)) * 100, 2, 100);
@@ -9494,13 +9519,28 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
             (pct ? '<em class="m-day-progress"><b style="width:' + pct.toFixed(1) + '%"></b><span>من منتصف الليل إلى الثامنة</span></em>' : '') +
             '</div>' +
             (back ? '<button type="button" class="m-day-note-back"><i class="fa-solid fa-rotate-left"></i> ' + esc(dayWord(auto)) + '</button>' : '');
-        if (dayNoteEl.innerHTML !== html) {
-            dayNoteEl.innerHTML = html;
-            const b = dayNoteEl.querySelector('.m-day-note-back');
-            if (b) b.addEventListener('click', () => chooseDay('auto', ''));
-        }
+        if (face.innerHTML !== html) swapNoteFace(face, html);
         dayNoteEl.dataset.kind = kind;
-        if (dayNoteEl.hidden) dayNoteEl.hidden = false;
+        if (dayNoteEl.dataset.open !== '1') dayNoteEl.dataset.open = '1';
+    }
+
+    /* كلام جديد داخل رسالة مفتوحة قد يطوّلها أو يقصّرها؛ الفرق لو تُرِك تحرّك
+       في إطار واحد قُرىء كانزاحة مفاجئة للوحة كلها. يُقاس الطرفين وتُسوّى
+       بينهما بحركة محسوبة. الفتح من الصفر والإغلاق إليهما تكفلّهما الشبكة. */
+    function swapNoteFace(face, html) {
+        const el = dayNoteEl;
+        const wasOpen = el.dataset.open === '1';
+        const h0 = el.offsetHeight;
+        face.innerHTML = html;
+        const b = face.querySelector('.m-day-note-back');
+        if (b) b.addEventListener('click', () => chooseDay('auto', ''));
+        if (!wasOpen || REDUCED || document.body.classList.contains('rm-motion-off') || !el.animate) return;
+        const h1 = el.offsetHeight;
+        if (Math.abs(h1 - h0) < 2) return;
+        try {
+            el.animate([{ height: h0 + 'px' }, { height: h1 + 'px' }],
+                { duration: 280, easing: 'cubic-bezier(.36,.06,.2,1)' });
+        } catch (e) { }
     }
 
     function dayRowMarkup(d, currentKey, i) {

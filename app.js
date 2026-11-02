@@ -2800,7 +2800,13 @@ window.updateBentoBox = () => {
     // ضخ الأرقام في واجهة البينتو مع تأثيرات بصرية
     const animateEl = (id, val) => {
         let el = document.getElementById(id);
-        if(el) { el.innerText = val.toLocaleString(); el.style.transform = 'scale(1.1)'; setTimeout(()=> el.style.transform = 'scale(1)', 300); }
+        if (!el) return;
+        el.innerText = val.toLocaleString();
+        /* الجوال يقلّب يوم العرض بدعوة من هنا، والنَفخة كانت تجعل ثلاثة أرقام
+           تنتفخ لحظة اللمسة فتُقرأ كأن اللوحة بُنيت من جديد. */
+        if (window.royalBentoQuiet) return;
+        el.style.transform = 'scale(1.1)';
+        setTimeout(() => { el.style.transform = 'scale(1)'; }, 300);
     };
 
     animateEl('bento-current-pieces', currentPieces);
@@ -4534,7 +4540,13 @@ window.updateBentoBox = () => {
     // ضخ الأرقام في واجهة البينتو مع تأثيرات بصرية
     const animateEl = (id, val) => {
         let el = document.getElementById(id);
-        if(el) { el.innerText = val.toLocaleString(); el.style.transform = 'scale(1.1)'; setTimeout(()=> el.style.transform = 'scale(1)', 300); }
+        if (!el) return;
+        el.innerText = val.toLocaleString();
+        /* الجوال يقلّب يوم العرض بدعوة من هنا، والنَفخة كانت تجعل ثلاثة أرقام
+           تنتفخ لحظة اللمسة فتُقرأ كأن اللوحة بُنيت من جديد. */
+        if (window.royalBentoQuiet) return;
+        el.style.transform = 'scale(1.1)';
+        setTimeout(() => { el.style.transform = 'scale(1)'; }, 300);
     };
 
     animateEl('bento-current-pieces', currentPieces);
