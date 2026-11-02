@@ -209,6 +209,74 @@ function getRealTime() {
     };
 }
 
+// =========================================================
+// --- يوم العمل في المكوى: التصفير الثامنة صباحاً ---
+// تبويب «اليومية» وحده يُصفَّر عند الثامنة لا عند منتصف الليل: فما بين الصفر
+// والثامنة تنتمي الأرقام إلى يوم أمس الذي لم ينتهِ عدّاده بعد. والقياس من مصدر
+// النظام نفسه (توقيت بغداد مع إزاحة الخادم): يُزاح «الآن» ثماني ساعات ثم يُقرأ
+// تاريخها، فلا مقارنة ساعات ولا افتراض منطقة زمنية على جهاز المستخدم.
+// لا يمسّ هذا شيئاً آخر: المالية والديون والمحفظة والزبائن على يومها التقويمي
+// كما كانته، ومفتاح royalTodayKey بقي ما هو.
+// =========================================================
+const WORK_DAY_START = 8;
+const MS_HOUR = 3600000;
+const MS_DAY = 86400000;
+
+function baghdadParts(ms, opts) {
+    const parts = new Intl.DateTimeFormat('en-US', Object.assign({ timeZone: 'Asia/Baghdad' }, opts))
+        .formatToParts(new Date(ms));
+    const out = {};
+    parts.forEach(p => out[p.type] = p.value);
+    return out;
+}
+
+function baghdadKey(ms) {
+    const p = baghdadParts(ms, { year: 'numeric', month: '2-digit', day: '2-digit' });
+    return p.year + '-' + p.month + '-' + p.day;
+}
+
+/* مفتاح يوم العمل: تاريخ بغداد لما قبل الآن بثماني ساعات. offset=1 → يوم العمل
+   السابق، وoffset=-1 → التالي. الأرقام في الفواتير تُخزَّن بتاريخها التقويمي،
+   فيُقارَن بها هذا المفتاح مباشرةً بلا تحويل ساعات. */
+window.royalWorkDayKey = (offset) => {
+    const n = Number(offset) || 0;
+    return baghdadKey(getRealTime().timestamp - WORK_DAY_START * MS_HOUR - n * MS_DAY);
+};
+
+/* حالة النهار الآن في بغداد: الساعة، وهل نحن في نافذة ما قبل التصفير، وكم ثانية
+   تفصلنا عن الثامنة. تُقرأ الدقيقة والثانية مع الساعة وإلا دار العدّ على ساعة
+   مستديرة. */
+window.royalWorkDayPhase = () => {
+    const now = getRealTime().timestamp;
+    const p = baghdadParts(now, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+    const hour = (Number(p.hour) + 24) % 24;
+    const into = (Number(p.minute) || 0) * 60 + (Number(p.second) || 0);
+    const hoursToReset = hour < WORK_DAY_START ? WORK_DAY_START - hour : (24 - hour) + WORK_DAY_START;
+    return {
+        hour: hour,
+        pre: hour < WORK_DAY_START,
+        resetInSec: Math.max(0, Math.round(hoursToReset * 3600 - into))
+    };
+};
+
+/* اليوم الذي يعرضه تبويب اليومية: الجوال يكتب فيه حين يختار المستخدم يوماً،
+   والكمبيوتر لا يكتب أبداً فيبقى على يوم العمل الجاري. */
+window.royalDailyView = '';
+
+window.royalDayKeyView = () => {
+    const v = String(window.royalDailyView || '');
+    return /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : window.royalWorkDayKey(0);
+};
+
+/* اسم اليوم وتاريخه بالعربية لنفس مصدر النظام: «الأحد ٢ تشرين الثاني ٢٠٢٦» */
+window.royalDayLabel = (key) => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(key || ''))) return '';
+    try {
+        return new Intl.DateTimeFormat('ar-IQ', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+            .format(new Date(String(key) + 'T12:00:00'));
+    } catch (e) { return String(key); }
+};
+
 // --- بذور نظام المزامنة اللحظية الأوفلاين ---
 window.addEventListener('online', updateSyncStatus);
 window.addEventListener('offline', updateSyncStatus);
@@ -2348,28 +2416,40 @@ window.updateAdminDashboard = () => {
     let totalExpenses = 0; let totalCosts = 0;
     let dailyReports = {}; 
 
+    /* فهرس كل الأيام: نفس أرقام جدول التقارير اليومية لكن بلا فلتر الشهر.
+       يحتاجه تبويب «اليومية» على الجوال ليرى أمس أو يوماً مختاراً ولو كان
+       فلتر المالية واقفاً على شهرٍ غيره. يُبنى في نفس الحلقة وبالنفس نفسه،
+       فلا يوجد حساب موازٍ يخالف الجدول يوماً. */
+    let allDays = {};
+    const dayRec = (map, dayStr, ts) => {
+        if (!map[dayStr]) map[dayStr] = { sales: 0, expenses: 0, details: [], timestamp: ts };
+        return map[dayStr];
+    };
+
     // 1. حساب الفواتير المباشرة والعربون
     (localData.invoices || []).forEach(inv => {
         let invDate = new Date(inv.timestamp);
         let monthStr = `${invDate.getFullYear()}-${String(invDate.getMonth() + 1).padStart(2, '0')}`;
         let dayStr = inv.date;
 
-        if (isAllTime || monthStr === selectedMonth) {
-            let amountCash = 0;
-            let amountElectronic = 0;
-            
-            if (inv.type === 'active' && inv.customer) amountCash = inv.customer.paid; // العربون المدفوع لحظة الطلب
-            else if (inv.type === 'cash') amountCash = inv.total;
-            else if (inv.type === 'electronic') amountElectronic = inv.total;
-            else if (inv.type === 'archived' && inv.customer) amountCash = inv.customer.paid; // العربون فقط (المتبقي في Payments)
+        let amountCash = 0;
+        let amountElectronic = 0;
 
+        if (inv.type === 'active' && inv.customer) amountCash = inv.customer.paid; // العربون المدفوع لحظة الطلب
+        else if (inv.type === 'cash') amountCash = inv.total;
+        else if (inv.type === 'electronic') amountElectronic = inv.total;
+        else if (inv.type === 'archived' && inv.customer) amountCash = inv.customer.paid; // العربون فقط (المتبقي في Payments)
+
+        const inMonth = isAllTime || monthStr === selectedMonth;
+        if (inMonth) {
             totalSalesCash += amountCash;
             totalSalesElectronic += amountElectronic;
+        }
 
-            if (amountCash > 0 || amountElectronic > 0) {
-                if(!dailyReports[dayStr]) dailyReports[dayStr] = { sales: 0, expenses: 0, details: [], timestamp: invDate.getTime() };
-                dailyReports[dayStr].sales += (amountCash + amountElectronic);
-            }
+        if (amountCash > 0 || amountElectronic > 0) {
+            const amt = amountCash + amountElectronic;
+            if (inMonth) dayRec(dailyReports, dayStr, invDate.getTime()).sales += amt;
+            dayRec(allDays, dayStr, invDate.getTime()).sales += amt;
         }
     });
 
@@ -2379,12 +2459,17 @@ window.updateAdminDashboard = () => {
         let monthStr = `${expDate.getFullYear()}-${String(expDate.getMonth() + 1).padStart(2, '0')}`;
         let dayStr = exp.date;
 
-        if (isAllTime || monthStr === selectedMonth) {
+        const inMonth = isAllTime || monthStr === selectedMonth;
+        const detail = window.escapeHTML(exp.detail);
+        if (inMonth) {
             totalExpenses += exp.amount;
-            if(!dailyReports[dayStr]) dailyReports[dayStr] = { sales: 0, expenses: 0, details: [], timestamp: expDate.getTime() };
-            dailyReports[dayStr].expenses += exp.amount;
-            dailyReports[dayStr].details.push(window.escapeHTML(exp.detail));
+            const rec = dayRec(dailyReports, dayStr, expDate.getTime());
+            rec.expenses += exp.amount;
+            rec.details.push(detail);
         }
+        const allRec = dayRec(allDays, dayStr, expDate.getTime());
+        allRec.expenses += exp.amount;
+        allRec.details.push(detail);
     });
 
     // 3. حساب الدفعات المستقلة (مسار payments) - المنقذ للرصيد
@@ -2393,28 +2478,37 @@ window.updateAdminDashboard = () => {
         let monthStr = `${payDate.getFullYear()}-${String(payDate.getMonth() + 1).padStart(2, '0')}`;
         let dayStr = pay.date;
 
-        if (isAllTime || monthStr === selectedMonth) {
-            if(!dailyReports[dayStr]) dailyReports[dayStr] = { sales: 0, expenses: 0, details: [], timestamp: payDate.getTime() };
-            
-            // الدفعات الإلكترونية
-            if (pay.type === 'دفع إلكتروني (متبقي طلب)') {
-                totalSalesElectronic += pay.amount;
-                dailyReports[dayStr].sales += pay.amount;
-            }
-            // خصم الأموال المسترجعة
-            else if (pay.type === 'إلغاء اشتراك VIP') {
-                totalSalesCash -= pay.amount; 
-                dailyReports[dayStr].sales -= pay.amount; 
-                dailyReports[dayStr].details.push(`استرجاع: -${pay.amount}`);
-            } 
-            // الكاش الداخل (تسديد ذمم، اشتراكات VIP، ومتبقي الطلبات)
-            else {
-                totalSalesCash += pay.amount; 
-                dailyReports[dayStr].sales += pay.amount; 
-                if (pay.type.includes('VIP')) dailyReports[dayStr].details.push(`VIP: +${pay.amount}`);
-            }
+        const inMonth = isAllTime || monthStr === selectedMonth;
+        if (inMonth) dayRec(dailyReports, dayStr, payDate.getTime());
+        const allRec = dayRec(allDays, dayStr, payDate.getTime());
+        /* البيع اليومي في الجدول والفهرس من عملية واحدة: إن غاب الفلتر غاب
+           الجدول وحده، وبقي الفهرس شاهداً ليوم الأمس. */
+        const put = (v) => { if (inMonth) dailyReports[dayStr].sales += v; allRec.sales += v; };
+        const note = (txt) => { if (inMonth) dailyReports[dayStr].details.push(txt); allRec.details.push(txt); };
+
+        // الدفعات الإلكترونية
+        if (pay.type === 'دفع إلكتروني (متبقي طلب)') {
+            if (inMonth) totalSalesElectronic += pay.amount;
+            put(pay.amount);
+        }
+        // خصم الأموال المسترجعة
+        else if (pay.type === 'إلغاء اشتراك VIP') {
+            if (inMonth) totalSalesCash -= pay.amount;
+            put(-pay.amount);
+            note(`استرجاع: -${pay.amount}`);
+        }
+        // الكاش الداخل (تسديد ذمم، اشتراكات VIP، ومتبقي الطلبات)
+        else {
+            if (inMonth) totalSalesCash += pay.amount;
+            put(pay.amount);
+            /* الفهرس يُبنى لكل الأيام لا لشهر الفلتر، فالفحص صار يعمل على
+               سجلات كانت خارج الطريق سابقاً — سلامٌ من نوع الحقل قبل الفحص. */
+            if (String(pay.type || '').includes('VIP')) note(`VIP: +${pay.amount}`);
         }
     });
+
+    /* الفهرس كامل يُسلَّم للقراءة فقط؛ لا يلمسه جدول ولا مجاميع. */
+    window.royalDailyIndex = allDays;
 
     // 4. التكاليف التشغيلية
     (localData.operatingCosts || []).forEach(c => { totalCosts += c.amount; });
@@ -2668,7 +2762,10 @@ window.updateBentoBox = () => {
     let currentPieces = 0; let enteredToday = 0; let finishedToday = 0;
     let monthEntered = 0; let monthFinished = 0;
 
-    let today = getRealTime().date;
+    /* يوم العرض: يوم العمل الجاري (تصفير الثامنة) أو يومٌ اختاره المستخدم على
+       الجوال. والاختيار هنا في القراءة لا في البيانات — نفس الفواتير ونفس
+       الشروط، فما يراه اليوم وما يراه أمس من مصدر واحد. */
+    let today = window.royalDayKeyView();
     let currentMonth = today.substring(0, 7); // استخراج YYYY-MM
 
     // 1. التنقيب في الفواتير (للقطع الموجودة والمستلمة)
@@ -4399,7 +4496,10 @@ window.updateBentoBox = () => {
     let currentPieces = 0; let enteredToday = 0; let finishedToday = 0;
     let monthEntered = 0; let monthFinished = 0;
 
-    let today = getRealTime().date;
+    /* يوم العرض: يوم العمل الجاري (تصفير الثامنة) أو يومٌ اختاره المستخدم على
+       الجوال. والاختيار هنا في القراءة لا في البيانات — نفس الفواتير ونفس
+       الشروط، فما يراه اليوم وما يراه أمس من مصدر واحد. */
+    let today = window.royalDayKeyView();
     let currentMonth = today.substring(0, 7); // استخراج YYYY-MM
 
     // 1. التنقيب في الفواتير (للقطع الموجودة والمستلمة)
@@ -4774,9 +4874,34 @@ document.addEventListener('mouseover', (e) => {
 // فلا تُحسب قيمة ولا يُكتب في قاعدة بيانات. تُستخدم لعرض لوحة «تفاصيل اليوم» فقط.
 window.royalTodayKey = () => getRealTime().date;
 window.royalTodayOrdersValue = () => {
-    const today = getRealTime().date;
+    /* نفس يوم العرض في محرك البينتو: الطلبات المسجلة تُعدّ ليوم اللوحة لا
+       ليوم التقويم، وإلا صار فوق البطاقة رقمٌ وتحتها رقمٌ آخر. */
+    const today = window.royalDayKeyView();
     return (localData.invoices || []).filter((i) => i && i.date === today)
         .reduce((s, i) => s + (Number(i.total) || 0), 0);
 };
 /* مرجع حيّ للقراءة فقط: محرك الإحصاءات على الجوال يقرأ منه ولا يكتب أبداً. */
 window.royalDataRead = () => localData;
+
+/* ملخّص يوم واحد من فهرس كل الأيام — نفس أرقام جدول التقارير، لا حساب جديد.
+   بلا سجلّ يُعيد null: تعرض اللوحة صفراً وتقول «لا حركة» بدل أن تخترع رقماً. */
+window.royalDaySummary = (key) => {
+    const idx = window.royalDailyIndex || {};
+    return idx[String(key || '')] || null;
+};
+
+/* الأيام الأحدث للوحة الاختيار على الجوال، ببيعها وصرفها وصافيها. */
+window.royalDayList = (limit) => {
+    const idx = window.royalDailyIndex || {};
+    return Object.keys(idx)
+        .sort((a, b) => (idx[b].timestamp || 0) - (idx[a].timestamp || 0))
+        .slice(0, Number(limit) || 45)
+        .map((k) => {
+            const sales = Number(idx[k].sales) || 0;
+            const expenses = Number(idx[k].expenses) || 0;
+            return {
+                key: k, sales: sales, expenses: expenses, net: sales - expenses,
+                details: (idx[k].details || []).slice(0, 6)
+            };
+        });
+};

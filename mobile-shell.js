@@ -1227,6 +1227,234 @@ html.is-mobile .m-today.m-anim .m-today-row {
     animation-delay: calc(330ms + min(var(--m-k, 0), 11) * 88ms + var(--m-r, 0) * 90ms);
 }
 
+/* ------------------------- دورة اليوم: شريط التبديل والرسالة -------------------------
+   اليومية تُصفَّر الثامنة صباحاً. الشريط يطرح السؤال الذي يسأله صاحب المكوى
+   كل صباح («اليوم ولا أمس؟») بلمسة واحدة والخيط ينزلق تحته، والرسالة تُخبره
+   أي يوم يقرأ قبل أن يقرأ رقماً. كل هذا جوالٌ وحده، ولا يلمس لوحةً ولا رقماً. */
+html.is-mobile .m-daybar {
+    display: flex; align-items: stretch; gap: 8px;
+    margin: 2px 0 10px;
+}
+html.is-mobile .m-day-seg {
+    position: relative;
+    flex: 1 1 auto; min-width: 0;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 4px;
+    padding: 4px;
+    border-radius: var(--m-radius-pill);
+    background: rgba(8,18,38,.62);
+    border: 1px solid var(--m-hair);
+    box-shadow: inset 0 1px 0 rgba(208,236,255,.06);
+}
+/* الخيط زجاجٌ مقلوب داخل المسار: يُضاء من حافته العليا وينضغط تحته ظل ناعم،
+   فيقرأه العين كتلة واحدة وقد انزلقت — لا كحدود حول الزر. */
+html.is-mobile .m-day-thumb {
+    position: absolute; top: 4px; bottom: 4px; left: 4px; width: 0;
+    z-index: 0; pointer-events: none; opacity: 0;
+    border-radius: calc(var(--m-radius-pill) - 5px);
+    background:
+        linear-gradient(160deg, rgba(198,230,255,.20), rgba(120,172,240,.05) 55%, rgba(150,200,255,.14)),
+        rgba(18,40,80,.92);
+    border: 1px solid rgba(162,212,255,.30);
+    box-shadow: 0 8px 18px rgba(1,6,16,.44), inset 0 1px 0 rgba(208,236,255,.34);
+    transition: transform .44s var(--m-ease-out), width .44s var(--m-ease-out), opacity .22s var(--m-ease);
+}
+html.is-mobile .m-day-seg-btn {
+    position: relative; z-index: 1;
+    min-height: 46px; padding: 5px 6px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+    background: transparent; border: none;
+    color: var(--m-faint); font: inherit; cursor: pointer;
+    border-radius: calc(var(--m-radius-pill) - 5px);
+    -webkit-tap-highlight-color: transparent;
+    transition: color .3s var(--m-ease), transform .16s var(--m-ease);
+}
+html.is-mobile .m-day-seg-btn > span { font-size: 13px; font-weight: 900; line-height: 1.25; }
+html.is-mobile .m-day-seg-btn > small {
+    font-size: 10px; font-weight: 800; letter-spacing: .2px; opacity: .82;
+    font-variant-numeric: tabular-nums;
+}
+html.is-mobile .m-day-seg-btn.on { color: #eaf4ff; text-shadow: 0 1px 2px rgba(0,0,0,.5); }
+html.is-mobile .m-day-seg-btn:active { transform: scale(.975); }
+html.is-mobile .m-day-pick {
+    flex: 0 0 auto; min-height: 46px; padding: 0 13px;
+    display: inline-flex; align-items: center; gap: 6px;
+    border-radius: var(--m-radius-pill);
+    background: rgba(8,18,38,.55);
+    border: 1px solid var(--m-hair);
+    color: var(--m-muted); font: inherit; font-size: 11.5px; font-weight: 900;
+    cursor: pointer; -webkit-tap-highlight-color: transparent;
+    transition: color .28s var(--m-ease), border-color .28s var(--m-ease), transform .16s var(--m-ease);
+}
+html.is-mobile .m-day-pick i { font-size: 11px; color: var(--m-accent2); }
+html.is-mobile .m-day-pick.on { color: #eaf4ff; border-color: var(--m-edge); }
+html.is-mobile .m-day-pick:active { transform: scale(.975); }
+
+html.is-mobile .m-day-note {
+    display: flex; align-items: flex-start; gap: 10px;
+    margin: 0 0 12px; padding: 12px 13px;
+    border-radius: 16px;
+    background:
+        linear-gradient(152deg, rgba(150,200,255,.10) 0%, rgba(90,140,226,.02) 46%, rgba(128,184,255,.06) 100%),
+        var(--m-glass-bg);
+    border: 1px solid var(--m-hair);
+    box-shadow: 0 10px 24px rgba(1,6,16,.34);
+}
+html.is-mobile .m-day-note[hidden] { display: none; }
+/* الظهور من لا شيء: العرض كان يُبقيها «مخفية» بصفر شفافية فقط، فتنزل الرسالة
+   على نصف مساحتها المحجوزة ثم يقفز كل ما تحتها */
+html.is-mobile .m-day-note:not([hidden]) {
+    display: flex;
+    animation: mDayNoteIn .46s var(--m-ease-out) both;
+}
+@keyframes mDayNoteIn {
+    from { opacity: 0; transform: translate3d(0, -6px, 0); }
+    to { opacity: 1; transform: none; }
+}
+html.is-mobile .m-day-note-ic {
+    flex: 0 0 auto; width: 30px; height: 30px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 10px; font-size: 12px; color: #cfe6ff;
+    background: rgba(10,24,48,.6);
+    border: 1px solid var(--m-hair);
+}
+html.is-mobile .m-day-note[data-kind="night"] .m-day-note-ic { color: #b9d3ff; }
+html.is-mobile .m-day-note[data-kind="wait"] .m-day-note-ic { color: var(--m-accent2); }
+html.is-mobile .m-day-note[data-kind="yesterday"] .m-day-note-ic { color: var(--m-accent2); }
+html.is-mobile .m-day-note[data-kind="archive"] .m-day-note-ic { color: #ffd89a; }
+html.is-mobile .m-day-note-body { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+html.is-mobile .m-day-note-body strong { font-size: 12.5px; font-weight: 900; color: #e6f1ff; line-height: 1.5; }
+html.is-mobile .m-day-note-body small { font-size: 10.5px; font-weight: 700; color: var(--m-muted); line-height: 1.6; }
+/* السكة تُخبر كم مضى من نافذة ما قبل التصفير — رقم بلا مقياس يُقرأ ولا يُحس */
+html.is-mobile .m-day-progress { display: block; margin-top: 6px; }
+html.is-mobile .m-day-progress > b {
+    display: block; height: 4px; min-width: 4px; border-radius: 0;
+    background: linear-gradient(90deg, rgba(70,130,220,.35), rgba(150,215,255,.95));
+}
+html.is-mobile .m-day-progress > span {
+    display: block; margin-top: 5px;
+    font-size: 10px; font-weight: 800; color: var(--m-muted);
+}
+html.is-mobile .m-day-note-back {
+    flex: 0 0 auto; align-self: center; min-height: 40px; padding: 0 12px;
+    display: inline-flex; align-items: center; gap: 6px;
+    border-radius: 12px;
+    background: rgba(255,255,255,.06);
+    border: 1px solid var(--m-hair);
+    color: #dbeaff; font: inherit; font-size: 11px; font-weight: 900;
+    cursor: pointer; -webkit-tap-highlight-color: transparent;
+    transition: transform .16s var(--m-ease), background .24s var(--m-ease);
+}
+html.is-mobile .m-day-note-back i { font-size: 10px; color: var(--m-accent2); }
+html.is-mobile .m-day-note-back:active { transform: scale(.96); }
+
+html.is-mobile body.rg-light .m-day-seg {
+    background: rgba(255,255,255,.70);
+    border-color: rgba(30,70,120,.14);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
+}
+html.is-mobile body.rg-light .m-day-thumb {
+    background: linear-gradient(160deg, #ffffff, #eef5ff 58%, #dcebf9);
+    border-color: rgba(30,80,140,.22);
+    box-shadow: 0 8px 18px rgba(28,60,100,.15), inset 0 1px 0 #ffffff;
+}
+html.is-mobile body.rg-light .m-day-seg-btn { color: #55718f; }
+html.is-mobile body.rg-light .m-day-seg-btn.on { color: #0f2f57; text-shadow: none; }
+html.is-mobile body.rg-light .m-day-pick {
+    background: rgba(255,255,255,.70); border-color: rgba(30,70,120,.14); color: #3d5f86;
+}
+html.is-mobile body.rg-light .m-day-pick.on { color: #0f2f57; border-color: rgba(30,80,140,.32); }
+html.is-mobile body.rg-light .m-day-pick i { color: #1c5f9e; }
+html.is-mobile body.rg-light .m-day-note {
+    background: linear-gradient(152deg, rgba(255,255,255,.96), rgba(214,232,252,.72));
+    border-color: rgba(30,70,120,.13);
+    box-shadow: 0 10px 22px rgba(28,60,100,.10);
+}
+html.is-mobile body.rg-light .m-day-note-ic { background: #ffffff; border-color: rgba(30,70,120,.13); color: #3d5f86; }
+html.is-mobile body.rg-light .m-day-note[data-kind="archive"] .m-day-note-ic { color: #a8710f; }
+html.is-mobile body.rg-light .m-day-note-body strong { color: #0f2c52; }
+html.is-mobile body.rg-light .m-day-note-body small,
+html.is-mobile body.rg-light .m-day-progress > span { color: #4d6a8a; }
+html.is-mobile body.rg-light .m-day-note-back { background: #ffffff; border-color: rgba(30,70,120,.14); color: #10305c; }
+
+/* ورقة اختيار اليوم: تلبس لباس «ورقة نبض التشغيل» حرفياً — الحاوية والعتمة
+   والبطاقة والزناد — فلا نافذتان في الجوال بأسلوبين. */
+html.is-mobile .m-day-chips {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+    padding: 4px 0 10px;
+    border-bottom: 1px solid var(--m-hair);
+}
+html.is-mobile .m-day-chip {
+    min-height: 40px; padding: 0 13px;
+    display: inline-flex; align-items: center; gap: 6px;
+    border-radius: var(--m-radius-pill);
+    background: rgba(255,255,255,.05);
+    border: 1px solid var(--m-hair);
+    color: var(--m-muted); font: inherit; font-size: 11.5px; font-weight: 900;
+    cursor: pointer; -webkit-tap-highlight-color: transparent;
+    transition: transform .16s var(--m-ease), color .24s var(--m-ease), border-color .24s var(--m-ease);
+}
+html.is-mobile .m-day-chip i { font-size: 10.5px; color: var(--m-accent2); }
+html.is-mobile .m-day-chip:active { transform: scale(.96); }
+html.is-mobile .m-day-chip.on { color: #eaf4ff; border-color: var(--m-edge); }
+html.is-mobile .m-day-jump {
+    flex: 1 1 150px; min-width: 0;
+    display: flex; align-items: center; gap: 7px;
+    font-size: 10.5px; font-weight: 800; color: var(--m-faint);
+}
+html.is-mobile .m-day-date {
+    flex: 1 1 auto; min-width: 0; min-height: 40px;
+    padding: 0 10px;
+    border-radius: 12px;
+    background: rgba(255,255,255,.05);
+    border: 1px solid var(--m-hair);
+    color: var(--m-text); font: inherit; font-size: 12px; font-weight: 800;
+    font-variant-numeric: tabular-nums;
+}
+html.is-mobile .m-day-row {
+    display: grid; grid-template-columns: minmax(0,.92fr) minmax(0,1fr) minmax(0,.92fr);
+    align-items: center; gap: 8px;
+    min-height: 48px; padding: 8px 10px;
+    border-radius: 13px;
+    border: 1px solid transparent;
+    background: rgba(255,255,255,.04);
+    color: inherit; font: inherit; text-align: start; cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    animation: mPoIn .42s var(--m-ease-out) both;
+    animation-delay: calc(min(var(--m-po, 0), 11) * 34ms);
+    transition: transform .16s var(--m-ease), border-color .24s var(--m-ease);
+}
+html.is-mobile .m-day-row:active { transform: scale(.985); }
+html.is-mobile .m-day-row.on { border-color: var(--m-edge); background: rgba(150,200,255,.10); }
+html.is-mobile .m-day-row-d { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+html.is-mobile .m-day-row-d strong { font-size: 12px; font-weight: 900; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html.is-mobile .m-day-row-d small { font-size: 10px; font-weight: 700; color: var(--m-muted); font-variant-numeric: tabular-nums; }
+html.is-mobile .m-day-row-v { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; min-width: 0; }
+html.is-mobile .m-day-row-v b { font-size: 11.5px; font-weight: 900; font-variant-numeric: tabular-nums; white-space: nowrap; }
+html.is-mobile .m-day-row-v small { font-size: 10px; font-weight: 800; color: var(--m-faint); }
+html.is-mobile .m-day-row-v.neg b { color: #ffa9b2; }
+html.is-mobile body.rg-light .m-day-chips { border-bottom-color: rgba(30,70,120,.10); }
+html.is-mobile body.rg-light .m-day-chip,
+html.is-mobile body.rg-light .m-day-date,
+html.is-mobile body.rg-light .m-day-row { background: rgba(30,70,120,.045); border-color: rgba(30,70,120,.10); }
+html.is-mobile body.rg-light .m-day-chip,
+html.is-mobile body.rg-light .m-day-date { color: #33507a; }
+html.is-mobile body.rg-light .m-day-chip i { color: #1c5f9e; }
+html.is-mobile body.rg-light .m-day-chip.on,
+html.is-mobile body.rg-light .m-day-row.on { color: #0f2f57; border-color: rgba(30,80,140,.34); background: rgba(30,110,190,.10); }
+html.is-mobile body.rg-light .m-day-row-d small,
+html.is-mobile body.rg-light .m-day-row-v small { color: #4d6a8a; }
+html.is-mobile body.rg-light .m-day-row-v.neg b { color: #b32b3a; }
+@media (prefers-reduced-motion: reduce) {
+    html.is-mobile .m-day-thumb { transition: none; }
+    html.is-mobile .m-day-note:not([hidden]) { animation: none; }
+    html.is-mobile .m-day-row { animation: none; }
+    html.is-mobile .m-day-seg-btn,
+    html.is-mobile .m-day-pick,
+    html.is-mobile .m-day-chip,
+    html.is-mobile .m-day-note-back,
+    html.is-mobile .m-day-row:active { transition: none; }
+}
+
 /* ------------------------- ورقة نبض التشغيل -------------------------
    بطاقة سفلية زجاجية تُفتح من عدّادات «تفاصيل اليوم» وتعرض الطلبات المفتوحة
    نفسها التي عُدّت: الأقدم أولاً، بلا أي إجراء يكتب على البيانات. */
@@ -7516,6 +7744,9 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
             if (!page.classList.contains('m-seen')) return;
             if (page.scrollTop) page.scrollTop = 0;
             if (page.scrollLeft) page.scrollLeft = 0;
+            /* أول إطار واللوحة معروضة: الخيط يُقاس من جديد، فقياسه والصفحة
+               مخفية يعطي عرضاً صفر. */
+            if (page.id === 'admin-daily-report') paintDayBar();
         });
     }
 
@@ -8195,12 +8426,6 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
         return '<span class="' + tone + '"><small>' + label + '</small><b><i class="fa-solid ' + icon + '"></i> ' + txt + '</b></span>';
     }
 
-    function todayRow() {
-        let key = '';
-        try { key = typeof window.royalTodayKey === 'function' ? String(window.royalTodayKey()) : ''; } catch (e) { key = ''; }
-        return dayRow(key);
-    }
-
     /* الطلبات المفتوحة مرة واحدة للعدّ والقائمة معاً. قراءة فقط من الفواتير،
        والعمر من وقت فايربيس الموثوق لا ساعة الجهاز. */
     function collectActiveOrders() {
@@ -8237,7 +8462,9 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
 
     let pulseEscBound = null;
     function closePulseSheet() {
-        const sheet = document.querySelector('.m-pulse-sheet');
+        /* ورقة اليوم تلبس لباس هذه الورقة فتأخذ أصنافها، لكنها لا تُغلق معها:
+           لولا :not() لأغلقت إحداهما الأخرى تحت أقدام المستخدم. */
+        const sheet = document.querySelector('.m-pulse-sheet:not(.m-day-sheet)');
         if (!sheet) return;
         sheet.classList.add('out');
         if (pulseEscBound) { document.removeEventListener('keydown', pulseEscBound, true); pulseEscBound = null; }
@@ -8889,14 +9116,18 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
     function paintToday() {
         if (!todayEl) buildTodayPanel();
         if (!todayEl) return;
-        let key = '';
-        try { key = typeof window.royalTodayKey === 'function' ? String(window.royalTodayKey()) : ''; } catch (e) {}
-        const td = todayRow();
-        const sales = td ? num(td[2].textContent) : 0;
-        const expenses = td ? num(td[3].textContent) : 0;
+        /* اليوم المعروض هو يوم العمل (تصفير الثامنة) أو ما اختاره المستخدم —
+           وهو نفسه ما بُنيت عليه أرقام القطع في محرك البينتو. */
+        const key = resolveDayKey();
+        /* ويُبلَّغ النظام به هنا أيضاً: إن قلبته الثامنةُ نفسها في منتصف هذه
+           الجولة بقِيَت أرقام القطع والطلبات على اليوم المرسوم لا قبله. */
+        try { window.royalDailyView = key; } catch (e) {}
+        const m = dayMoney(key);
+        const sales = m ? m.sales : 0;
+        const expenses = m ? m.expenses : 0;
+        const net = m ? m.net : 0;
         let orders = 0;
         try { orders = num(typeof window.royalTodayOrdersValue === 'function' ? window.royalTodayOrdersValue() : 0); } catch (e) { orders = 0; }
-        const net = td && td.length > 5 ? num(td[5].textContent) : sales - expenses;
         const vals = { sales: sales, orders: orders, expenses: expenses, net: net };
         const peak = Math.max(sales, orders, expenses, 1);
         TODAY_LINES.forEach((l) => {
@@ -8912,23 +9143,23 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
             const w = pct + '%';
             if (fill.style.width !== w) fill.style.width = w;
         });
-        /* شريط «مقابل أمس» من صف أمس في نفس جدول التقارير — لا حساب جديد
-           ولا قراءة قاعدة، ويختفي إن لم يكن لأمس تقرير أصلاً. */
+        /* شريط «مقابل …» من اليوم السابق له في نفس الجدول — لا حساب جديد ولا
+           قراءة قاعدة، ويختفي إن لم يكن للسابق تقرير أصلاً. والتسمية تُقال
+           بحسب المعروض: مقابل أمس حين ترى اليوم، ومقابل قبل يومين حين ترى
+           أمس، ومقابل اسم اليوم حين ترى يوماً من الأرشيف. */
         const cmp = todayEl.querySelector('.m-today-cmp');
         if (cmp) {
-            const ytd = key ? dayRow(prevDayKey(key)) : null;
+            const prevKey = key ? prevDayKey(key) : '';
+            const ytd = prevKey ? dayMoney(prevKey) : null;
             if (!ytd) {
                 cmp.hidden = true;
                 if (cmp.innerHTML) cmp.innerHTML = '';
             } else {
-                const ySales = num(ytd[2].textContent);
-                const yExpenses = num(ytd[3].textContent);
-                const yNet = ytd.length > 5 ? num(ytd[5].textContent) : ySales - yExpenses;
-                const html = '<div class="m-today-cmp-h"><i class="fa-solid fa-arrow-right-arrow-left"></i><span>مقابل أمس</span></div>' +
+                const html = '<div class="m-today-cmp-h"><i class="fa-solid fa-arrow-right-arrow-left"></i><span>مقابل ' + esc(dayWord(prevKey)) + '</span></div>' +
                     '<div class="m-today-cmp-grid">' +
-                        cmpChip('المبيعات', sales, ySales, false) +
-                        cmpChip('الصرفيات', expenses, yExpenses, true) +
-                        cmpChip('الصافي', net, yNet, false) +
+                        cmpChip('المبيعات', sales, ytd.sales, false) +
+                        cmpChip('الصرفيات', expenses, ytd.expenses, true) +
+                        cmpChip('الصافي', net, ytd.net, false) +
                     '</div>';
                 if (cmp.innerHTML !== html) cmp.innerHTML = html;
                 if (cmp.hidden) cmp.hidden = false;
@@ -8951,23 +9182,414 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
         });
         const lateItem = todayEl.querySelector('.m-pulse-i.late');
         if (lateItem) lateItem.classList.toggle('zero', pulse.late === 0);
+        /* عنوان اللوحة يتبع اليوم المعروض: «تفاصيل اليوم» بشمس، و«تفاصيل أمس»
+           بقمر، و«تفاصيل الأربعاء» ليومٍ من الأرشيف. */
+        const head = todayEl.querySelector('.m-today-head');
+        if (head) {
+            const ttl = 'تفاصيل ' + dayWord(key);
+            const t = head.querySelector('span');
+            if (t && t.textContent !== ttl) t.textContent = ttl;
+            const ic = head.querySelector('i');
+            const want = key === calTodayKey() ? 'fa-sun' : (key === prevDayKey(calTodayKey()) ? 'fa-moon' : 'fa-calendar-day');
+            if (ic && !ic.classList.contains(want)) {
+                ic.classList.remove('fa-sun', 'fa-moon', 'fa-calendar-day');
+                ic.classList.add(want);
+            }
+        }
         const d = todayEl.querySelector('.m-today-date');
         const label = key ? new Intl.DateTimeFormat('ar-IQ', { weekday: 'long', day: 'numeric', month: 'long' })
             .format(new Date(key + 'T12:00:00')) : '';
         if (label && d.textContent !== label) d.textContent = label;
+        paintDayBar();
     }
 
     function bindTodayPanel() {
+        buildDayBar();
         buildTodayPanel();
-        paintToday();
+        applyDay(false);
         if (state.todayTimer) return;
-        /* يتحدث وحده كل دقيقة طالما الإدارة مفتوحة: يوم جديد يدخل بلا إعادة تحميل */
+        /* يتحدث وحده كل دقيقة طالما الإدارة مفتوحة: يوم جديد يدخل بلا إعادة تحميل،
+           والثامنة تُقلِب اللوحة على الجاري من نفسها في منتصف الجلسة. */
         state.todayTimer = setInterval(() => {
             if (!document.getElementById(ADMIN_ID).classList.contains('active-screen')) return;
             if (document.hidden) return;
-            paintToday();
+            turnDay();
         }, 60000);
     }
+
+    /* ═════════════════════════ دورة اليوم ═════════════════════════
+       اليومية تُصفَّر الثامنة صباحاً لا عند منتصف الليل: فما بين الصفر والثامنة
+       تبقى الأرقام على يوم أمس الذي لم يرست عدّاداته بعد. الشريط يبدّل بين اليوم
+       وأمسه، والرسالة تُخبر المستخدم أي يوم يقرأ قبل أن يقرأ رقماً، والعدّاد
+       يقول كم بقي على التصفير. والتلقائية بقرار واحد: يوم العمل الجاري — وهو
+       تقويميّاً «أمس» قبل الثامنة و«اليوم» بعدها.
+       لا رقم يُحسب هنا: القطع من محرك البينتو بعد أن يوجَّه على اليوم، والمال من
+       فهرس كل الأيام الذي يبنيه النظام في نفس حلقة جدول التقارير. */
+    let daySel = 'auto';   /* auto | today | yesterday | pick */
+    let dayPick = '';
+    let dayAuto = '';
+    let dayApplied = '';
+    let dayBarEl = null;
+    let dayNoteEl = null;
+    let daySheetEl = null;
+    let daySheetEsc = null;
+
+    function calTodayKey() {
+        try { if (typeof window.royalTodayKey === 'function') return String(window.royalTodayKey() || ''); } catch (e) {}
+        return '';
+    }
+
+    /* يوم العمل من مصدر النظام نفسه؛ وإن لم تُحمَّل طبقة القراءة بعد (كمبيوتر
+       قديم أو تحميل متقطع) فاليوم التقويمي — ولا تنفجر اللوحة. */
+    function workDayKey() {
+        try { if (typeof window.royalWorkDayKey === 'function') return String(window.royalWorkDayKey(0) || ''); } catch (e) {}
+        return calTodayKey();
+    }
+
+    function workPhase() {
+        try {
+            if (typeof window.royalWorkDayPhase === 'function') {
+                const p = window.royalWorkDayPhase();
+                if (p && typeof p.pre === 'boolean') return p;
+            }
+        } catch (e) {}
+        return { hour: 12, pre: false, resetInSec: 0 };
+    }
+
+    /* تغيّر يوم العمل (عند الثامنة) هو وحده ما يسحب اللوحة إلى التلقائي: فما
+       دام اليوم هو اليوم، يبقى اختيار المستخدم كما تركه. */
+    function resolveDayKey() {
+        const auto = workDayKey();
+        if (auto !== dayAuto) { dayAuto = auto; daySel = 'auto'; dayPick = ''; }
+        if (daySel === 'today') return calTodayKey();
+        if (daySel === 'yesterday') return prevDayKey(calTodayKey());
+        if (daySel === 'pick') return dayPick || auto;
+        return auto;
+    }
+
+    function dayWord(key) {
+        const t = calTodayKey();
+        if (!key || !t) return 'اليوم';
+        if (key === t) return 'اليوم';
+        if (key === prevDayKey(t)) return 'أمس';
+        if (key === prevDayKey(prevDayKey(t))) return 'قبل يومين';
+        try {
+            return new Intl.DateTimeFormat('ar-IQ', { weekday: 'long' }).format(new Date(key + 'T12:00:00'));
+        } catch (e) { return key; }
+    }
+
+    function dayLabel(key) {
+        try {
+            if (typeof window.royalDayLabel === 'function') {
+                const s = String(window.royalDayLabel(key) || '');
+                if (s) return s;
+            }
+        } catch (e) {}
+        return key || '';
+    }
+
+    /* «ساعتان و ١٢ دقيقة» — بلا ساعة رقمية تجري كل ثانية تحت عين المستخدم.
+       والعدّ العربي بالاسم لا بقاعدة واحدة: «٣ ساعات» و«١٢ ساعة» غيران،
+       واللفظ الأعجمي على لسان صاحب المكوى العراقي يُقرأ خطأً. */
+    function durText(sec) {
+        const totalMin = Math.max(0, Math.round((Number(sec) || 0) / 60));
+        const h = Math.floor(totalMin / 60);
+        const m = totalMin % 60;
+        const say = (n, one, two, few, many) => {
+            const v = money(n);
+            if (n === 1) return one;
+            if (n === 2) return two;
+            if (n >= 3 && n <= 10) return v + ' ' + few;
+            return v + ' ' + many;
+        };
+        const parts = [];
+        if (h) parts.push(say(h, 'ساعة', 'ساعتان', 'ساعات', 'ساعة'));
+        if (m) parts.push(say(m, 'دقيقة', 'دقيقتان', 'دقائق', 'دقيقة'));
+        if (!parts.length) return 'أقل من دقيقة';
+        return parts.join(' و ');
+    }
+
+    /* مال اليوم المعروض: من فهرس كل الأيام، وإلا من سطر الجدول نفسه — لا ثالث. */
+    function dayMoney(key) {
+        let s = null;
+        try { if (typeof window.royalDaySummary === 'function') s = window.royalDaySummary(key); } catch (e) {}
+        if (s) {
+            const sales = Math.round(Number(s.sales) || 0);
+            const exp = Math.round(Number(s.expenses) || 0);
+            return { sales: sales, expenses: exp, net: sales - exp, details: s.details || [] };
+        }
+        const td = dayRow(key);
+        if (!td) return null;
+        const sales = num(td[2].textContent);
+        const exp = num(td[3].textContent);
+        return { sales: sales, expenses: exp, net: td.length > 5 ? num(td[5].textContent) : sales - exp, details: [] };
+    }
+
+    function dayBarMarkup() {
+        return '<div class="m-day-seg" role="group" aria-label="تبديل اليوم">' +
+                '<i class="m-day-thumb" aria-hidden="true"></i>' +
+                '<button type="button" class="m-day-seg-btn" data-d="today" aria-pressed="false">' +
+                    '<span>اليوم</span><small class="js-d-today"></small></button>' +
+                '<button type="button" class="m-day-seg-btn" data-d="yesterday" aria-pressed="false">' +
+                    '<span>أمس</span><small class="js-d-yest"></small></button>' +
+            '</div>' +
+            '<button type="button" class="m-day-pick" aria-haspopup="dialog">' +
+                '<i class="fa-solid fa-calendar-days"></i><span class="js-pick-lbl">يوم آخر</span>' +
+            '</button>';
+    }
+
+    function buildDayBar() {
+        const page = pageOf('daily-report');
+        if (!page || page.querySelector('.m-daybar')) return;
+        const bar = document.createElement('div');
+        bar.className = 'm-daybar';
+        bar.innerHTML = dayBarMarkup();
+        const note = document.createElement('div');
+        note.className = 'm-day-note';
+        note.hidden = true;
+        const anchor = page.querySelector('.m-flow') || page.querySelector('.bento-box-container') || page.querySelector('.m-today');
+        if (anchor && anchor.parentNode === page) {
+            page.insertBefore(bar, anchor);
+            page.insertBefore(note, bar.nextSibling);
+        } else {
+            page.appendChild(bar);
+            page.appendChild(note);
+        }
+        bar.querySelectorAll('.m-day-seg-btn').forEach((b) => {
+            b.addEventListener('click', () => chooseDay(b.getAttribute('data-d'), ''));
+        });
+        bar.querySelector('.m-day-pick').addEventListener('click', openDaySheet);
+        dayBarEl = bar;
+        dayNoteEl = note;
+    }
+
+    function chooseDay(mode, key) {
+        daySel = mode;
+        dayPick = mode === 'pick' ? String(key || '') : '';
+        applyDay(true);
+    }
+
+    /* اليوم المعروض يُبلَّغ للنظام قبل أي رسم: محرك البينتو يقرأه، فكل تحديث
+       في الخلفية — ومنه تكرار updateBentoBox داخل لوحة المالية — يبني اليوم
+       نفسه، ولا تُقلَب اللوحة إلى الجاري عند أول مزامنة. */
+    function applyDay(force) {
+        const key = resolveDayKey();
+        dayApplied = key;
+        try { window.royalDailyView = key; } catch (e) {}
+        /* القطع لا تُعاد بناها إلا حين خرج العرض عن اليوم التقويمي الذي بُني
+           عليه المحرك أصلاً، أو حين طلب المستخدم يوماً بيده — فالدخول العادي
+           لا يكلّف دورة رسم زائدة. */
+        if (force === true || key !== calTodayKey()) {
+            try { if (typeof window.updateBentoBox === 'function') window.updateBentoBox(); } catch (e) {}
+        }
+        paintToday();
+        syncFlow();
+    }
+
+    /* حارس الدقيقة: الثامنة قد تدخل واللوحة مفتوحة، فهنا وحده يُستدعى بناء
+       القطع من جديد — ولا يُستدعى ما لم يتغيّر اليوم فعلاً. */
+    function turnDay() {
+        if (resolveDayKey() !== dayApplied) applyDay(false);
+        else paintToday();
+    }
+
+    function paintDayBar() {
+        if (!dayBarEl) buildDayBar();
+        if (!dayBarEl) return;
+        const key = resolveDayKey();
+        const t = calTodayKey();
+        const y = prevDayKey(t);
+        const segs = dayBarEl.querySelectorAll('.m-day-seg-btn');
+        const pick = dayBarEl.querySelector('.m-day-pick');
+        const on = (el, v) => {
+            if (!el) return;
+            if (el.classList.contains('on') !== v) el.classList.toggle('on', v);
+            el.setAttribute('aria-pressed', v ? 'true' : 'false');
+        };
+        /* الخيط ينزلق إلى الزر الظاهر: offsetLeft يُقاس من الحافة اليسرى دائماً
+           فلا يحتاج التفافاً حين يقلب المستخدم اتجاه الشاشة. */
+        let active = null;
+        segs.forEach((b) => {
+            const d = b.getAttribute('data-d');
+            const sel = (d === 'today' && key === t) || (d === 'yesterday' && key === y);
+            on(b, sel);
+            if (sel) active = b;
+        });
+        const picked = !!key && key !== t && key !== y;
+        on(pick, picked);
+        const lbl = dayBarEl.querySelector('.js-pick-lbl');
+        const want = picked ? dayWord(key) : 'يوم آخر';
+        if (lbl && lbl.textContent !== want) lbl.textContent = want;
+        const thumb = dayBarEl.querySelector('.m-day-thumb');
+        /* القياس بالموضع الفعلي لا بنسبة مئوية: الشريط شبكةٌ اتجاهها عربي،
+           وoffsetLeft يُقاس من الحافة اليسرى دائماً، فيبقى الخيط تحت الزر
+           الصحيح مهما انقلبت الصفحة. والصفحة المخفية عرضها صفر — فلا يُلمس
+           الخيط أصلاً حتى يُعاد رسمه لحظة ظهور اللوحة (هناك مُعلَّق على
+           m-seen)، وإلا وقف على عرض صفر ونُفِخ قفزةً عند أول دخول. */
+        if (thumb) {
+            const w = active ? (active.clientWidth || 0) : 0;
+            if (w > 0) {
+                const dx = Math.round(active.offsetLeft - thumb.offsetLeft);
+                if (thumb.style.width !== w + 'px') thumb.style.width = w + 'px';
+                const tf = 'translateX(' + dx + 'px)';
+                if (thumb.style.transform !== tf) thumb.style.transform = tf;
+                if (thumb.style.opacity === '0') thumb.style.opacity = '1';
+            } else if (thumb.style.opacity !== '0') {
+                thumb.style.opacity = '0';
+            }
+        }
+        const dt = dayBarEl.querySelector('.js-d-today');
+        const dy = dayBarEl.querySelector('.js-d-yest');
+        const short = (k) => {
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(String(k || ''))) return '';
+            try {
+                return new Intl.DateTimeFormat('ar-IQ', { day: 'numeric', month: 'short' }).format(new Date(k + 'T12:00:00'));
+            } catch (e) { return ''; }
+        };
+        if (dt) { const v = short(t); if (dt.textContent !== v) dt.textContent = v; }
+        if (dy) { const v = short(y); if (dy.textContent !== v) dy.textContent = v; }
+        paintDayNote(key);
+    }
+
+    /* الرسالة: أربع حالات لا واحدة — نافذة ما قبل التصفير، ويومٌ جديد لم يبدأ
+       عدّه بعد، وأمسٌ يقرأه المستخدم بعد التصفير، ويومٌ قديم اختاره بيده.
+       وزرّ الرجوع يسمّي اليوم الذي يعود إليه بالاسم نفسه الذي على الشريط،
+       فلا يبحث المستخدم عن زرّه. */
+    function paintDayNote(key) {
+        if (!dayNoteEl) return;
+        const ph = workPhase();
+        const auto = dayAuto || workDayKey();
+        const t = calTodayKey();
+        const y = prevDayKey(t);
+        let kind = '';
+        let head = '';
+        let sub = '';
+        if (ph.pre && key === auto) {
+            kind = 'night';
+            head = 'هذه إحصائيات يوم ' + dayLabel(key);
+            sub = 'أرقام المكوى تُصفَّر الثامنة صباحاً — تبقّى ' + durText(ph.resetInSec);
+        } else if (ph.pre && key === t) {
+            kind = 'wait';
+            head = 'يوم ' + dayLabel(key) + ' لم يبدأ عدّه بعد';
+            sub = 'التصفير الثامنة صباحاً — تبقّى ' + durText(ph.resetInSec) + ' على يوم جديد';
+        } else if (key === y) {
+            kind = 'yesterday';
+            head = 'أنت تعرض إحصائيات أمس · ' + dayLabel(key);
+            sub = 'عدّادات اليوم الجاري تعمل الآن — اضغط «' + dayWord(t) + '» لترجع إليها';
+        } else if (key !== auto) {
+            kind = 'archive';
+            head = 'أنت تعرض إحصائيات يوم ' + dayLabel(key);
+            sub = 'يوم من السجل: أرقامه كما سُجِّلَت، لا تزيد مع اليوم الجاري';
+        }
+        if (!kind) {
+            if (!dayNoteEl.hidden) dayNoteEl.hidden = true;
+            if (dayNoteEl.innerHTML) dayNoteEl.innerHTML = '';
+            return;
+        }
+        const ICONS = { night: 'fa-moon', wait: 'fa-clock', yesterday: 'fa-clock-rotate-left', archive: 'fa-box-archive' };
+        const back = kind === 'yesterday' || kind === 'archive';
+        const pct = back ? 0 : clamp(100 - (ph.resetInSec / (8 * 3600)) * 100, 2, 100);
+        const html = '<i class="fa-solid ' + (ICONS[kind] || 'fa-moon') + ' m-day-note-ic"></i>' +
+            '<div class="m-day-note-body"><strong>' + esc(head) + '</strong><small>' + esc(sub) + '</small>' +
+            (pct ? '<em class="m-day-progress"><b style="width:' + pct.toFixed(1) + '%"></b><span>من منتصف الليل إلى الثامنة</span></em>' : '') +
+            '</div>' +
+            (back ? '<button type="button" class="m-day-note-back"><i class="fa-solid fa-rotate-left"></i> ' + esc(dayWord(auto)) + '</button>' : '');
+        if (dayNoteEl.innerHTML !== html) {
+            dayNoteEl.innerHTML = html;
+            const b = dayNoteEl.querySelector('.m-day-note-back');
+            if (b) b.addEventListener('click', () => chooseDay('auto', ''));
+        }
+        dayNoteEl.dataset.kind = kind;
+        if (dayNoteEl.hidden) dayNoteEl.hidden = false;
+    }
+
+    function dayRowMarkup(d, currentKey, i) {
+        const on = d.key === currentKey;
+        return '<button type="button" class="m-day-row' + (on ? ' on' : '') + '" data-k="' + esc(d.key) + '"' +
+            ' style="--m-po:' + (i || 0) + '">' +
+            '<span class="m-day-row-d"><strong>' + esc(dayWord(d.key)) + '</strong>' +
+                '<small>' + esc(d.key.replace(/-/g, '/')) + '</small></span>' +
+            '<span class="m-day-row-v"><b>' + money(d.sales) + '</b><small>مبيعات</small></span>' +
+            '<span class="m-day-row-v ' + (d.net < 0 ? 'neg' : '') + '"><b>' + money(d.net) + '</b><small>الصافي</small></span>' +
+        '</button>';
+    }
+
+    function closeDaySheet() {
+        const sheet = daySheetEl;
+        if (!sheet) return;
+        daySheetEl = null;
+        sheet.classList.add('out');
+        if (daySheetEsc) { document.removeEventListener('keydown', daySheetEsc, true); daySheetEsc = null; }
+        setTimeout(() => { if (sheet.parentNode) sheet.parentNode.removeChild(sheet); }, 360);
+    }
+
+    function openDaySheet() {
+        closeDaySheet();
+        closePulseSheet();
+        const currentKey = resolveDayKey();
+        let days = [];
+        try { if (typeof window.royalDayList === 'function') days = window.royalDayList(60) || []; } catch (e) { days = []; }
+        const t = calTodayKey();
+        const y = prevDayKey(t);
+        /* اليوم وأمس لهما مكان في القائمة حتى بلا حركة: المستخدم قد يريد
+           أن يراهما صفراً لا أن يقرأ «لا حركة» فقط. */
+        const seen = {};
+        days.forEach((d) => { seen[d.key] = 1; });
+        [t, y].forEach((k) => {
+            if (!k || seen[k]) return;
+            days.push({ key: k, sales: 0, expenses: 0, net: 0, details: [] });
+        });
+        const list = days.slice(0, 60);
+        const sheet = document.createElement('div');
+        sheet.className = 'm-pulse-sheet m-day-sheet';
+        sheet.innerHTML =
+            '<div class="m-pulse-scrim"></div>' +
+            '<div class="m-pulse-card" role="dialog" aria-modal="true" aria-label="اختيار يوم">' +
+                '<div class="m-pulse-grip"></div>' +
+                '<div class="m-pulse-head">' +
+                    '<div><h3><i class="fa-solid fa-calendar-day"></i> يوم تريد أن ترى تفاصيله</h3>' +
+                    '<small>التصفير الثامنة صباحاً · ' + (list.length ? list.length + ' يوماً مسجَّلاً' : 'لا أيام مسجَّلة') + '</small></div>' +
+                    '<button type="button" class="m-pulse-x" aria-label="إغلاق"><i class="fa-solid fa-xmark"></i></button>' +
+                '</div>' +
+                '<div class="m-day-chips">' +
+                    '<button type="button" class="m-day-chip' + (currentKey === t ? ' on' : '') + '" data-k="' + esc(t) + '"><i class="fa-solid fa-sun"></i> اليوم</button>' +
+                    '<button type="button" class="m-day-chip' + (currentKey === y ? ' on' : '') + '" data-k="' + esc(y) + '"><i class="fa-solid fa-moon"></i> أمس</button>' +
+                    '<label class="m-day-jump">أو تاريخ<input type="date" class="m-day-date" value="' + esc(currentKey) + '"></label>' +
+                '</div>' +
+                '<div class="m-pulse-list m-day-list">' +
+                    (list.length ? list.map((d, i) => dayRowMarkup(d, currentKey, i)).join('')
+                        : '<div class="m-po-empty"><i class="fa-solid fa-inbox"></i><span>لا تقارير يومية بعد</span></div>') +
+                '</div>' +
+            '</div>';
+        document.body.appendChild(sheet);
+        daySheetEl = sheet;
+        requestAnimationFrame(() => sheet.classList.add('on'));
+        sheet.addEventListener('click', (e) => {
+            const row = e.target.closest('.m-day-row, .m-day-chip');
+            if (row) {
+                const k = String(row.getAttribute('data-k') || '');
+                if (k) { chooseDay(k === t ? 'today' : (k === y ? 'yesterday' : 'pick'), k); closeDaySheet(); }
+                return;
+            }
+            if (e.target.closest('.m-pulse-x') || e.target.classList.contains('m-pulse-scrim')) closeDaySheet();
+        });
+        const dateEl = sheet.querySelector('.m-day-date');
+        if (dateEl) {
+            dateEl.addEventListener('change', () => {
+                const k = String(dateEl.value || '');
+                if (!/^\d{4}-\d{2}-\d{2}$/.test(k)) return;
+                chooseDay(k === t ? 'today' : (k === y ? 'yesterday' : 'pick'), k);
+                closeDaySheet();
+            });
+        }
+        daySheetEsc = (e) => {
+            if (e.key === 'Escape') { e.preventDefault(); closeDaySheet(); }
+        };
+        document.addEventListener('keydown', daySheetEsc, true);
+        const x = sheet.querySelector('.m-pulse-x');
+        if (x) setTimeout(() => { try { x.focus({ preventScroll: true }); } catch (e) {} }, 60);
+    }
+
 
     /* ================== شاشة الدخول والقفل ================== */
     const LOGIN_ID = 'modal-admin-login';
@@ -10621,12 +11243,18 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
     }
 
     /* اليوم من مصدر النظام نفسه (توقيت بغداد مع إزاحة الخادم)، لا من ساعة
-       الجهاز: متوسط اليوم يقسم رقم الشهر على يومه، وخطأ يومٍ يُحرّف الرقم. */
+       الجهاز: متوسط اليوم يقسم رقم الشهر على يومه، وخطأ يومٍ يُحرّف الرقم.
+       واليوم هنا هو يوم العرض لا يوم التقويم — فاسم الشهر وقاسم المتوسط يجب
+       أن يطابقا ما رسمه محرك البينتو، وإلا قُسِّم تراكمي تشرين على يوم من
+       كانون، و«متوسط اليوم» صار كذبة حسابية. */
     function flowToday() {
-        try {
-            const m = /^(\d{4})-(\d{2})-(\d{2})/.exec((window.getRealTime && window.getRealTime().date) || '');
-            if (m) return { y: +m[1], mo: +m[2], day: +m[3] };
-        } catch (e) {}
+        let k = '';
+        try { if (typeof window.royalDayKeyView === 'function') k = String(window.royalDayKeyView() || ''); } catch (e) {}
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(k)) {
+            try { k = String((window.getRealTime && window.getRealTime().date) || ''); } catch (e) {}
+        }
+        const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(k);
+        if (m) return { y: +m[1], mo: +m[2], day: +m[3] };
         const n = new Date();
         return { y: n.getFullYear(), mo: n.getMonth() + 1, day: n.getDate() };
     }
@@ -10639,23 +11267,23 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
                     '<span class="m-flow-live"><i></i>مباشر</span></div>' +
                 '<div class="m-flow-figure"><span data-slot="bento-current-pieces"></span><span class="m-flow-unit">قطعة</span></div>' +
                 '<div class="m-flow-gauge" aria-hidden="true">' + ticks + '</div>' +
-                '<div class="m-flow-caption"><span>سُلّم اليوم من الموجود</span><b class="js-tank-pct">—</b></div>' +
-                '<div class="m-flow-caption m-flow-caption-2"><span>على وتيرة اليوم ينتهي المخزون خلال</span><b class="js-tank-days">—</b></div>' +
+                '<div class="m-flow-caption"><span class="js-tank-cap">سُلّم اليوم من الموجود</span><b class="js-tank-pct">—</b></div>' +
+                '<div class="m-flow-caption m-flow-caption-2"><span class="js-days-cap">على وتيرة اليوم ينتهي المخزون خلال</span><b class="js-tank-days">—</b></div>' +
             '</section>' +
             '<div class="m-flow-pair">' +
                 '<section class="m-flow-node in">' +
-                    '<div class="m-flow-node-top"><span class="m-flow-chip"><i class="fa-solid fa-boxes-stacked"></i></span><span class="m-flow-tag">اليوم</span></div>' +
+                    '<div class="m-flow-node-top"><span class="m-flow-chip"><i class="fa-solid fa-boxes-stacked"></i></span><span class="m-flow-tag js-flow-tag">اليوم</span></div>' +
                     '<div class="m-flow-num"><span data-slot="bento-entered-today"></span></div>' +
                     '<div class="m-flow-node-label">قطع استُلمت</div>' +
                     '<div class="m-flow-minibar"><i class="js-in-bar"></i></div>' +
-                    '<div class="m-flow-node-sub">متوسط اليوم <b class="js-in-avg">—</b></div>' +
+                    '<div class="m-flow-node-sub">المتوسط اليومي <b class="js-in-avg">—</b></div>' +
                 '</section>' +
                 '<section class="m-flow-node out">' +
-                    '<div class="m-flow-node-top"><span class="m-flow-chip"><i class="fa-solid fa-truck-fast"></i></span><span class="m-flow-tag">اليوم</span></div>' +
+                    '<div class="m-flow-node-top"><span class="m-flow-chip"><i class="fa-solid fa-truck-fast"></i></span><span class="m-flow-tag js-flow-tag">اليوم</span></div>' +
                     '<div class="m-flow-num"><span data-slot="bento-finished-today"></span></div>' +
                     '<div class="m-flow-node-label">قطع سُلّمت</div>' +
                     '<div class="m-flow-minibar"><i class="js-out-bar"></i></div>' +
-                    '<div class="m-flow-node-sub">متوسط اليوم <b class="js-out-avg">—</b></div>' +
+                    '<div class="m-flow-node-sub">المتوسط اليومي <b class="js-out-avg">—</b></div>' +
                 '</section>' +
             '</div>' +
             '<section class="m-flow-month">' +
@@ -10684,6 +11312,20 @@ html.is-mobile body.rg-light .modal-overlay:not(#modal-admin-login) .modal-conte
         const q = (sel) => root.querySelector(sel);
         const nf = (v) => Math.round(v).toLocaleString();
         const setW = (el, v) => { if (el) el.style.width = clamp(v, 0, 100).toFixed(2) + '%'; };
+
+        /* ألفاظ «اليوم» تتبع اليوم المعروض: الأرقام نفسها جاءت من محرك البينتو
+           بعد أن وُجَّه على يوم العرض، فوسمُها «اليوم» يومَ يُعرض أمس كذبٌ
+           بصريح العبارة. والصفحة كلها تُوسَم بوسمٍ واحد فلا تختلف بطاقتان. */
+        const vk = window.royalDayKeyView ? String(window.royalDayKeyView()) : '';
+        const dw = dayWord(vk);
+        qsa('.js-flow-tag', root).forEach((el) => { if (el.textContent !== dw) el.textContent = dw; });
+        const capText = (el, pre, post) => {
+            if (!el) return;
+            const want = pre + dw + post;
+            if (el.textContent !== want) el.textContent = want;
+        };
+        capText(q('.js-tank-cap'), 'سُلّم ', ' من الموجود');
+        capText(q('.js-days-cap'), 'على وتيرة ', ' ينتهي المخزون خلال');
 
         /* المقياس لا يُقاس بوارد الشهر: ما في المكوى اليوم فيه بقية من أشهر قبله،
            فيصير الرقم «١٣٢٠٪» ويكذب التشبيه. ما يُهمّ صاحب المكوى من هذه البطاقة
